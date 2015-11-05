@@ -1,0 +1,29 @@
+---- shm_segs Matches (28 in 2 files) ----
+Shm.c (ipc):static struct shmid_ds *shm_segs[SHMMNI];
+Shm.c (ipc):		shm_segs[id] = (struct shmid_ds *) IPC_UNUSED;
+Shm.c (ipc):		while ((shp = shm_segs[id]) == IPC_NOID) 
+Shm.c (ipc): * allocate new shmid_ds and pgtable. protected by shm_segs[id] = NOID.
+Shm.c (ipc):		if (shm_segs[id] == IPC_UNUSED) {
+Shm.c (ipc):			shm_segs[id] = (struct shmid_ds *) IPC_NOID;
+Shm.c (ipc):		shm_segs[id] = (struct shmid_ds *) IPC_UNUSED;
+Shm.c (ipc):		shm_segs[id] = (struct shmid_ds *) IPC_UNUSED;
+Shm.c (ipc):	shp->shm_segsz = size;
+Shm.c (ipc):	shm_segs[id] = shp;
+Shm.c (ipc):	shp = shm_segs[id];
+Shm.c (ipc):	if (size > shp->shm_segsz)
+Shm.c (ipc):	shp = shm_segs[id];
+Shm.c (ipc):	shm_segs[id] = (struct shmid_ds *) IPC_UNUSED;
+Shm.c (ipc):		while (max_shmid && (shm_segs[--max_shmid] == IPC_UNUSED));
+Shm.c (ipc):		shp = shm_segs[shmid];
+Shm.c (ipc):	shp = shm_segs[id = shmid % SHMMNI];
+Shm.c (ipc):	shp = shm_segs[id = shmid % SHMMNI];
+Shm.c (ipc):		addr = (addr - shp->shm_segsz) & PAGE_MASK;
+Shm.c (ipc):			if (addr + shp->shm_segsz >= shmd->start && 
+Shm.c (ipc):			    addr + shp->shm_segsz < shmd->end)
+Shm.c (ipc):	if ((shp != shm_segs[id]) || (shp->shm_perm.seq != shmid / SHMMNI)) {
+Shm.c (ipc):  	shp = shm_segs[id];
+Shm.c (ipc):	unmap_page_range (shmd->start, shp->shm_segsz); /* sleeps */
+Shm.c (ipc):		shp = shm_segs[id];
+Shm.c (ipc):	shp = shm_segs[id];
+Shm.c (ipc):	shp = shm_segs[swap_id];
+Shm.h (include\linux):	int	shm_segsz;		/* size of segment (bytes) */
