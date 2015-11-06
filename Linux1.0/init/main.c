@@ -348,6 +348,8 @@ static void copro_timeout(void)
 	outb_p(0,0xf0);
 }
 
+/* 内核启动函数
+ **/
 asmlinkage void start_kernel(void)
 {
 /*
@@ -363,6 +365,7 @@ asmlinkage void start_kernel(void)
 	memory_end &= PAGE_MASK;
 	ramdisk_size = RAMDISK_SIZE;
 	copy_options(command_line,COMMAND_LINE);
+	/*最大内存支持16MB*/
 #ifdef CONFIG_MAX_16M
 	if (memory_end > 16*1024*1024)
 		memory_end = 16*1024*1024;

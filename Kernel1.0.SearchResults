@@ -1,29 +1,142 @@
----- shm_segs Matches (28 in 2 files) ----
-Shm.c (ipc):static struct shmid_ds *shm_segs[SHMMNI];
-Shm.c (ipc):		shm_segs[id] = (struct shmid_ds *) IPC_UNUSED;
-Shm.c (ipc):		while ((shp = shm_segs[id]) == IPC_NOID) 
-Shm.c (ipc): * allocate new shmid_ds and pgtable. protected by shm_segs[id] = NOID.
-Shm.c (ipc):		if (shm_segs[id] == IPC_UNUSED) {
-Shm.c (ipc):			shm_segs[id] = (struct shmid_ds *) IPC_NOID;
-Shm.c (ipc):		shm_segs[id] = (struct shmid_ds *) IPC_UNUSED;
-Shm.c (ipc):		shm_segs[id] = (struct shmid_ds *) IPC_UNUSED;
-Shm.c (ipc):	shp->shm_segsz = size;
-Shm.c (ipc):	shm_segs[id] = shp;
-Shm.c (ipc):	shp = shm_segs[id];
-Shm.c (ipc):	if (size > shp->shm_segsz)
-Shm.c (ipc):	shp = shm_segs[id];
-Shm.c (ipc):	shm_segs[id] = (struct shmid_ds *) IPC_UNUSED;
-Shm.c (ipc):		while (max_shmid && (shm_segs[--max_shmid] == IPC_UNUSED));
-Shm.c (ipc):		shp = shm_segs[shmid];
-Shm.c (ipc):	shp = shm_segs[id = shmid % SHMMNI];
-Shm.c (ipc):	shp = shm_segs[id = shmid % SHMMNI];
-Shm.c (ipc):		addr = (addr - shp->shm_segsz) & PAGE_MASK;
-Shm.c (ipc):			if (addr + shp->shm_segsz >= shmd->start && 
-Shm.c (ipc):			    addr + shp->shm_segsz < shmd->end)
-Shm.c (ipc):	if ((shp != shm_segs[id]) || (shp->shm_perm.seq != shmid / SHMMNI)) {
-Shm.c (ipc):  	shp = shm_segs[id];
-Shm.c (ipc):	unmap_page_range (shmd->start, shp->shm_segsz); /* sleeps */
-Shm.c (ipc):		shp = shm_segs[id];
-Shm.c (ipc):	shp = shm_segs[id];
-Shm.c (ipc):	shp = shm_segs[swap_id];
-Shm.h (include\linux):	int	shm_segsz;		/* size of segment (bytes) */
+---- task_struct Matches (143 in 37 files) ----
+Array.c (fs\proc):static struct task_struct ** get_task(pid_t pid)
+Array.c (fs\proc):	struct task_struct ** p;
+Array.c (fs\proc):static unsigned long get_phys_addr(struct task_struct ** p, unsigned long ptr)
+Array.c (fs\proc):static int get_array(struct task_struct ** p, unsigned long start, unsigned long end, char * buffer)
+Array.c (fs\proc):	struct task_struct ** p = get_task(pid);
+Array.c (fs\proc):	struct task_struct ** p = get_task(pid);
+Array.c (fs\proc):static unsigned long get_wchan(struct task_struct *p)
+Array.c (fs\proc):	struct task_struct ** p = get_task(pid);
+Array.c (fs\proc):	struct task_struct ** p = get_task(pid);
+Array.c (fs\proc):	struct task_struct **p = get_task(pid);
+Blk.h (drivers\block):	struct task_struct * waiting;
+Blk.h (drivers\block):	struct task_struct * p;
+Cdu31a.c (drivers\block):static struct task_struct *has_cd_task = NULL;  /* The task that is currently using the
+Exit.c (kernel):int getrusage(struct task_struct *, int, struct rusage *);
+Exit.c (kernel):static int generate(unsigned long sig, struct task_struct * p)
+Exit.c (kernel):int send_sig(unsigned long sig,struct task_struct * p,int priv)
+Exit.c (kernel):void notify_parent(struct task_struct * tsk)
+Exit.c (kernel):void release(struct task_struct * p)
+Exit.c (kernel): * Check to see if a task_struct pointer is present in the task[] array
+Exit.c (kernel):int bad_task_ptr(struct task_struct *p)
+Exit.c (kernel):	struct task_struct *p;
+Exit.c (kernel):	struct task_struct *p;
+Exit.c (kernel):	struct task_struct *p;
+Exit.c (kernel): 	struct task_struct *p;
+Exit.c (kernel):		struct task_struct * p;
+Exit.c (kernel):	struct task_struct *p;
+Exit.c (kernel):	struct task_struct * p;
+Exit.c (kernel):static void forget_original_parent(struct task_struct * father)
+Exit.c (kernel):	struct task_struct * p;
+Exit.c (kernel):	struct task_struct *p;
+Exit.c (kernel):	struct task_struct *p;
+Fd.c (fs\proc):	struct task_struct * p;
+Fd.c (fs\proc):	struct task_struct * p;
+Fork.c (kernel):extern int shm_fork(struct task_struct *, struct task_struct *);
+Fork.c (kernel)://寻找空闲的task_struct,并返回其索引
+Fork.c (kernel):int dup_mmap(struct task_struct * tsk)
+Fork.c (kernel):	struct task_struct *p;
+Fork.c (kernel):	//从内存当中申请一个task_struct,注意并不是用kmalloc申请的
+Fork.c (kernel):	if(!(p = (struct task_struct*)__get_free_page(GFP_KERNEL)))
+Fork.c (kernel):	//设置task_struct进程的链表关系
+Fs.h (include\linux):	struct task_struct *fl_owner;	/* NULL if on free list, for sanity checks */
+Info.c (kernel):	struct task_struct **p;
+Inode.c (fs\proc):	struct task_struct * p;
+Link.c (fs\proc):	struct task_struct * p;
+Locks.c (fs):void fcntl_remove_locks(struct task_struct *task, struct file *filp,
+Memory.c (mm):void oom(struct task_struct * task)
+Memory.c (mm):void clear_page_tables(struct task_struct * tsk)
+Memory.c (mm):void free_page_tables(struct task_struct * tsk)
+Memory.c (mm):int clone_page_tables(struct task_struct * tsk)
+Memory.c (mm):int copy_page_tables(struct task_struct * tsk)
+Memory.c (mm):unsigned long put_page(struct task_struct * tsk,unsigned long page,
+Memory.c (mm):unsigned long put_dirty_page(struct task_struct * tsk, unsigned long page, unsigned long address)
+Memory.c (mm):	struct task_struct * tsk, unsigned long user_esp)
+Memory.c (mm):	struct task_struct * tsk, unsigned long user_esp)
+Memory.c (mm):static inline void get_empty_page(struct task_struct * tsk, unsigned long address)
+Memory.c (mm):static int try_to_share(unsigned long address, struct task_struct * tsk,
+Memory.c (mm):	struct task_struct * p, unsigned long error_code, unsigned long newpage)
+Memory.c (mm):int share_page(struct vm_area_struct * area, struct task_struct * tsk,
+Memory.c (mm):	struct task_struct ** p;
+Memory.c (mm):static inline unsigned long get_empty_pgtable(struct task_struct * tsk,unsigned long address)
+Memory.c (mm):	struct task_struct *tsk, unsigned long user_esp)
+Mm.h (include\linux):	struct task_struct * vm_task;		/* VM area parameters */
+Mm.h (include\linux):extern unsigned long put_dirty_page(struct task_struct * tsk,unsigned long page,
+Mm.h (include\linux):extern void free_page_tables(struct task_struct * tsk);
+Mm.h (include\linux):extern void clear_page_tables(struct task_struct * tsk);
+Mm.h (include\linux):extern int copy_page_tables(struct task_struct * to);
+Mm.h (include\linux):extern int clone_page_tables(struct task_struct * to);
+Mm.h (include\linux):	struct task_struct *tsk, unsigned long user_esp);
+Mm.h (include\linux):	struct task_struct *tsk, unsigned long user_esp);
+Mm.h (include\linux):extern void oom(struct task_struct * task);
+Mm.h (include\linux):extern void insert_vm_struct(struct task_struct *, struct vm_area_struct *);
+Mmap.c (fs\nfs):extern int share_page(struct vm_area_struct * area, struct task_struct * tsk,
+Mmap.c (fs\nfs):extern unsigned long put_page(struct task_struct * tsk,unsigned long page,
+Mmap.c (mm):void insert_vm_struct(struct task_struct *t, struct vm_area_struct *vmp)
+Namei.c (fs):	struct task_struct ** p;
+Open.c (fs):extern void fcntl_remove_locks(struct task_struct *, struct file *, unsigned int fd);
+Ptrace.c (kernel):static inline struct task_struct * get_task(int pid)
+Ptrace.c (kernel):static inline int get_stack_long(struct task_struct *task, int offset)
+Ptrace.c (kernel):static inline int put_stack_long(struct task_struct *task, int offset,
+Ptrace.c (kernel):static unsigned long get_long(struct task_struct * tsk,
+Ptrace.c (kernel):static void put_long(struct task_struct * tsk, unsigned long addr,
+Ptrace.c (kernel):static int read_long(struct task_struct * tsk, unsigned long addr,
+Ptrace.c (kernel):static int write_long(struct task_struct * tsk, unsigned long addr,
+Ptrace.c (kernel):	struct task_struct *child;
+Ptrace.c (kernel):		     want to modify a portion of the task_struct, and we
+Root.c (fs\proc):	struct task_struct * p;
+Sched.c (kernel):struct task_struct init_task = INIT_TASK;
+Sched.c (kernel):struct task_struct *current = &init_task;
+Sched.c (kernel):struct task_struct *last_task_used_math = NULL;
+Sched.c (kernel):struct task_struct * task[NR_TASKS] = {&init_task, };
+Sched.c (kernel):	struct task_struct * p;
+Sched.c (kernel):	struct task_struct * next;
+Sched.c (kernel):	struct task_struct * p;
+Sched.c (kernel):	struct task_struct * p;
+Sched.c (kernel):	struct task_struct **p;
+Sched.c (kernel):static void show_task(int nr,struct task_struct * p)
+Sched.h (include\linux):struct task_struct {
+Sched.h (include\linux):	struct task_struct *next_task, *prev_task;
+Sched.h (include\linux):	struct task_struct *p_opptr,*p_pptr, *p_cptr, *p_ysptr, *p_osptr;
+Sched.h (include\linux):extern struct task_struct init_task;
+Sched.h (include\linux):extern struct task_struct *task[NR_TASKS];
+Sched.h (include\linux):extern struct task_struct *last_task_used_math;
+Sched.h (include\linux):extern struct task_struct *current;
+Sched.h (include\linux):extern void notify_parent(struct task_struct * tsk);
+Sched.h (include\linux):extern int send_sig(unsigned long sig,struct task_struct * p,int priv);
+Sched.h (include\linux):/* 系统为每个进程保有两项，依次交替，其中n为进程task_struct在任务数组中的索引
+Sched.h (include\linux):/*  将新建的task_struct插入到以init_task为首的双向队列的队尾
+Scsi.h (drivers\scsi):	struct task_struct * p;
+Scsi_ioctl.c (drivers\scsi):  struct task_struct * p;
+Sd.c (drivers\scsi):  struct task_struct * p;
+Sem.h (include\linux):/* this gets linked into the task_struct */
+Shm.c (ipc):int shm_fork (struct task_struct *p1, struct task_struct *p2)
+Shm.h (include\linux):	struct task_struct *task;     /* attacher */
+Sr.c (drivers\scsi):  struct task_struct * p;
+Sr_ioctl.c (drivers\scsi):  struct task_struct * p;
+Swap.c (mm):    struct task_struct *p;
+Swap.c (mm):	struct task_struct * p;
+Swap.c (mm):	struct task_struct *p;
+Sys.c (kernel):static int proc_sel(struct task_struct *p, int which, int who)
+Sys.c (kernel):	struct task_struct **p;
+Sys.c (kernel):	struct task_struct **p;
+Sys.c (kernel):static void mark_screen_rdonly(struct task_struct * tsk)
+Sys.c (kernel):	struct task_struct * p;
+Sys.c (kernel):		struct task_struct * tmp;
+Sys.c (kernel):	struct task_struct * p;
+Sys.c (kernel): * It would make sense to put struct rusuage in the task_struct,
+Sys.c (kernel): * except that would make the task_struct be *really big*.  After
+Sys.c (kernel): * task_struct gets moved into malloc'ed memory, it would
+Sys.c (kernel):int getrusage(struct task_struct *p, int who, struct rusage *ru)
+Tty_io.c (drivers\char):	struct task_struct *p;
+Tty_io.c (drivers\char):	struct task_struct *p;
+Tty_io.c (drivers\char):	struct task_struct **p;
+Tty_io.c (drivers\char):	struct task_struct **p;
+Tty_ioctl.c (drivers\char):		struct task_struct tasks[NR_TASKS];
+Tty_ioctl.c (drivers\char):	struct task_struct **p;
+Tty_ioctl.c (drivers\char):			for (i=0 ; i<sizeof(struct task_struct) ; i++)
+Tty_ioctl.c (drivers\char):					struct task_struct *p;
+User.h (include\linux):   in the file.  Directly after this is a copy of the task_struct, which
+Util.c (ipc):int shm_fork (struct task_struct *p1, struct task_struct *p2)
+Vmalloc.c (mm):	struct task_struct * p;
+Wait.h (include\linux):	struct task_struct * task;

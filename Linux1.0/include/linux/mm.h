@@ -167,7 +167,7 @@ extern unsigned long high_memory;
 
 extern unsigned short * mem_map;
 
-#define PAGE_PRESENT	0x001
+#define PAGE_PRESENT	0x001                //内存在主存中
 #define PAGE_RW		0x002
 #define PAGE_USER	0x004
 #define PAGE_PWT	0x008	/* 486 only - not used currently */

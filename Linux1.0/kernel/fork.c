@@ -151,7 +151,8 @@ asmlinkage int sys_fork(struct pt_regs regs)
 	p->flags &= ~(PF_PTRACED|PF_TRACESYS);
 	p->pid = last_pid;
 	p->swappable = 1;
-	/*刚被创建时，父进程和创建该进程的进程是同一个进程*/
+	/*刚被创建时，父进程和创建该进程的进程是同一个进程，为啥要区分开，是因为
+	 *进程的父进程被杀死后，就将该进程的父进程设置为1号进程*/
 	p->p_pptr = p->p_opptr = current;
 	p->p_cptr = NULL;
 	//设置task_struct进程的链表关系

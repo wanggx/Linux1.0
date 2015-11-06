@@ -52,6 +52,9 @@ extern int shm_swap (int);
  * The following are used to make sure we don't thrash too much...
  * NOTE!! NR_LAST_FREE_PAGES must be a power of 2...
  */
+
+/* 记录被分配出去的空闲内存
+ **/
 #define NR_LAST_FREE_PAGES 32
 static unsigned long last_free_pages[NR_LAST_FREE_PAGES] = {0,};
 
@@ -509,17 +512,27 @@ static inline void add_mem_queue(unsigned long addr, unsigned long * queue)
  * With the above two rules, you get a straight-line execution path
  * for the normal case, giving better asm-code.
  */
+
+/* 释放物理内存页，如果mem_map中引用计数大于1，则最后的结果仅仅是引用计数减1
+ **/
 void free_page(unsigned long addr)
 {
 	if (addr < high_memory) {
 		unsigned short * map = mem_map + MAP_NR(addr);
 
 		if (*map) {
+			/*如果不是保留的页，则释放*/
 			if (!(*map & MAP_PAGE_RESERVED)) {
 				unsigned long flag;
-
+				/* 保存现场，也就是保存原来CPSR的值
+				 * 然后再禁止中断，当需要开中断时，直接restore_flags即可，
+				 * 可以去查查中断的过程
+				 */
 				save_flags(flag);
 				cli();
+				/* 如果该页的引用计数不等于0,则释放，只有在释放的时候才会减小
+				 * 物理内存页的引用计数
+				 */
 				if (!--*map) {
 					if (nr_secondary_pages < MAX_SECONDARY_PAGES) {
 						add_mem_queue(addr,&secondary_page_list);
@@ -527,6 +540,7 @@ void free_page(unsigned long addr)
 						restore_flags(flag);
 						return;
 					}
+					/*将其添加到空闲链表中*/
 					add_mem_queue(addr,&free_page_list);
 					nr_free_pages++;
 				}

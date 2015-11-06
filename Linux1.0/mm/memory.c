@@ -42,9 +42,10 @@
 #include <linux/mman.h>
 
 
-//mem_init中传递的end_mem
+//mem_init中传递的end_mem，即内核支持的最大物理地址
 unsigned long high_memory = 0;
 
+/*pg0映射物理地址的0-4MB范围*/
 extern unsigned long pg0[1024];		/* page table for 0-4MB for everybody */
 
 extern void sound_mem_init(void);
@@ -81,6 +82,9 @@ void oom(struct task_struct * task)
 	send_sig(SIGKILL,task,1);
 }
 
+/* 释放一个页表的内存，也就是4MB
+ * page_dir是页表地址的地址
+ **/
 static void free_one_table(unsigned long * page_dir)
 {
 	int j;
@@ -94,20 +98,28 @@ static void free_one_table(unsigned long * page_dir)
 		printk("Bad page table: [%p]=%08lx\n",page_dir,pg_table);
 		return;
 	}
+	/*如果是保留页，则不做处理*/
 	if (mem_map[MAP_NR(pg_table)] & MAP_PAGE_RESERVED)
 		return;
+	/*获取页表首地址，循环处理页表中的每一项*/
 	page_table = (unsigned long *) (pg_table & PAGE_MASK);
 	for (j = 0 ; j < PTRS_PER_PAGE ; j++,page_table++) {
 		unsigned long pg = *page_table;
 		
 		if (!pg)
 			continue;
+		/*清空页表项的值*/
 		*page_table = 0;
+		/* 注意此处有点非常重要
+		 * 当访问的内存不在主存中时，在交换区中，则需要做另外的处理
+		 * PAGE_PRESENT表示内存在主存中
+		 */
 		if (pg & PAGE_PRESENT)
 			free_page(PAGE_MASK & pg);
 		else
 			swap_free(pg);
 	}
+	/*释放页表所占用的空间*/
 	free_page(PAGE_MASK & pg_table);
 }
 
@@ -118,6 +130,10 @@ static void free_one_table(unsigned long * page_dir)
  * page-table-tree in memory: it just removes the user pages. The two
  * functions are similar, but there is a fundamental difference.
  */
+
+/* 只保留进程的内核态页表，释放所有用户态页表
+ */
+
 void clear_page_tables(struct task_struct * tsk)
 {
 	int i;
@@ -128,6 +144,7 @@ void clear_page_tables(struct task_struct * tsk)
 		return;
 	if (tsk == task[0])
 		panic("task[0] (swapper) doesn't support exec()\n");
+	/*每个进程的页目录表存放在tast_struct->tss.cr3当中*/
 	pg_dir = tsk->tss.cr3;
 	page_dir = (unsigned long *) pg_dir;
 	if (!page_dir || page_dir == swapper_pg_dir) {
@@ -137,6 +154,11 @@ void clear_page_tables(struct task_struct * tsk)
 	if (mem_map[MAP_NR(pg_dir)] > 1) {
 		unsigned long * new_pg;
 
+		/* 申请一个新的页目录表，
+		 * 将进程的内核态地址空间拷贝到新的页面当中，
+		 * 将用户态0-3GB的地址空间释放，然后将新的页目录表
+		 * 赋值给cr3,并释放原来的页目录表，此函数主要用在exev函数族当中
+		 */
 		if (!(new_pg = (unsigned long*) get_free_page(GFP_KERNEL))) {
 			oom(tsk);
 			return;
@@ -176,6 +198,11 @@ void free_page_tables(struct task_struct * tsk)
 	tsk->tss.cr3 = (unsigned long) swapper_pg_dir;
 	if (tsk == current)
 		__asm__ __volatile__("movl %0,%%cr3": :"a" (tsk->tss.cr3));
+
+	/* 如果页目录表的引用计数大于1，可以这么理解，比如说，两个进程都指向了一个页目录表
+	 * 释放一个进程的页表，则该页表的计数减1，并不做任何处理返回，如果只被一个进程所用
+	 * 则需要将页目录表所映射的内存都释放，可以看函数clone_page_tables的实现
+	 */
 	if (mem_map[MAP_NR(pg_dir)] > 1) {
 		free_page(pg_dir);
 		return;
@@ -193,6 +220,8 @@ void free_page_tables(struct task_struct * tsk)
  * probably races in the memory management with cloning, but we'll
  * see..
  */
+
+
 int clone_page_tables(struct task_struct * tsk)
 {
 	unsigned long pg_dir;
@@ -240,6 +269,8 @@ int copy_page_tables(struct task_struct * tsk)
 			*old_page_dir = 0;
 			continue;
 		}
+		/* 如果是内核空间则直接赋值即可
+		 */
 		if (mem_map[MAP_NR(old_pg_table)] & MAP_PAGE_RESERVED) {
 			*new_page_dir = old_pg_table;
 			continue;
@@ -491,6 +522,10 @@ unsigned long put_page(struct task_struct * tsk,unsigned long page,
 		printk("put_page: trying to put page %08lx at %08lx\n",page,address);
 		return 0;
 	}
+	/*  此处的address是线性地址,此处一定要想清楚，
+	 *  Linux的内存分配采用的是段页式的，逻辑地址---(分段)---线性地址----(分页)-----物理地址，
+	 *  然后找到他在页目录表的所在的项，也就是页表的地址
+	 */
 	page_table = PAGE_DIR_OFFSET(tsk->tss.cr3,address);
 	if ((*page_table) & PAGE_PRESENT)
 		page_table = (unsigned long *) (PAGE_MASK & *page_table);
@@ -500,7 +535,12 @@ unsigned long put_page(struct task_struct * tsk,unsigned long page,
 		*page_table = BAD_PAGETABLE | PAGE_TABLE;
 		return 0;
 	}
+	/*取出地址在页表中的位置*/
 	page_table += (address >> PAGE_SHIFT) & (PTRS_PER_PAGE-1);
+	/* 如果页表已经被映射了，则将之前的映射取消
+	 * 此处有一个问题，映射取消时，为啥没有释放被映射的物理内存?
+	 * 或者减小mem_map引用计数
+	 */
 	if (*page_table) {
 		printk("put_page: page already exists\n");
 		*page_table = 0;
@@ -677,6 +717,7 @@ int __verify_write(unsigned long start, unsigned long size)
 	return 0;
 }
 
+/* 申请一个空的物理内存页，然后把该物理页映射到address表示的线性地址所在的页*/
 static inline void get_empty_page(struct task_struct * tsk, unsigned long address)
 {
 	unsigned long tmp;
@@ -711,6 +752,7 @@ static int try_to_share(unsigned long address, struct task_struct * tsk,
 	unsigned long from_page;
 	unsigned long to_page;
 
+	/*获取同一个线性地址在两个不同进程当中的页目录项地址*/
 	from_page = (unsigned long)PAGE_DIR_OFFSET(p->tss.cr3,address);
 	to_page = (unsigned long)PAGE_DIR_OFFSET(tsk->tss.cr3,address);
 /* is there a page-directory at from? */
@@ -718,6 +760,7 @@ static int try_to_share(unsigned long address, struct task_struct * tsk,
 	if (!(from & PAGE_PRESENT))
 		return 0;
 	from &= PAGE_MASK;
+	/*找到要共享页在页表中的地址*/
 	from_page = from + PAGE_PTR(address);
 	from = *(unsigned long *) from_page;
 /* is the page clean and present? */
@@ -725,6 +768,7 @@ static int try_to_share(unsigned long address, struct task_struct * tsk,
 		return 0;
 	if (from >= high_memory)
 		return 0;
+	/*如果要共享的页是保留的则不行*/
 	if (mem_map[MAP_NR(from)] & MAP_PAGE_RESERVED)
 		return 0;
 /* is the destination ok? */
@@ -733,6 +777,8 @@ static int try_to_share(unsigned long address, struct task_struct * tsk,
 		return 0;
 	to &= PAGE_MASK;
 	to_page = to + PAGE_PTR(address);
+	/* 如果to_page已经对应了物理页，则无法共享，不能释放该内存在映射，
+	 * 因为这时根本就不知道该物理页里存放的是什么数据*/
 	if (*(unsigned long *) to_page)
 		return 0;
 /* share them if read - do COW immediately otherwise */
@@ -801,6 +847,9 @@ int share_page(struct vm_area_struct * area, struct task_struct * tsk,
 /*
  * fill in an empty page-table if none exists.
  */
+
+/* 在线性地址address申请一个新的页目录项
+ */
 static inline unsigned long get_empty_pgtable(struct task_struct * tsk,unsigned long address)
 {
 	unsigned long page;
@@ -848,6 +897,7 @@ void do_no_page(unsigned long error_code, unsigned long address,
 	if (tmp & PAGE_PRESENT)
 		return;
 	++tsk->rss;
+	/*如果缺页的内存在交换区中则将交换区中的内存交换到内存*/
 	if (tmp) {
 		++tsk->maj_flt;
 		swap_in((unsigned long *) page);
@@ -870,6 +920,7 @@ void do_no_page(unsigned long error_code, unsigned long address,
 		mpnt->vm_ops->nopage(error_code, mpnt, address);
 		return;
 	}
+	/*不是当前进程就好说了，直接给tsk分配一页物理内存*/
 	if (tsk != current)
 		goto ok_no_page;
 	if (address >= tsk->end_data && address < tsk->brk)
@@ -880,9 +931,11 @@ void do_no_page(unsigned long error_code, unsigned long address,
 		mpnt->vm_start = address;
 		goto ok_no_page;
 	}
+	/*cr2记录缺页地址*/
 	tsk->tss.cr2 = address;
 	current->tss.error_code = error_code;
 	current->tss.trap_no = 14;
+	/*发送段错误信号，杀死进程*/
 	send_sig(SIGSEGV,tsk,1);
 	if (error_code & 4)	/* user level access? */
 		return;
@@ -1035,10 +1088,17 @@ unsigned long paging_init(unsigned long start_mem, unsigned long end_mem)
 	memset((void *) 0, 0, PAGE_SIZE);
 #endif
 	start_mem = PAGE_ALIGN(start_mem);
+	/*此处的address应该是物理地址，映射的是进程的内核空间,而
+	 *内核程序是可以任意访问物理内存的任何位置的*/
 	address = 0;
 	pg_dir = swapper_pg_dir;
 	while (address < end_mem) {
+		/*在二级页表当中，页目录表中的768项正好是3GB的位置，在每个进程的地址
+		 *空间当中，0-3GB是进程的用户地址空间，3-4GB是进程的内核空间*/
 		tmp = *(pg_dir + 768);		/* at virtual addr 0xC0000000 */
+		/* 如果页表项为空，则从start_mem位置开始分配一个页表，而一个页表
+		 * 具有1024项，正好一页大小，然后将这一页表的地址赋给页目录项
+		 */
 		if (!tmp) {
 			tmp = start_mem | PAGE_TABLE;
 			*(pg_dir + 768) = tmp;
@@ -1046,7 +1106,9 @@ unsigned long paging_init(unsigned long start_mem, unsigned long end_mem)
 		}
 		*pg_dir = tmp;			/* also map it in at 0x0000000 for init */
 		pg_dir++;
+		/*获取页表的地址*/
 		pg_table = (unsigned long *) (tmp & PAGE_MASK);
+		/*循环处理一个页表*/
 		for (tmp = 0 ; tmp < PTRS_PER_PAGE ; tmp++,pg_table++) {
 			if (address < end_mem)
 				*pg_table = address | PAGE_SHARED;
@@ -1059,6 +1121,10 @@ unsigned long paging_init(unsigned long start_mem, unsigned long end_mem)
 	return start_mem;
 }
 
+
+/* 内存初始化
+ * start_low_mem是从640KB处开始的
+ */
 void mem_init(unsigned long start_low_mem,
 	      unsigned long start_mem, unsigned long end_mem)
 {
@@ -1075,13 +1141,18 @@ void mem_init(unsigned long start_low_mem,
 	start_mem +=  0x0000000f;
 	start_mem &= ~0x0000000f;
 	tmp = MAP_NR(end_mem);
+	/* mem_map放在start_mem的起始处，占用空间是根据物理地址的总页数
+	 * 来确定的，mem_map是用来记录每页物理内存的使用情况
+	 **/
 	mem_map = (unsigned short *) start_mem;
 	p = mem_map + tmp;
 	start_mem = (unsigned long) p;
+	/*将所有的内存页状态设置为MAP_PAGE_RESERVED，应该和COW有关*/
 	while (p > mem_map)
 		*--p = MAP_PAGE_RESERVED;
 	start_low_mem = PAGE_ALIGN(start_low_mem);
 	start_mem = PAGE_ALIGN(start_mem);
+	/*如果start_low_mem小于1M则640KB-1MB留给显存了。0xA0000=640KB*/
 	while (start_low_mem < 0xA0000) {
 		mem_map[MAP_NR(start_low_mem)] = 0;
 		start_low_mem += PAGE_SIZE;
@@ -1090,21 +1161,35 @@ void mem_init(unsigned long start_low_mem,
 		mem_map[MAP_NR(start_mem)] = 0;
 		start_mem += PAGE_SIZE;
 	}
+	/* 上面第一个循环将所有的物理页表设置为MAP_PAGE_RESERVED，
+	 *  而在后面的两个循环中，将想要的物理页表设置为0，也即是主存区
+	 */
 #ifdef CONFIG_SOUND
 	sound_mem_init();
 #endif
+	/* 此段代码非常重要，涉及到kamlloc
+	 * free_page_list作为空闲物理页表的链首
+	 * nr_free_pages代表空闲物理页表的数量
+	 **/
+
 	free_page_list = 0;
 	nr_free_pages = 0;
 	for (tmp = 0 ; tmp < end_mem ; tmp += PAGE_SIZE) {
+		/*如果mem_map的标记大于0，则表示该页表已被使用*/
 		if (mem_map[MAP_NR(tmp)]) {
+			/*如果实在显存区*/
 			if (tmp >= 0xA0000 && tmp < 0x100000)
 				reservedpages++;
+			/*此处etext应该是内核代码段*/
 			else if (tmp < (unsigned long) &etext)
 				codepages++;
 			else
 				datapages++;
 			continue;
 		}
+		/* 如果物理页是空闲的，则将该空闲页表添加到free_page_list当中
+		 * 放在链首，同时增加nr_free_pages
+		 **/
 		*(unsigned long *) tmp = free_page_list;
 		free_page_list = tmp;
 		nr_free_pages++;
@@ -1123,6 +1208,7 @@ void mem_init(unsigned long start_low_mem,
 	__asm__ __volatile__("movb 0,%%al ; movb %%al,0": : :"ax", "memory");
 	pg0[0] = 0;
 	invalidate();
+	/*开始启动分页功能*/
 	if (wp_works_ok < 0)
 		wp_works_ok = 0;
 	return;
