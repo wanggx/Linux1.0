@@ -295,7 +295,8 @@ int copy_page_tables(struct task_struct * tsk)
 			if ((pg & (PAGE_RW | PAGE_COW)) == (PAGE_RW | PAGE_COW))
 				pg &= ~PAGE_RW;
 			/* 此处并没有去申请一个新的内存，实际是父进程和子进程在共享内存，如果要写再去复制
-			 * 也就是写时复制(copy-on-write)
+			 * 也就是写时复制(copy-on-write),同时增加了物理页mem_map的引用计数，在__verify_write中在
+			 * 调用free_page减小引用计数
 			 */
 			*new_page_table = pg;
 			if (mem_map[MAP_NR(pg)] & MAP_PAGE_RESERVED)
@@ -569,8 +570,10 @@ unsigned long put_dirty_page(struct task_struct * tsk, unsigned long page, unsig
 	if (PAGE_PRESENT & *page_table)
 		page_table = (unsigned long *) (PAGE_MASK & *page_table);
 	else {
+		/*如果当前的页表项不在内存中,则重新分配一个空闲的内存页*/
 		if (!(tmp = get_free_page(GFP_KERNEL)))
 			return 0;
+		/*此处为啥又要判断一次?*/
 		if (PAGE_PRESENT & *page_table) {
 			free_page(tmp);
 			page_table = (unsigned long *) (PAGE_MASK & *page_table);
@@ -585,6 +588,7 @@ unsigned long put_dirty_page(struct task_struct * tsk, unsigned long page, unsig
 		*page_table = 0;
 		invalidate();
 	}
+	/*设置页标记为脏和私有*/
 	*page_table = page | (PAGE_DIRTY | PAGE_PRIVATE);
 /* no need for invalidate */
 	return page;
@@ -630,6 +634,7 @@ static void __do_wp_page(unsigned long error_code, unsigned long address,
 		if (new_page) {
 			if (mem_map[MAP_NR(old_page)] & MAP_PAGE_RESERVED)
 				++tsk->rss;
+			/*将物理页数据拷贝*/
 			copy_page(old_page,new_page);
 			*(unsigned long *) pte = new_page | prot;
 			free_page(old_page);
@@ -679,6 +684,7 @@ void do_wp_page(unsigned long error_code, unsigned long address,
 	if ((page & PAGE_PRESENT) && page < high_memory) {
 		pg_table = (unsigned long *) ((page & PAGE_MASK) + PAGE_PTR(address));
 		page = *pg_table;
+		/*如果当前页不在内存或者该页本来就是共享读写的，就直接返回*/
 		if (!(page & PAGE_PRESENT))
 			return;
 		if (page & PAGE_RW)
@@ -704,12 +710,16 @@ void do_wp_page(unsigned long error_code, unsigned long address,
 	*pg_table = 0;
 }
 
+
+/* 此操作主要针对COW，进程在fork的时候，并没有将父进程的，物理内存页拷贝，
+ * 只有在写的时候，才会去拷贝，当其中一个进程需要写时，就将所在的物理页拷贝一份*/
 int __verify_write(unsigned long start, unsigned long size)
 {
 	size--;
 	size += start & ~PAGE_MASK;
 	size >>= PAGE_SHIFT;
 	start &= PAGE_MASK;
+	/*一次处理所有页*/
 	do {
 		do_wp_page(1,start,current,0);
 		start += PAGE_SIZE;
@@ -905,6 +915,9 @@ void do_no_page(unsigned long error_code, unsigned long address,
 	}
 	address &= 0xfffff000;
 	tmp = 0;
+	/* 此处注意虚拟地址链表是按照地址大小顺序来排列的，目前版本内核是链表的，
+	 * 在高版本内核中是二叉树结构(AVL)，
+	 */
 	for (mpnt = tsk->mmap; mpnt != NULL; mpnt = mpnt->vm_next) {
 		if (address < mpnt->vm_start)
 			break;
@@ -1314,6 +1327,8 @@ int file_mmap_share(struct vm_area_struct * area1,
 	return 1;
 }
 
+
+/* 虚拟内存操作函数 */
 struct vm_operations_struct file_mmap = {
 	NULL,			/* open */
 	file_mmap_free,		/* close */

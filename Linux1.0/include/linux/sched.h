@@ -213,7 +213,7 @@ struct task_struct {
 	unsigned long cmin_flt, cmaj_flt;
 	struct rlimit rlim[RLIM_NLIMITS]; 
 	unsigned short used_math;
-	unsigned short rss;	/* number of resident pages */
+	unsigned short rss;	/* number of resident pages */ /*当前在主存中的内存页数*/
 	char comm[16];
 	struct vm86_struct * vm86_info;
 	unsigned long screen_bitmap;
