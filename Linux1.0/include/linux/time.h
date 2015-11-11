@@ -14,10 +14,10 @@ struct timezone {
 #define NFDBITS			__NFDBITS
 
 #define FD_SETSIZE		__FD_SETSIZE
-#define FD_SET(fd,fdsetp)	__FD_SET(fd,fdsetp)
-#define FD_CLR(fd,fdsetp)	__FD_CLR(fd,fdsetp)
-#define FD_ISSET(fd,fdsetp)	__FD_ISSET(fd,fdsetp)
-#define FD_ZERO(fdsetp)		__FD_ZERO(fdsetp)
+#define FD_SET(fd,fdsetp)	__FD_SET(fd,fdsetp)  	/*将fd设置到fdsetp文件集合当中*/
+#define FD_CLR(fd,fdsetp)	__FD_CLR(fd,fdsetp)  	/*将fd从集合当中删除*/
+#define FD_ISSET(fd,fdsetp)	__FD_ISSET(fd,fdsetp)   /*判断是否被设置*/
+#define FD_ZERO(fdsetp)		__FD_ZERO(fdsetp)		/*将集合清0*/
 
 /*
  * Names of the interval timers, and structure

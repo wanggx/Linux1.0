@@ -91,6 +91,10 @@ int permission(struct inode * inode,int mask)
  * routines (currently minix_lookup) for it. It also checks for
  * fathers (pseudo-roots, mount-points)
  */
+
+
+/* 在dir对应的目录当中查找文件名为name,且长度为len的文件或目录的inode
+ */
 int lookup(struct inode * dir,const char * name, int len,
 	struct inode ** result)
 {
@@ -115,6 +119,8 @@ int lookup(struct inode * dir,const char * name, int len,
 			dir->i_count++;
 		}
 	}
+	/* 判断不是一个目录，目录也是一种特殊的文件
+	 */
 	if (!dir->i_op || !dir->i_op->lookup) {
 		iput(dir);
 		return -ENOTDIR;
@@ -153,6 +159,13 @@ int follow_link(struct inode * dir, struct inode * inode,
  * dir_namei() returns the inode of the directory of the
  * specified name, and the name within that directory.
  */
+
+/* pathname路径       /usr/local/test.txt
+ * namelen文件名长度  strlen("test.txt")
+ * name      test.txt
+ * base      文件系统的根目录，或当前进程的启动目录的i节点
+ * res_inode 找到的文件的inode
+ */
 static int dir_namei(const char * pathname, int * namelen, const char ** name,
 	struct inode * base, struct inode ** res_inode)
 {
@@ -174,10 +187,12 @@ static int dir_namei(const char * pathname, int * namelen, const char ** name,
 	}
 	while (1) {
 		thisname = pathname;
+		/*以'/'为分割字符，分割路径*/
 		for(len=0;(c = *(pathname++))&&(c != '/');len++)
 			/* nothing */ ;
 		if (!c)
 			break;
+		/*增加引用计数，如果不增加，则可能在当前进程被切换出去之后，把该inode给释放掉了*/
 		base->i_count++;
 		error = lookup(base,thisname,len,&inode);
 		if (error) {

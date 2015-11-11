@@ -157,6 +157,9 @@ struct buffer_head {
 #include <linux/xia_fs_i.h>
 #include <linux/sysv_fs_i.h>
 
+
+/* inode中有一部分数据是在磁盘当中的
+ */
 struct inode {
 	dev_t		i_dev;
 	unsigned long	i_ino;
@@ -173,12 +176,12 @@ struct inode {
 	unsigned long	i_blocks;
 	struct semaphore i_sem;
 	struct inode_operations * i_op;
-	struct super_block * i_sb;
+	struct super_block * i_sb;      /*对应的超级块*/
 	struct wait_queue * i_wait;
 	struct file_lock * i_flock;
 	struct vm_area_struct * i_mmap;
-	struct inode * i_next, * i_prev;
-	struct inode * i_hash_next, * i_hash_prev;
+	struct inode * i_next, * i_prev;     /*空闲双向链表*/
+	struct inode * i_hash_next, * i_hash_prev; /*hash双向链表*/
 	struct inode * i_bound_to, * i_bound_by;
 	struct inode * i_mount;
 	struct socket * i_socket;
@@ -263,6 +266,8 @@ struct super_block {
 	} u;
 };
 
+/* 对inode对应文件的操作
+ */
 struct file_operations {
 	int (*lseek) (struct inode *, struct file *, off_t, int);
 	int (*read) (struct inode *, struct file *, char *, int);
@@ -276,6 +281,8 @@ struct file_operations {
 	int (*fsync) (struct inode *, struct file *);
 };
 
+/* 对inode的操作
+ */
 struct inode_operations {
 	struct file_operations * default_file_ops;
 	int (*create) (struct inode *,const char *,int,int,struct inode **);

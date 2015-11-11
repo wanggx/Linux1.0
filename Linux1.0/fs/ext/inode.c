@@ -301,6 +301,13 @@ repeat:
 	return result;
 }
 
+
+/* 注意此处就是文件系统中数据块的映射方式，
+ * 直接映射9块
+ * 一级映射1块
+ * 二级一块
+ * 三级一块
+ */
 struct buffer_head * ext_getblk(struct inode * inode, int block, int create)
 {
 	struct buffer_head * bh;

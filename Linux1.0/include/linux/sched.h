@@ -84,7 +84,7 @@ extern unsigned long avenrun[];		/* Load averages */
 
 #define TASK_RUNNING		0
 #define TASK_INTERRUPTIBLE	1
-#define TASK_UNINTERRUPTIBLE	2
+#define TASK_UNINTERRUPTIBLE	2	/*内核一些特定流程，是不可被打断的，也就是可以忽略某些信号*/
 #define TASK_ZOMBIE		3
 #define TASK_STOPPED		4
 #define TASK_SWAPPING		5
@@ -228,6 +228,9 @@ struct task_struct {
 	struct shm_desc *shm;
 	struct sem_undo *semun;
 	struct file * filp[NR_OPEN];
+	/* 当子进程执行exec族函数替换子进程时，表示需要关闭的文件描述符
+	 * 不然文件永远处于打开状态
+	 */
 	fd_set close_on_exec;
 /* ldt for this task - used by Wine.  If NULL, default_ldt is used */
 	struct desc_struct *ldt;
@@ -362,6 +365,8 @@ __asm__("str %%ax\n\t" \
  * This also clears the TS-flag if the task we switched to has used
  * tha math co-processor latest.
  */
+/* current在这个时候被改变
+ */
 #define switch_to(tsk) \
 __asm__("cmpl %%ecx,_current\n\t" \
 	"je 1f\n\t" \
@@ -425,6 +430,10 @@ extern inline void add_wait_queue(struct wait_queue ** p, struct wait_queue * wa
 #endif
 	save_flags(flags);
 	cli();
+	/* 如果队列为空，则让wait指向队首，next指向自己
+	 * 当继续向队列中添加节点时，整个队列就是一个闭合的圆环，
+	 * 否则将wait添加到以*p为队首的下一个地方
+	 */
 	if (!*p) {
 		wait->next = wait;
 		*p = wait;
@@ -445,6 +454,9 @@ extern inline void remove_wait_queue(struct wait_queue ** p, struct wait_queue *
 
 	save_flags(flags);
 	cli();
+	/* 如果队列中只有一个，则将该队列指为NULL
+	 * 反之扫描等待队列，并从中删除wait
+	 */
 	if ((*p == wait) &&
 #ifdef DEBUG
 	    (ok = 1) &&
@@ -452,6 +464,9 @@ extern inline void remove_wait_queue(struct wait_queue ** p, struct wait_queue *
 	    ((*p = wait->next) == wait)) {
 		*p = NULL;
 	} else {
+		/* 因为队列是一个闭合的圆环，所以tmp=wait最终是可以找到wait的，
+		 * 但是为什么不从*p处开始查找?
+		 */
 		tmp = wait;
 		while (tmp->next != wait) {
 			tmp = tmp->next;

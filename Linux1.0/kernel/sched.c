@@ -318,7 +318,7 @@ void wake_up(struct wait_queue **q)
 	do {
 		if ((p = tmp->task) != NULL) {
 			if ((p->state == TASK_UNINTERRUPTIBLE) ||
-			    (p->state == TASK_INTERRUPTIBLE)) {
+			    (p->state == TASK_INTERRUPTIBLE)) {   /*唯一和wake_up_interruptible差别*/
 				p->state = TASK_RUNNING;
 				if (p->counter > current->counter)
 					need_resched = 1;
@@ -344,8 +344,12 @@ void wake_up_interruptible(struct wait_queue **q)
 		return;
 	do {
 		if ((p = tmp->task) != NULL) {
+			/* 将等待队列中状态为TASK_INTERRUPTIBLE的所有进程状态设置为TASK_RUNNING
+			 * 并等待调度程序调度执行
+			 */
 			if (p->state == TASK_INTERRUPTIBLE) {
 				p->state = TASK_RUNNING;
+				/*如果p进程的优先级高于当前进程的优先级，则在下一个时钟，重新调度进程*/
 				if (p->counter > current->counter)
 					need_resched = 1;
 			}
@@ -358,14 +362,16 @@ void wake_up_interruptible(struct wait_queue **q)
 			break;
 		}
 		tmp = tmp->next;
-	} while (tmp != *q);
+	} while (tmp != *q); /*因为等待队列是一个圈*/
 }
 
 void __down(struct semaphore * sem)
 {
 	struct wait_queue wait = { current, NULL };
 	add_wait_queue(&sem->wait, &wait);
+	/*信号量的处理过程是不可以被打断的*/
 	current->state = TASK_UNINTERRUPTIBLE;
+	/*信号量小于等于0时，表明已经无法在获取信号量了，只能让出cpu*/
 	while (sem->count <= 0) {
 		schedule();
 		current->state = TASK_UNINTERRUPTIBLE;
@@ -374,6 +380,7 @@ void __down(struct semaphore * sem)
 	remove_wait_queue(&sem->wait, &wait);
 }
 
+/*以特定状态休眠，并调用schedule函数，放弃cpu*/
 static inline void __sleep_on(struct wait_queue **p, int state)
 {
 	unsigned long flags;
@@ -755,6 +762,7 @@ asmlinkage int sys_getegid(void)
 	return current->egid;
 }
 
+/*更改当前进程的优先级*/
 asmlinkage int sys_nice(long increment)
 {
 	int newprio;
@@ -799,6 +807,9 @@ static void show_task(int nr,struct task_struct * p)
 		printk("\n");
 }
 
+
+/* 显示所有进程
+ */ 
 void show_state(void)
 {
 	int i;

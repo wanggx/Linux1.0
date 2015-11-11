@@ -443,6 +443,9 @@ void ext2_read_inode (struct inode * inode)
 			    "inode=%lu, block=%lu", inode->i_ino, block);
 	raw_inode = ((struct ext2_inode *) bh->b_data) +
 		(inode->i_ino - 1) % EXT2_INODES_PER_BLOCK(inode->i_sb);
+	/* 从磁盘中读取的ext2文件系统中文件的inode的数据
+	 * 并赋值
+	 */
 	inode->i_mode = raw_inode->i_mode;
 	inode->i_uid = raw_inode->i_uid;
 	inode->i_gid = raw_inode->i_gid;
@@ -473,6 +476,8 @@ void ext2_read_inode (struct inode * inode)
 		inode->u.ext2_i.i_data[block] = raw_inode->i_block[block];
 	brelse (bh);
 	inode->i_op = NULL;
+	/* 通过判断文件类型来设置文件的读写函数
+	 */
 	if (inode->i_ino == EXT2_ACL_IDX_INO ||
 	    inode->i_ino == EXT2_ACL_DATA_INO)
 		/* Nothing to do */ ;

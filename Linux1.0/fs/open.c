@@ -395,6 +395,7 @@ int do_open(const char * filename,int flags,int mode)
 		flag++;
 	if (flag & (O_TRUNC | O_CREAT))
 		flag |= 2;
+	/*通过一个路径filename来打开一个文件，并获取文件的inode*/
 	error = open_namei(filename,flag,mode,&inode,NULL);
 	if (error) {
 		current->filp[fd]=NULL;
@@ -421,6 +422,10 @@ int do_open(const char * filename,int flags,int mode)
 	return (fd);
 }
 
+/* flag为打开文件方式，如可读，可写，可读写，
+ * 如果文件没有则会去创建一个新的文件
+ * mode中有在创建新的文件时候才起作用，也就是确定新建文件的权限
+ */
 asmlinkage int sys_open(const char * filename,int flags,int mode)
 {
 	char * tmp;
@@ -450,6 +455,7 @@ int close_fp(struct file *filp, unsigned int fd)
 	inode = filp->f_inode;
 	if (inode && S_ISREG(inode->i_mode))
 		fcntl_remove_locks(current, filp, fd);
+	/*如果引用计数大于1,则减小一个即可*/
 	if (filp->f_count > 1) {
 		filp->f_count--;
 		return 0;

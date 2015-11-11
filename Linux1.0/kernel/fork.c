@@ -211,6 +211,10 @@ asmlinkage int sys_fork(struct pt_regs regs)
 		goto bad_fork_cleanup;
 	if (clone_flags & COPYFD) {
 		for (i=0; i<NR_OPEN;i++)
+			/* 注意此时p->filp任然是父进程的文件指针,copy_fd函数就是
+			 * 将父进程的文件指针拷贝一份过来，注意struct_file的文件计数
+			 * 和inode的文件计数
+			 */
 			if ((f = p->filp[i]) != NULL)
 				p->filp[i] = copy_fd(f);
 	} else {
