@@ -455,6 +455,8 @@ asmlinkage void start_kernel(void)
 	printk(linux_banner);
 
 	move_to_user_mode();
+	/* fork子进程返回0，父进程返回子进程的进程号
+	 */
 	if (!fork())		/* we count on this going ok */
 		init();
 /*
@@ -481,6 +483,11 @@ static int printf(const char *fmt, ...)
 	return i;
 }
 
+/* 该进程是由0号进程创建的，系统中的所有其他进程都是由该
+ * 进程创建,在该进程中，首先挂载root文件系统，在该进程当中
+ * 创建登录shell进程，然后1进程等待登录进程结束，登录结束之后
+ * 给用户创建终端，用户即可进行操作。
+ */
 void init(void)
 {
 	int pid,i;
@@ -497,15 +504,20 @@ void init(void)
 	/* if this fails, fall through to original stuff */
 
 	if (!(pid=fork())) {
+		/*开始执行登录*/
 		close(0);
 		if (open("/etc/rc",O_RDONLY,0))
 			_exit(1);
 		execve("/bin/sh",argv_rc,envp_rc);
 		_exit(2);
 	}
+	/* 父进程等待子进程登录完成
+	 */
 	if (pid>0)
 		while (pid != wait(&i))
 			/* nothing */;
+	/* 用户登录成功之后，给用户创建一个终端进程
+	 */
 	while (1) {
 		if ((pid = fork()) < 0) {
 			printf("Fork failed in init\n\r");
@@ -519,6 +531,9 @@ void init(void)
 			(void) dup(0);
 			_exit(execve("/bin/sh",argv,envp));
 		}
+		/* 1号进程等待终端进程的操作，直到终端进程结束，
+		 * 终端进程结束之后继续创建另一个终端进程
+		 */
 		while (1)
 			if (pid == wait(&i))
 				break;

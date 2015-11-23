@@ -26,12 +26,16 @@
  *
  * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
  */
+
+/* 从内核中申请一页的内存用来存放filename中的数据
+ */
 int getname(const char * filename, char **result)
 {
 	int error;
 	unsigned long i, page;
 	char * tmp, c;
 
+	/* 将用户空间映射到内核空间*/
 	i = (unsigned long) filename;
 	if (!i || i >= TASK_SIZE)
 		return -EFAULT;
@@ -59,6 +63,8 @@ int getname(const char * filename, char **result)
 	return error;
 }
 
+/* 将name地址所在的一页内存给释放掉
+ */
 void putname(char * name)
 {
 	free_page((unsigned long) name);
@@ -164,7 +170,7 @@ int follow_link(struct inode * dir, struct inode * inode,
  * namelen文件名长度  strlen("test.txt")
  * name      test.txt
  * base      文件系统的根目录，或当前进程的启动目录的i节点
- * res_inode 找到的文件的inode
+ * res_inode 找到的目录文件的inode，注意这里是目录文件的inode
  */
 static int dir_namei(const char * pathname, int * namelen, const char ** name,
 	struct inode * base, struct inode ** res_inode)
@@ -187,7 +193,12 @@ static int dir_namei(const char * pathname, int * namelen, const char ** name,
 	}
 	while (1) {
 		thisname = pathname;
-		/*以'/'为分割字符，分割路径*/
+		/* 以'/'为分割字符，分割路径
+		 * 在这里只会处理目录，如给出以下路径/usr/local/test,
+		 * 以‘/’为根目录寻找下一个目录usr,在以usr为父目录寻找到
+		 * local子目录，再当以local为父目录查找时，此时的c等于0，
+		 * 并不会继续查找下去，此时就会返回local目录的inode
+		 */
 		for(len=0;(c = *(pathname++))&&(c != '/');len++)
 			/* nothing */ ;
 		if (!c)
@@ -626,6 +637,8 @@ asmlinkage int sys_symlink(const char * oldname, const char * newname)
 	return error;
 }
 
+/* 将oldinode节点对应的文件链接到newname指向的路径
+ */
 static int do_link(struct inode * oldinode, const char * newname)
 {
 	struct inode * dir;
@@ -668,6 +681,8 @@ static int do_link(struct inode * oldinode, const char * newname)
 	return error;
 }
 
+/* 文件链接的函数，软链接，硬链接
+ */
 asmlinkage int sys_link(const char * oldname, const char * newname)
 {
 	int error;

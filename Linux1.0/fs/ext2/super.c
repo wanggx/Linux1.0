@@ -352,6 +352,10 @@ static int ext2_check_descriptors (struct super_block * sb)
 	return 1;
 }
 
+/* 读取ext2文件系统的超级块
+ */
+
+
 struct super_block * ext2_read_super (struct super_block * sb, void * data,
 				      int silent)
 {
@@ -375,6 +379,7 @@ struct super_block * ext2_read_super (struct super_block * sb, void * data,
 
 	lock_super (sb);
 	set_blocksize (dev, BLOCK_SIZE);
+	/*读取超级块所在扇区*/
 	if (!(bh = bread (dev, sb_block, BLOCK_SIZE))) {
 		sb->s_dev = 0;
 		unlock_super (sb);
@@ -557,6 +562,7 @@ struct super_block * ext2_read_super (struct super_block * sb, void * data,
 	 * set up enough so that it can read an inode
 	 */
 	sb->s_dev = dev;
+	/*设置ext2超级块的操作函数*/
 	sb->s_op = &ext2_sops;
 	if (!(sb->s_mounted = iget (sb, EXT2_ROOT_INO))) {
 		sb->s_dev = 0;

@@ -361,6 +361,8 @@ repeat:
 		inode->i_count--;
 		return;
 	}
+	/* 唤醒等待使用inode进程
+	 */
 	wake_up(&inode_wait);
 	if (inode->i_pipe) {
 		unsigned long page = (unsigned long) PIPE_BASE(*inode);
@@ -413,6 +415,9 @@ repeat:
 	 */ 
 	if (!inode) {
 		printk("VFS: No free inodes - contact Linus\n");
+		/* 申请inode时，如果不能满足要求，则让进程等待，
+		 * 在iput的时候唤醒需要inode的进程
+		 */
 		sleep_on(&inode_wait);
 		goto repeat;
 	}
@@ -513,7 +518,8 @@ repeat:
 	insert_inode_hash(inode);
 	/* inode此时具有的信息只有s_dev,nr,s_flags
 	 * read_inode就是根据以上信息从磁盘中读取inode
-	 * 对应文件的信息到inode的数据当中
+	 * 对应文件的信息到inode的数据当中，此时会
+	 * 根据文件类型来决定inode中的i_op结构
 	 */
 	read_inode(inode);
 	goto return_it;

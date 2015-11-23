@@ -197,10 +197,13 @@ int ext2_lookup (struct inode * dir, const char * name, int len,
 #ifndef DONT_USE_DCACHE
 	}
 #endif
+	/* 从超级块对应的磁盘中读取i节点号为ino的inode
+	 */
 	if (!(*result = iget (dir->i_sb, ino))) {
 		iput (dir);
 		return -EACCES;
 	}
+	/* 将父目录inode释放*/
 	iput (dir);
 	return 0;
 }
@@ -845,6 +848,9 @@ int ext2_symlink (struct inode * dir, const char * name, int len,
 	return 0;
 }
 
+
+/* 将oldinode节点连接到dir目录节点下面，名称为name,长度为len
+ */
 int ext2_link (struct inode * oldinode, struct inode * dir,
 	       const char * name, int len)
 {
@@ -852,16 +858,20 @@ int ext2_link (struct inode * oldinode, struct inode * dir,
 	struct buffer_head * bh;
 	int err;
 
+	/*不能是目录文件*/
 	if (S_ISDIR(oldinode->i_mode)) {
 		iput (oldinode);
 		iput (dir);
 		return -EPERM;
 	}
+
+	/*不能超过最大链接数*/
 	if (oldinode->i_nlink >= EXT2_LINK_MAX) {
 		iput (oldinode);
 		iput (dir);
 		return -EMLINK;
 	}
+	/*先判断需要链接的文件是否存在，如果存在则返回已存在的错误*/
 	bh = ext2_find_entry (dir, name, len, &de);
 	if (bh) {
 		brelse (bh);
@@ -869,12 +879,16 @@ int ext2_link (struct inode * oldinode, struct inode * dir,
 		iput (oldinode);
 		return -EEXIST;
 	}
+	/* 向目录中添加一个文件链接
+	 */ 
 	bh = ext2_add_entry (dir, name, len, &de, &err);
 	if (!bh) {
 		iput (dir);
 		iput (oldinode);
 		return err;
 	}
+	/* 指向同一个inode号
+	 */
 	de->inode = oldinode->i_ino;
 #ifndef DONT_USE_DCACHE
 	ext2_dcache_add (dir->i_dev, dir->i_ino, de->name, de->name_len,

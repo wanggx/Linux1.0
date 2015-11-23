@@ -48,9 +48,18 @@ extern int check_mcd_media_change(int, int);
 
 static int grow_buffers(int pri, int size);
 
+/* 缓存机制是将物理内存块，映射到相应的缓冲头，如果缓冲头没有，
+ * 则去申请一页的缓冲头，并且用unused_list来指向，当需要缓冲头时
+ * 则会从unused_list链表中去取，然后将映射好的缓冲头依次添加到
+ * free_list对应的双向链表当中
+ */
 static struct buffer_head * hash_table[NR_HASH];
-static struct buffer_head * free_list = NULL;
+static struct buffer_head * free_list = NULL;      
 static struct buffer_head * unused_list = NULL;
+
+/* 该队列是等待使用缓存的队列，当申请使用缓存而无法满足时getblk，
+ * 则在该队列中等待，当释放缓存时，则唤醒等待使用缓存的进程(brelse)
+ */
 static struct wait_queue * buffer_wait = NULL;
 
 int nr_buffers = 0;
@@ -89,6 +98,8 @@ repeat:
    return until all buffer writes have completed.  Sync() may return
    before the writes have finished; fsync() may not. */
 
+/* 将设备dev在缓存中的数据全部写回到设备
+ */
 static int sync_buffers(dev_t dev, int wait)
 {
 	int i, retry, pass = 0, err = 0;
@@ -188,6 +199,8 @@ asmlinkage int sys_fsync(unsigned int fd)
 	return 0;
 }
 
+/* 更改设备dev的所有缓存标记
+ */
 void invalidate_buffers(dev_t dev)
 {
 	int i;
@@ -279,6 +292,8 @@ void check_disk_change(dev_t dev)
 #define _hashfn(dev,block) (((unsigned)(dev^block))%NR_HASH)
 #define hash(dev,block) hash_table[_hashfn(dev,block)]
 
+/* 和inode中的hash结构差不多
+ */
 static inline void remove_from_hash_queue(struct buffer_head * bh)
 {
 	if (bh->b_next)
@@ -290,6 +305,8 @@ static inline void remove_from_hash_queue(struct buffer_head * bh)
 	bh->b_next = bh->b_prev = NULL;
 }
 
+/* 将bh从free_list当中移除
+ */
 static inline void remove_from_free_list(struct buffer_head * bh)
 {
 	if (!(bh->b_prev_free) || !(bh->b_next_free))
@@ -301,6 +318,8 @@ static inline void remove_from_free_list(struct buffer_head * bh)
 	bh->b_next_free = bh->b_prev_free = NULL;
 }
 
+/* 将bh从hash链表和free_list链表中删除
+ */
 static inline void remove_from_queues(struct buffer_head * bh)
 {
 	remove_from_hash_queue(bh);
@@ -320,6 +339,8 @@ static inline void put_first_free(struct buffer_head * bh)
 	free_list = bh;
 }
 
+/* 将bh放在以firee_list为首的最后一个
+ */
 static inline void put_last_free(struct buffer_head * bh)
 {
 	if (!bh)
@@ -336,6 +357,8 @@ static inline void put_last_free(struct buffer_head * bh)
 	free_list->b_prev_free = bh;
 }
 
+/* 将bh插入到free_list的最后一个，并将其插入到hash链的链首
+ */
 static inline void insert_into_queues(struct buffer_head * bh)
 {
 /* put at end of free list */
@@ -354,6 +377,8 @@ static inline void insert_into_queues(struct buffer_head * bh)
 		bh->b_next->b_prev = bh;
 }
 
+/* 从缓冲hash链中查找满足dev，block，size的缓冲块
+ */
 static struct buffer_head * find_buffer(dev_t dev, int block, int size)
 {		
 	struct buffer_head * tmp;
@@ -465,6 +490,8 @@ repeat:
 	buffers = nr_buffers;
 	bh = NULL;
 
+	/* 扫描整个缓冲链
+	 */
 	for (tmp = free_list; buffers-- > 0 ; tmp = tmp->b_next_free) {
 		if (tmp->b_count || tmp->b_size != size)
 			continue;
@@ -472,6 +499,7 @@ repeat:
 			continue;
 		if (!bh || BADNESS(tmp)<BADNESS(bh)) {
 			bh = tmp;
+			/*既是干净的也没有被锁住，则该缓冲块满足条件*/
 			if (!BADNESS(tmp))
 				break;
 		}
@@ -517,12 +545,17 @@ repeat:
 	return bh;
 }
 
+/* 释放缓冲头，仅仅是减少b_count，
+ * 如getblk找到后由于某种原因又用不到该缓冲块
+ */
 void brelse(struct buffer_head * buf)
 {
 	if (!buf)
 		return;
 	wait_on_buffer(buf);
 	if (buf->b_count) {
+		/* 如果b_count==1则以为没有其他进程用到它
+		 */
 		if (--buf->b_count)
 			return;
 		wake_up(&buffer_wait);
@@ -550,6 +583,10 @@ struct buffer_head * bread(dev_t dev, int block, int size)
 	wait_on_buffer(bh);
 	if (bh->b_uptodate)
 		return bh;
+	/* getblk得到的缓冲块不符合要求，
+	 * 也即是数据不是最新的,然后释放缓冲块，
+	 * 并返回空表示从设备读取数据失败
+	 */
 	brelse(bh);
 	return NULL;
 }
@@ -597,6 +634,9 @@ struct buffer_head * breada(dev_t dev,int first, ...)
 /*
  * See fs/inode.c for the weird use of volatile..
  */
+
+/* 将该缓冲头的数据清空，并保留等待队列，将bh放在unused_list的链首
+ */
 static void put_unused_buffer_head(struct buffer_head * bh)
 {
 	struct wait_queue * wait;
@@ -608,23 +648,31 @@ static void put_unused_buffer_head(struct buffer_head * bh)
 	unused_list = bh;
 }
 
+/* 创建更多的缓冲头，但是并没有指定缓冲头指向的数据b_data
+ */
 static void get_more_buffer_heads(void)
 {
 	int i;
 	struct buffer_head * bh;
 
+	/*如果还有未使用的缓冲头则不做处理*/
 	if (unused_list)
 		return;
 
 	if(! (bh = (struct buffer_head*) get_free_page(GFP_BUFFER)))
 		return;
-
+	/* 将申请的一页物理内存，连接起来，注意是单向连接，
+	 * 并且将unused_list指向链首，同时增加缓冲头的数量
+	 */
 	for (nr_buffer_heads+=i=PAGE_SIZE/sizeof*bh ; i>0; i--) {
 		bh->b_next_free = unused_list;	/* only make link */
 		unused_list = bh++;
 	}
 }
 
+/* 从缓冲头unused_list链表的链首取出一个节点
+ * 并初始化数据
+ */
 static struct buffer_head * get_unused_buffer_head(void)
 {
 	struct buffer_head * bh;
@@ -647,6 +695,11 @@ static struct buffer_head * get_unused_buffer_head(void)
  * follow the buffers created.  Return NULL if unable to create more
  * buffers.
  */
+
+/* 将申请到的一页物理内存分成size大小的块，
+ * 然后依次将这些块映射到相应的缓冲头，然后
+ * 将数据指向该物理块的缓冲头用b_this_page链接起来
+ */
 static struct buffer_head * create_buffers(unsigned long page, unsigned long size)
 {
 	struct buffer_head *bh, *head;
@@ -658,16 +711,25 @@ static struct buffer_head * create_buffers(unsigned long page, unsigned long siz
 		bh = get_unused_buffer_head();
 		if (!bh)
 			goto no_grow;
+		/* 为了防止在page块在映射到一般时，
+		 * 找不到空闲的缓冲头，然后直接跳转到no_grow
+		 * 解除之前的部分映射
+		 */
 		bh->b_this_page = head;
 		head = bh;
 		bh->b_data = (char *) (page+offset);
 		bh->b_size = size;
 	}
-	return head;
+	return head; /*将指向该物理块最后一块的缓冲头返回*/
 /*
  * In case anything failed, we just free everything we got.
  */
 no_grow:
+	/* head是上一个指向page这块物理块数据的缓冲头，
+	 * 然后将数据指向该物理块的所有缓冲头给释放，
+	 * 之前已经映射缓冲头和page对应的物理块的(上面的while循环)，
+	 * 将被解除映射
+	 */
 	bh = head;
 	while (bh) {
 		head = bh;
@@ -677,6 +739,8 @@ no_grow:
 	return NULL;
 }
 
+/* 将nrbuf块bh对应的设备读入到bh当中
+ */
 static void read_buffers(struct buffer_head * bh[], int nrbuf)
 {
 	int i;
@@ -713,6 +777,8 @@ static unsigned long check_aligned(struct buffer_head * first, unsigned long add
 	mem_map[MAP_NR(page)]++;
 	bh[0] = first;
 	nrbuf = 1;
+	/* 一页内存最多缓存块也就8块=4KB/412B
+	 */
 	for (offset = size ; offset < PAGE_SIZE ; offset += size) {
 		block = *++b;
 		if (!block)
@@ -866,6 +932,8 @@ static int grow_buffers(int pri, int size)
 	unsigned long page;
 	struct buffer_head *bh, *tmp;
 
+	/* 限制增长buffer块的大小，要么是512KB,要么是1024KB
+	 */
 	if ((size & 511) || (size > PAGE_SIZE)) {
 		printk("VFS: grow_buffers: size = %d\n",size);
 		return 0;
@@ -878,6 +946,8 @@ static int grow_buffers(int pri, int size)
 		return 0;
 	}
 	tmp = bh;
+	/* 将刚才分配的一夜物理内存对应的缓冲头给添加到free_list双向链表当中
+	 */
 	while (1) {
 		if (free_list) {
 			tmp->b_next_free = free_list;
@@ -889,13 +959,14 @@ static int grow_buffers(int pri, int size)
 			tmp->b_next_free = tmp;
 		}
 		free_list = tmp;
-		++nr_buffers;
+		++nr_buffers; /*增加缓存数量*/
 		if (tmp->b_this_page)
 			tmp = tmp->b_this_page;
 		else
 			break;
 	}
 	tmp->b_this_page = bh;
+	/*增加缓寸大小*/
 	buffermem += PAGE_SIZE;
 	return 1;
 }
@@ -903,6 +974,9 @@ static int grow_buffers(int pri, int size)
 /*
  * try_to_free() checks if all the buffers on this particular page
  * are unused, and free's the page if so.
+ */
+/* bhp获取bh指向的下一个空闲的缓冲头，如果下一个缓冲头需要被释放
+ * 则bhp继续指向下一个的下一个
  */
 static int try_to_free(struct buffer_head * bh, struct buffer_head ** bhp)
 {
@@ -913,6 +987,8 @@ static int try_to_free(struct buffer_head * bh, struct buffer_head ** bhp)
 	page = (unsigned long) bh->b_data;
 	page &= PAGE_MASK;
 	tmp = bh;
+	/* 扫描一圈判断缓冲头指向数据是否和bh->b_data在同一物理页
+	 */
 	do {
 		if (!tmp)
 			return 0;
@@ -921,6 +997,10 @@ static int try_to_free(struct buffer_head * bh, struct buffer_head ** bhp)
 		tmp = tmp->b_this_page;
 	} while (tmp != bh);
 	tmp = bh;
+	/* 依次释放数据指向同一块内存的缓冲头，
+	 * 并将缓冲头添加到unused_list链表当中，
+	 * 同时减少nr_buffers和buffermem大小和释放缓冲头指向的数据块
+	 */
 	do {
 		p = tmp;
 		tmp = tmp->b_this_page;
@@ -941,6 +1021,9 @@ static int try_to_free(struct buffer_head * bh, struct buffer_head ** bhp)
  * Priority tells the routine how hard to try to shrink the
  * buffers: 3 means "don't bother too much", while a value
  * of 0 means "we'd better get some free pages now".
+ */
+
+/* 收缩缓存空间
  */
 int shrink_buffers(unsigned int priority)
 {
@@ -971,6 +1054,9 @@ int shrink_buffers(unsigned int priority)
 			bh->b_count--;
 			continue;
 		}
+		/* 更改空闲链的结构，并记下下一个空闲节点，
+		 * 然后继续循环处理,返回1表示成功释放一页
+		 */
 		if (try_to_free(bh, &bh))
 			return 1;
 	}

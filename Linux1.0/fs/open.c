@@ -395,7 +395,8 @@ int do_open(const char * filename,int flags,int mode)
 		flag++;
 	if (flag & (O_TRUNC | O_CREAT))
 		flag |= 2;
-	/*通过一个路径filename来打开一个文件，并获取文件的inode*/
+	/* 通过一个路径filename来打开一个文件，并获取文件的inode
+	 */
 	error = open_namei(filename,flag,mode,&inode,NULL);
 	if (error) {
 		current->filp[fd]=NULL;
@@ -403,6 +404,12 @@ int do_open(const char * filename,int flags,int mode)
 		return error;
 	}
 
+	/* 在open函数当中，先通过open_namei函数获取对应路径文件的inode
+	 * 在获取的inode当中会有f_op的操作符，Linux的文件系统是根据所要
+	 * 操作文件的类型来确定文件操作的f_op和i_op，因为Linux支持的文件系统众多
+	 * 每种文件系统的f_op和i_op都有特定的实现，文件系统具体函数的实现在相应的
+	 * 文件夹当中，如ext2文件系统的实现在/fs/ext2/当中
+	 */
 	f->f_inode = inode;
 	f->f_pos = 0;
 	f->f_reada = 0;

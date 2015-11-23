@@ -34,6 +34,8 @@ extern void fcntl_init_locks(void);
 
 extern int root_mountflags;
 
+/* 支持超级快的数量
+ */ 
 struct super_block super_blocks[NR_SUPER];
 
 static int do_remount_sb(struct super_block *sb, int flags, char * data);
@@ -87,6 +89,8 @@ void sync_supers(dev_t dev)
 	}
 }
 
+/* 获取相应设备的超级块号
+ */
 static struct super_block * get_super(dev_t dev)
 {
 	struct super_block * s;
@@ -137,11 +141,14 @@ static struct super_block * read_super(dev_t dev,char *name,int flags,
 	s = get_super(dev);
 	if (s)
 		return s;
+	/* 获取文件系统类型结构
+	 */
 	if (!(type = get_fs_type(name))) {
 		printk("VFS: on device %d/%d: get_fs_type(%s) failed\n",
 						MAJOR(dev), MINOR(dev), name);
 		return NULL;
 	}
+	/*找到一个可用的超级块*/
 	for (s = 0+super_blocks ;; s++) {
 		if (s >= NR_SUPER+super_blocks)
 			return NULL;
@@ -150,10 +157,14 @@ static struct super_block * read_super(dev_t dev,char *name,int flags,
 	}
 	s->s_dev = dev;
 	s->s_flags = flags;
+	/* 然后通过对应文件系统类型的超级块读取函数来读取超级块
+	 */
 	if (!type->read_super(s,data, silent)) {
 		s->s_dev = 0;
 		return NULL;
 	}
+	/* 读取成功之后设置超级块的设备号
+	 */
 	s->s_dev = dev;
 	s->s_covered = NULL;
 	s->s_rd_only = 0;
@@ -504,6 +515,8 @@ asmlinkage int sys_mount(char * dev_name, char * dir_name, char * type,
 	return retval;
 }
 
+/* 挂载根文件系统
+ */
 void mount_root(void)
 {
 	struct file_system_type * fs_type;
@@ -516,9 +529,11 @@ void mount_root(void)
 		printk(KERN_NOTICE "VFS: Insert root floppy and press ENTER\n");
 		wait_for_keypress();
 	}
+	/*循环处理文件系统类型*/
 	for (fs_type = file_systems; fs_type->read_super; fs_type++) {
 		if (!fs_type->requires_dev)
 			continue;
+		/*读取每个文件系统的超级块*/
 		sb = read_super(ROOT_DEV,fs_type->name,root_mountflags,NULL,1);
 		if (sb) {
 			inode = sb->s_mounted;

@@ -47,8 +47,8 @@ extern void buffer_init(void);
 extern unsigned long inode_init(unsigned long start, unsigned long end);
 extern unsigned long file_table_init(unsigned long start, unsigned long end);
 
-#define MAJOR(a) (int)((unsigned short)(a) >> 8)
-#define MINOR(a) (int)((unsigned short)(a) & 0xFF)
+#define MAJOR(a) (int)((unsigned short)(a) >> 8)   /*主设备号*/
+#define MINOR(a) (int)((unsigned short)(a) & 0xFF) /*次设备号*/
 #define MKDEV(a,b) ((int)((((a) & 0xff) << 8) | ((b) & 0xff)))
 
 #ifndef NULL
@@ -240,7 +240,7 @@ struct file_lock {
 #include <linux/sysv_fs_sb.h>
 
 struct super_block {
-	dev_t s_dev;
+	dev_t s_dev;					/*对应设备号*/
 	unsigned long s_blocksize;
 	unsigned char s_blocksize_bits;
 	unsigned char s_lock;

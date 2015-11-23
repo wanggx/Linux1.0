@@ -619,6 +619,7 @@ repeat:
 	if (priority == GFP_BUFFER)
 		return 0;
 	if (priority != GFP_ATOMIC)
+		/*看能不能释放一些缓存，如果释放成功，则继续尝试*/
 		if (try_to_free_page())
 			goto repeat;
 	REMOVE_FROM_MEM_QUEUE(secondary_page_list,nr_secondary_pages);

@@ -38,6 +38,8 @@ static struct file_lock *file_lock_free_list;
  * Called at boot time to initialize the lock table ...
  */
 
+/* 初始化文件锁，以单链表的形式将其连接起来
+ */
 void fcntl_init_locks(void)
 {
 	struct file_lock *fl;
