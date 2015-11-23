@@ -165,8 +165,8 @@ struct inode {
 	unsigned long	i_ino;
 	umode_t		i_mode;
 	nlink_t		i_nlink;
-	uid_t		i_uid;
-	gid_t		i_gid;
+	uid_t		i_uid;           /*创建文件的用户ID*/
+	gid_t		i_gid;			 /*创建文件的用户组ID*/
 	dev_t		i_rdev;
 	off_t		i_size;
 	time_t		i_atime;

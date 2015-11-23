@@ -155,11 +155,15 @@ asmlinkage int sys_utime(char * filename, struct utimbuf * times)
  * XXX we should use the real ids for checking _all_ components of the
  * path.  Now we only use them for the final component of the path.
  */
+
+/* 判断文件的访问权限
+  */
 asmlinkage int sys_access(const char * filename,int mode)
 {
 	struct inode * inode;
 	int res, i_mode;
 
+	/*判断mode前三位的有效性*/
 	if (mode != (mode & S_IRWXO))	/* where's F_OK, X_OK, W_OK, R_OK? */
 		return -EINVAL;
 	res = namei(filename,&inode);

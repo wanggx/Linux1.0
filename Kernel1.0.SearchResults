@@ -1,4 +1,10 @@
----- sys_link Matches (3 in 3 files) ----
-Namei.c (fs):asmlinkage int sys_link(const char * oldname, const char * newname)
-Sched.c (kernel):sys_write, sys_open, sys_close, sys_waitpid, sys_creat, sys_link,
-Sys.h (include\linux):extern int sys_link();
+---- b_blocknr Matches (9 in 0 files) ----
+Buffer.c (fs):				bh->b_blocknr, bh->b_dev);
+Buffer.c (fs):	if (hash(bh->b_dev,bh->b_blocknr) == bh)
+Buffer.c (fs):		hash(bh->b_dev,bh->b_blocknr) = bh->b_next;
+Buffer.c (fs):	bh->b_next = hash(bh->b_dev,bh->b_blocknr);
+Buffer.c (fs):	hash(bh->b_dev,bh->b_blocknr) = bh;
+Buffer.c (fs):		if (tmp->b_dev==dev && tmp->b_blocknr==block)
+Buffer.c (fs):		if (bh->b_dev == dev && bh->b_blocknr == block && bh->b_size == size)
+Buffer.c (fs):	bh->b_blocknr=block;
+Buffer.c (fs):		bh->b_blocknr = *(p++);

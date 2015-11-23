@@ -292,8 +292,10 @@ void check_disk_change(dev_t dev)
 #define _hashfn(dev,block) (((unsigned)(dev^block))%NR_HASH)
 #define hash(dev,block) hash_table[_hashfn(dev,block)]
 
-/* 和inode中的hash结构差不多
- */
+/* 和inode中的hash结构差不多,
+  * 将bh从hash链表的第一项删除，同时将自己所在的hash链表
+  * 中删除删除
+  */
 static inline void remove_from_hash_queue(struct buffer_head * bh)
 {
 	if (bh->b_next)
@@ -306,7 +308,7 @@ static inline void remove_from_hash_queue(struct buffer_head * bh)
 }
 
 /* 将bh从free_list当中移除
- */
+  */
 static inline void remove_from_free_list(struct buffer_head * bh)
 {
 	if (!(bh->b_prev_free) || !(bh->b_next_free))
@@ -325,7 +327,8 @@ static inline void remove_from_queues(struct buffer_head * bh)
 	remove_from_hash_queue(bh);
 	remove_from_free_list(bh);
 }
-
+/* 将bh放置在链首，然后让free_list指向bh
+  */
 static inline void put_first_free(struct buffer_head * bh)
 {
 	if (!bh || (bh == free_list))
@@ -340,7 +343,7 @@ static inline void put_first_free(struct buffer_head * bh)
 }
 
 /* 将bh放在以firee_list为首的最后一个
- */
+  */
 static inline void put_last_free(struct buffer_head * bh)
 {
 	if (!bh)
@@ -357,8 +360,12 @@ static inline void put_last_free(struct buffer_head * bh)
 	free_list->b_prev_free = bh;
 }
 
-/* 将bh插入到free_list的最后一个，并将其插入到hash链的链首
- */
+/* 将bh插入到free_list的最后一个，
+  * 因为查找空闲都是从free_list的第一个开始
+  * 查找的，而查找已经映射的dev，block，size时，
+  * 则是从hash表的第一项开始的，
+  * 所以将其插入到hash链的链首
+  */
 static inline void insert_into_queues(struct buffer_head * bh)
 {
 /* put at end of free list */
@@ -468,6 +475,12 @@ void set_blocksize(dev_t dev, int size)
  * 14.02.92: changed it to sync dirty buffers a bit: better performance
  * when the filesystem starts to get full of dirty blocks (I hope).
  */
+
+/* 注意该函数获取对应设备dev，block，size
+  * 大小的高速缓存，如果在查找的过程当中
+  * 没有找到相应的高速缓存，则会去grow_buffer
+  * 注意此函数是一个阻塞式的函数
+  */
 #define BADNESS(bh) (((bh)->b_dirt<<1)+(bh)->b_lock)
 struct buffer_head * getblk(dev_t dev, int block, int size)
 {
@@ -530,10 +543,19 @@ repeat:
 	}
 /* NOTE!! While we slept waiting for this block, somebody else might */
 /* already have added "this" block to the cache. check it */
+
+/* 注意此处是如果找到了，则继续repeat，
+  * 然后将找到条件的高速缓存给返回，
+  * 注意上面的英文注释
+  */
 	if (find_buffer(dev,block,size))
 		goto repeat;
 /* OK, FINALLY we know that this buffer is the only one of its kind, */
 /* and that it's unused (b_count=0), unlocked (b_lock=0), and clean */
+
+/* 此时确定可以使用该高速缓存，
+  * 然后设置引用计数，脏设备号，块号等标记
+  */
 	bh->b_count=1;
 	bh->b_dirt=0;
 	bh->b_uptodate=0;
