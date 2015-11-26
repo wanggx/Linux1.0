@@ -308,7 +308,7 @@ static inline void remove_from_hash_queue(struct buffer_head * bh)
 }
 
 /* 将bh从free_list当中移除
-  */
+ */
 static inline void remove_from_free_list(struct buffer_head * bh)
 {
 	if (!(bh->b_prev_free) || !(bh->b_next_free))
@@ -343,7 +343,7 @@ static inline void put_first_free(struct buffer_head * bh)
 }
 
 /* 将bh放在以firee_list为首的最后一个
-  */
+ */
 static inline void put_last_free(struct buffer_head * bh)
 {
 	if (!bh)
@@ -949,6 +949,12 @@ unsigned long bread_page(unsigned long address, dev_t dev, int b[], int size, in
  * Try to increase the number of buffers available: the size argument
  * is used to determine what kind of buffers we want.
  */
+ 
+/* 增长高速缓存，因为高速缓存的大小可以设置为512KB,1024KB等等
+ * 该函数是用来增长一页(4KB)的高速缓存，该页被分成size大小的均等块
+ * 高速缓存结构体不占用该块内存，空闲的换冲头结构体存放在以unused_list为首的
+ * 链表当中
+ */
 static int grow_buffers(int pri, int size)
 {
 	unsigned long page;
@@ -1115,6 +1121,9 @@ void show_buffers(void)
  * but I'm not sure), and programs in the ps package expect it.
  * 					- TYT 8/30/92
  */
+
+/* 高速缓存初始化函数
+ */
 void buffer_init(void)
 {
 	int i;
@@ -1126,6 +1135,8 @@ void buffer_init(void)
 	for (i = 0 ; i < NR_HASH ; i++)
 		hash_table[i] = NULL;
 	free_list = 0;
+	/* 一开始就增长一页的高速缓存
+	 */
 	grow_buffers(GFP_KERNEL, BLOCK_SIZE);
 	if (!free_list)
 		panic("VFS: Unable to initialize buffer free list!");
