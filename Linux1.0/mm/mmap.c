@@ -91,6 +91,10 @@ int do_mmap(struct file * file, unsigned long addr, unsigned long len,
 					continue;
 				if (addr + len <= vmm->vm_start)
 					continue;
+				/*如果有交叉则停止，也有可能addr,len和多个地址空间交叉，
+				 * 所以在找到第一个之后就将addr设置为vmm指向的地址空间末端，
+				 * 然后继续查找从前一个虚拟地址空间的结尾处
+				 */
 				addr = PAGE_ALIGN(vmm->vm_end);
 				break;
 			}
@@ -122,6 +126,8 @@ int do_mmap(struct file * file, unsigned long addr, unsigned long len,
 	do_munmap(addr, len);	/* Clear old maps */
 
 	if (file)
+		/* 调用本文件中的generic_mmap函数
+	      */
 		error = file->f_op->mmap(file->f_inode, file, addr, len, mask, off);
 	else
 		error = anon_map(NULL, NULL, addr, len, mask, off);
@@ -134,6 +140,11 @@ int do_mmap(struct file * file, unsigned long addr, unsigned long len,
 	return -1;
 }
 
+/* 文件映射功能
+ * 该函数中，一个文件只会映射到一个虚拟地址空间
+ * 也就是current->mmap链表中的一个节点而已，
+ * 并且映射的地址空间是有限的。
+ */
 asmlinkage int sys_mmap(unsigned long *buffer)
 {
 	int error;
@@ -191,6 +202,9 @@ void unmap_fixup(struct vm_area_struct *area,
 	}
 
 	/* Unmapping the whole area */
+
+	/* 如果正好是一整个地址空间，则全部释放
+	 */
 	if (addr == area->vm_start && end == area->vm_end) {
 		if (area->vm_ops && area->vm_ops->close)
 			area->vm_ops->close(area);
@@ -264,18 +278,27 @@ int do_munmap(unsigned long addr, size_t len)
 	for (mpnt = *npp; mpnt != NULL; mpnt = *npp) {
 		unsigned long end = addr+len;
 
+		/* 在逐个判断地址的过程中，
+		 *   如果虚拟地址链没有和addr为起始长度为len的地址空间交叉，则继续判断下一个
+		 */
 		if ((addr < mpnt->vm_start && end <= mpnt->vm_start) ||
 		    (addr >= mpnt->vm_end && end > mpnt->vm_end))
 		{
+			/* npp一直指向交叉地址空间的这一个节点
+			 */
 			npp = &mpnt->vm_next;
 			continue;
 		}
-
+		/* 如果存在交叉，则将该虚拟地址节点添加到释放链表当中，
+		 * 如一个反映射的地址空间比较大，和current->mmap链中的多个节点有交叉
+		 * 则交叉的所有节点都必须释放
+		 */
 		*npp = mpnt->vm_next;
 		mpnt->vm_next = free;
 		free = mpnt;
 	}
 
+	/*如果没有找到任何交叉的地址空间，则不做处理，直接返回*/
 	if (free == NULL)
 		return 0;
 
@@ -291,6 +314,9 @@ int do_munmap(unsigned long addr, size_t len)
 		mpnt = free;
 		free = free->vm_next;
 
+		/* 将链中交叉的一段给取出来，如果有交叉，但不是整个地址空间交叉
+		 * 则只处理交叉部分
+		 */
 		st = addr < mpnt->vm_start ? mpnt->vm_start : addr;
 		end = addr+len;
 		end = end > mpnt->vm_end ? mpnt->vm_end : end;
@@ -331,6 +357,10 @@ int generic_mmap(struct inode * inode, struct file * file,
 	}
 	brelse(bh);
 
+	/* 分配一个虚拟地址空间，运行到这个位置就代表
+	 * 起始地址addr长度为len的虚拟地址空间只可以
+	 * 映射到进程的地址空间当中的。
+	 */
 	mpnt = (struct vm_area_struct * ) kmalloc(sizeof(struct vm_area_struct), GFP_KERNEL);
 	if (!mpnt)
 		return -ENOMEM;
@@ -356,6 +386,10 @@ int generic_mmap(struct inode * inode, struct file * file,
  * This makes sure the list is sorted by start address, and
  * some some simple overlap checking.
  * JSGF
+ */
+
+/* 将一个线性地址段插入到进程的地址空间当中，
+ * 最后排序从小到大
  */
 void insert_vm_struct(struct task_struct *t, struct vm_area_struct *vmp)
 {
@@ -387,6 +421,10 @@ void insert_vm_struct(struct task_struct *t, struct vm_area_struct *vmp)
  * Merge a list of memory segments if possible.
  * Redundant vm_area_structs are freed.
  * This assumes that the list is ordered by address.
+ */
+
+/* 如果相邻的虚拟地址空间(地址段)可以合并，
+ * 则将可以合并的地址空间合并
  */
 void merge_segments(struct vm_area_struct *mpnt,
 		    map_mergep_fnp mergep, void *mpd)

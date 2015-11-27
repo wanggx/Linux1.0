@@ -224,7 +224,10 @@ struct task_struct {
 	struct inode * pwd;
 	struct inode * root;
 	struct inode * executable;
-	struct vm_area_struct * mmap;
+	/* 虚拟地址链，在地址链表中，
+	 * 地址空间是按照从小到大的顺序来存放的
+	 */
+	struct vm_area_struct * mmap;  
 	struct shm_desc *shm;
 	struct sem_undo *semun;
 	struct file * filp[NR_OPEN];

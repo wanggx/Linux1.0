@@ -211,7 +211,7 @@ struct file {
 	dev_t f_rdev;			/* needed for /dev/tty */
 	off_t f_pos;
 	unsigned short f_flags;
-	unsigned short f_count;
+	unsigned short f_count;  /*文件的引用计数*/
 	unsigned short f_reada;
 	struct file *f_next, *f_prev;
 	struct inode * f_inode;

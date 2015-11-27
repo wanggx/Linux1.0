@@ -34,6 +34,7 @@ struct	shminfo {
     int shmall;	
 };
 
+/*共享内存范围，在线性地址空间中1G-1.5G ???*/
 #define SHM_RANGE_START	0x40000000
 #define SHM_RANGE_END	0x60000000
 

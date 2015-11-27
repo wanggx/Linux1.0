@@ -314,6 +314,10 @@ int copy_page_tables(struct task_struct * tsk)
  * a more complete version of free_page_tables which performs with page
  * granularity.
  */
+
+/* 将以from为起始地址，大小为size的地址空间从进程的
+ * 二级页表中删除
+ */
 int unmap_page_range(unsigned long from, unsigned long size)
 {
 	unsigned long page, page_dir;
@@ -366,6 +370,12 @@ int unmap_page_range(unsigned long from, unsigned long size)
 	return 0;
 }
 
+/* 注意和上面unmap_page_range函数差别，
+ * 在将二级页表中的地址映射给取消之后，
+ * 将相应的项设置为mask值，mask的值代表在
+ * 进程操作当前线性地址对应的物理页时，应该
+ * 采取咋样的操作，如线性地址共享
+ */
 int zeromap_page_range(unsigned long from, unsigned long size, int mask)
 {
 	unsigned long *page_table, *dir;
@@ -383,13 +393,16 @@ int zeromap_page_range(unsigned long from, unsigned long size, int mask)
 		printk("zeromap_page_range: from = %08lx\n",from);
 		return -EINVAL;
 	}
+	/*获取在页目录表中的位置*/
 	dir = PAGE_DIR_OFFSET(current->tss.cr3,from);
 	size = (size + ~PAGE_MASK) >> PAGE_SHIFT;
+	/*获取在页表中的位置*/
 	poff = (from >> PAGE_SHIFT) & (PTRS_PER_PAGE-1);
 	if ((pcnt = PTRS_PER_PAGE - poff) > size)
 		pcnt = size;
 
 	while (size > 0) {
+		/*如果当前不在内存当中*/
 		if (!(PAGE_PRESENT & *dir)) {
 				/* clear page needed here?  SRB. */
 			if (!(page_table = (unsigned long*) get_free_page(GFP_KERNEL))) {
@@ -401,8 +414,10 @@ int zeromap_page_range(unsigned long from, unsigned long size, int mask)
 				page_table = (unsigned long *)(PAGE_MASK & *dir++);
 			} else
 				*dir++ = ((unsigned long) page_table) | PAGE_TABLE;
-		} else
+		} else {
+			/*获取页目录表中页表的位置*/
 			page_table = (unsigned long *)(PAGE_MASK & *dir++);
+		}
 		page_table += poff;
 		poff = 0;
 		for (size -= pcnt; pcnt-- ;) {
@@ -1294,6 +1309,10 @@ void file_mmap_nopage(int error_code, struct vm_area_struct * area, unsigned lon
 	free_page(page);
 	oom(current);
 }
+
+
+/* 将虚拟地址空间对应的文件映射写回设备
+ */
 
 void file_mmap_free(struct vm_area_struct * area)
 {

@@ -17,17 +17,27 @@ extern int fcntl_getlk(unsigned int, struct flock *);
 extern int fcntl_setlk(unsigned int, unsigned int, struct flock *);
 extern int sock_fcntl (struct file *, unsigned int cmd, unsigned long arg);
 
+
+/* 复制文件句柄
+ * fd是要被复制的句柄
+ * arg是从哪个文件句柄查找可以复制到的文件句柄
+ * 复制成功之后会有两个(也可能是多个dup多次)
+ * 对应的文件指针，而指针指向的内存区域相同，
+ * 并且引用计数会加1
+ */
 static int dupfd(unsigned int fd, unsigned int arg)
 {
 	if (fd >= NR_OPEN || !current->filp[fd])
 		return -EBADF;
 	if (arg >= NR_OPEN)
 		return -EINVAL;
+	/*找到一个可用的fd*/
 	while (arg < NR_OPEN)
 		if (current->filp[arg])
 			arg++;
 		else
 			break;
+	/*如果超过进程可以打开的最大文件数，则失败*/
 	if (arg >= NR_OPEN)
 		return -EMFILE;
 	FD_CLR(arg, &current->close_on_exec);
