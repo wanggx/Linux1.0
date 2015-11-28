@@ -620,6 +620,11 @@ unsigned long put_dirty_page(struct task_struct * tsk, unsigned long page, unsig
  * Goto-purists beware: the only reason for goto's here is that it results
  * in better assembly code.. The "default" path will see no jumps at all.
  */
+
+
+
+/* 内存写保护函数
+ */
 static void __do_wp_page(unsigned long error_code, unsigned long address,
 	struct task_struct * tsk, unsigned long user_esp)
 {
@@ -629,12 +634,14 @@ static void __do_wp_page(unsigned long error_code, unsigned long address,
 	new_page = __get_free_page(GFP_KERNEL);
 	pde = PAGE_DIR_OFFSET(tsk->tss.cr3,address);
 	pte = *pde;
+	/*写保护内存对应映射的页表不在内存时，不做任何处理*/
 	if (!(pte & PAGE_PRESENT))
 		goto end_wp_page;
 	if ((pte & PAGE_TABLE) != PAGE_TABLE || pte >= high_memory)
 		goto bad_wp_pagetable;
 	pte &= PAGE_MASK;
 	pte += PAGE_PTR(address);
+	/*当要写保护的内存不在内存当中时，则不做任何处理*/
 	old_page = *(unsigned long *) pte;
 	if (!(old_page & PAGE_PRESENT))
 		goto end_wp_page;
@@ -652,6 +659,10 @@ static void __do_wp_page(unsigned long error_code, unsigned long address,
 			/*将物理页数据拷贝*/
 			copy_page(old_page,new_page);
 			*(unsigned long *) pte = new_page | prot;
+			/* 因为之前两个地址都映射到同一个物理地址
+			 * 现在将同一个物理页给拷贝一份，则原来物理页的引用计数将会减1
+			 * 也就是这里执行free_page的原因
+			 */
 			free_page(old_page);
 			invalidate();
 			return;
@@ -667,11 +678,13 @@ static void __do_wp_page(unsigned long error_code, unsigned long address,
 	if (new_page)
 		free_page(new_page);
 	return;
+	/*设置页表项对应的页是坏的页，同时发送杀死进程的信号*/
 bad_wp_page:
 	printk("do_wp_page: bogus page at address %08lx (%08lx)\n",address,old_page);
 	*(unsigned long *) pte = BAD_PAGE | PAGE_SHARED;
 	send_sig(SIGKILL, tsk, 1);
 	goto end_wp_page;
+	/*设置页目录项对应的页表时坏的，并且发送杀死进程的信号*/
 bad_wp_pagetable:
 	printk("do_wp_page: bogus page-table at address %08lx (%08lx)\n",address,pte);
 	*pde = BAD_PAGETABLE | PAGE_TABLE;
@@ -697,6 +710,7 @@ void do_wp_page(unsigned long error_code, unsigned long address,
 	if (!page)
 		return;
 	if ((page & PAGE_PRESENT) && page < high_memory) {
+		/* PAGE_PTR(address)找到线性地址在页表中的偏移量 */
 		pg_table = (unsigned long *) ((page & PAGE_MASK) + PAGE_PTR(address));
 		page = *pg_table;
 		/*如果当前页不在内存或者该页本来就是共享读写的，就直接返回*/
@@ -704,11 +718,12 @@ void do_wp_page(unsigned long error_code, unsigned long address,
 			return;
 		if (page & PAGE_RW)
 			return;
+		/*如果不是写时复制*/
 		if (!(page & PAGE_COW)) {
 			if (user_esp && tsk == current) {
 				current->tss.cr2 = address;
 				current->tss.error_code = error_code;
-				current->tss.trap_no = 14;
+				current->tss.trap_no = 14;   /*14就是也错误处理*/
 				send_sig(SIGSEGV, tsk, 1);
 				return;
 			}
@@ -841,13 +856,14 @@ int share_page(struct vm_area_struct * area, struct task_struct * tsk,
 
 	if (!inode || inode->i_count < 2 || !area->vm_ops)
 		return 0;
+	/*依次扫描进程列表*/
 	for (p = &LAST_TASK ; p > &FIRST_TASK ; --p) {
 		if (!*p)
 			continue;
 		if (tsk == *p)
 			continue;
 		if (inode != (*p)->executable) {
-			  if(!area) continue;
+			if(!area) continue;
 			/* Now see if there is something in the VMM that
 			   we can share pages with */
 			if(area){
@@ -873,7 +889,10 @@ int share_page(struct vm_area_struct * area, struct task_struct * tsk,
  * fill in an empty page-table if none exists.
  */
 
-/* 在线性地址address申请一个新的页目录项
+/* 在线性地址address对应的页目录项分配一个页表，
+ * 如果已经分配了，则直接返回，如果没有分配，则申请
+ * 一页新的内存作为页表，并将该页内存的赋给页目录项
+ * 注意此处仅仅是分配了一个页表，而也表项对应的物理并没有
  */
 static inline unsigned long get_empty_pgtable(struct task_struct * tsk,unsigned long address)
 {
@@ -888,7 +907,11 @@ static inline unsigned long get_empty_pgtable(struct task_struct * tsk,unsigned 
 		*p = 0;
 	}
 	page = get_free_page(GFP_KERNEL);
+	/*找到页目录项的位置*/
 	p = PAGE_DIR_OFFSET(tsk->tss.cr3,address);
+	/*如果当前页目录项已经在内存当中，也就是说已经存在映射了
+	 *那么直接返回已经映射的页表的地址
+	 */
 	if (PAGE_PRESENT & *p) {
 		free_page(page);
 		return *p;
@@ -897,6 +920,7 @@ static inline unsigned long get_empty_pgtable(struct task_struct * tsk,unsigned 
 		printk("get_empty_pgtable: bad page-directory entry \n");
 		*p = 0;
 	}
+	/*如果还没有映射则将新申请的一页内存(作为页表)地址赋给页目录项*/
 	if (page) {
 		*p = page | PAGE_TABLE;
 		return *p;
@@ -906,6 +930,8 @@ static inline unsigned long get_empty_pgtable(struct task_struct * tsk,unsigned 
 	return 0;
 }
 
+/* 要访问的地址不在内存当中
+ */
 void do_no_page(unsigned long error_code, unsigned long address,
 	struct task_struct *tsk, unsigned long user_esp)
 {
@@ -913,21 +939,29 @@ void do_no_page(unsigned long error_code, unsigned long address,
 	unsigned long page;
 	struct vm_area_struct * mpnt;
 
+	/* 获取映射的物理页，如果失败了，则不做处理
+	 * 如果成功了，则会继续处理页表项对应的物理页
+	 */
 	page = get_empty_pgtable(tsk,address);
 	if (!page)
 		return;
 	page &= PAGE_MASK;
 	page += PAGE_PTR(address);
 	tmp = *(unsigned long *) page;
+	/*如果物理页已经在内存当中，则不做任何处理*/
 	if (tmp & PAGE_PRESENT)
 		return;
+	/*增加进程在内核中占用的物理页的数量*/
 	++tsk->rss;
 	/*如果缺页的内存在交换区中则将交换区中的内存交换到内存*/
 	if (tmp) {
 		++tsk->maj_flt;
+		/*注意此处的page是页表项的地址*/
 		swap_in((unsigned long *) page);
 		return;
 	}
+	/* vm_area_struct中的地址是和4KB对齐的
+	 */
 	address &= 0xfffff000;
 	tmp = 0;
 	/* 此处注意虚拟地址链表是按照地址大小顺序来排列的，目前版本内核是链表的，
@@ -977,6 +1011,7 @@ ok_no_page:
  * and the problem, and then passes it off to one of the appropriate
  * routines.
  */
+ 
 asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long error_code)
 {
 	unsigned long address;
@@ -984,7 +1019,9 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long error_code)
 	unsigned int bit;
 
 	/* get the address */
+	/*从cr2中读取引起页错误的地址*/
 	__asm__("movl %%cr2,%0":"=r" (address));
+	/*如果是用户空间*/
 	if (address < TASK_SIZE) {
 		if (error_code & 4) {	/* user mode access? */
 			if (regs->eflags & VM_MASK) {
@@ -1312,6 +1349,9 @@ void file_mmap_nopage(int error_code, struct vm_area_struct * area, unsigned lon
 
 
 /* 将虚拟地址空间对应的文件映射写回设备
+ * 在将文件mmap到虚拟地址空间时，一个地址段对应
+ * 一个文件，所以在某一段即将释放时，直接将虚拟段
+ * 对应的文件给写回即可。
  */
 
 void file_mmap_free(struct vm_area_struct * area)

@@ -43,6 +43,12 @@ static int generate(unsigned long sig, struct task_struct * p)
 	return 1;
 }
 
+
+/* 向进程发送信号
+ * sig代表信号
+ * 代表接受信号的进程
+ * priv代表信号的优先级
+ */
 int send_sig(unsigned long sig,struct task_struct * p,int priv)
 {
 	if (!p || sig > 32)

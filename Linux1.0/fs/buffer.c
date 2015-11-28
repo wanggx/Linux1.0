@@ -761,7 +761,8 @@ no_grow:
 	return NULL;
 }
 
-/* 将nrbuf块bh对应的设备读入到bh当中
+/* 将nrbuf块bh对应的设备读入到bh当中，
+ * 注意此时bh中已经记录了读取设备的基本信息
  */
 static void read_buffers(struct buffer_head * bh[], int nrbuf)
 {
