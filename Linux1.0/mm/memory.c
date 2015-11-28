@@ -784,6 +784,11 @@ static inline void get_empty_page(struct task_struct * tsk, unsigned long addres
  * big concern. Any sharing of pages between the buffer cache and the
  * code space reduces the need for this as well.  - ERY
  */
+
+/* 将进程p的线性地址共享到进程tsk的线性地址,
+ * 同时tsk的address线性地址映射到物理地址newpage处
+ * 如果页时非PAGE_RW得，则仅仅增加引用计数而已
+ */
 static int try_to_share(unsigned long address, struct task_struct * tsk,
 	struct task_struct * p, unsigned long error_code, unsigned long newpage)
 {
@@ -795,7 +800,7 @@ static int try_to_share(unsigned long address, struct task_struct * tsk,
 	/*获取同一个线性地址在两个不同进程当中的页目录项地址*/
 	from_page = (unsigned long)PAGE_DIR_OFFSET(p->tss.cr3,address);
 	to_page = (unsigned long)PAGE_DIR_OFFSET(tsk->tss.cr3,address);
-/* is there a page-directory at from? */
+/* is there a page-directory at from ? */
 	from = *(unsigned long *) from_page;
 	if (!(from & PAGE_PRESENT))
 		return 0;
@@ -808,7 +813,7 @@ static int try_to_share(unsigned long address, struct task_struct * tsk,
 		return 0;
 	if (from >= high_memory)
 		return 0;
-	/*如果要共享的页是保留的则不行*/
+	/*如果要共享的页不在内存中则不行*/
 	if (mem_map[MAP_NR(from)] & MAP_PAGE_RESERVED)
 		return 0;
 /* is the destination ok? */
@@ -848,6 +853,12 @@ static int try_to_share(unsigned long address, struct task_struct * tsk,
  * We first check if it is at all feasible by checking executable->i_count.
  * It should be >1 if there are other tasks sharing this inode.
  */
+
+/* area是需要共享的虚拟地址
+ * tsk是需要被共享的进程
+ * address是线性地址
+ * newpage是物理地址
+ */
 int share_page(struct vm_area_struct * area, struct task_struct * tsk,
 	struct inode * inode,
 	unsigned long address, unsigned long error_code, unsigned long newpage)
@@ -862,13 +873,17 @@ int share_page(struct vm_area_struct * area, struct task_struct * tsk,
 			continue;
 		if (tsk == *p)
 			continue;
+		/*如果和进程可执行文件对应的inode节点不一样*/
 		if (inode != (*p)->executable) {
 			if(!area) continue;
 			/* Now see if there is something in the VMM that
 			   we can share pages with */
 			if(area){
 			  struct vm_area_struct * mpnt;
+			  /*扫描进程的虚拟地址空间*/
 			  for (mpnt = (*p)->mmap; mpnt; mpnt = mpnt->vm_next) {
+			  	/* 虚拟地址的操作函数，i节点号，设备号相同
+				 */
 			    if (mpnt->vm_ops == area->vm_ops &&
 			       mpnt->vm_inode->i_ino == area->vm_inode->i_ino&&
 			       mpnt->vm_inode->i_dev == area->vm_inode->i_dev){
@@ -1316,7 +1331,14 @@ void file_mmap_nopage(int error_code, struct vm_area_struct * area, unsigned lon
 	int prot = area->vm_page_prot;
 
 	address &= PAGE_MASK;
+	/*因为文件映射都是从虚拟地址段的开始地址处开始映射的，
+	 *而映射的文件可以从第多少个字节处开始，所以在文件中总的偏移量为
+	 *一下计算
+	 */
 	block = address - area->vm_start + area->vm_offset;
+
+	/*获取偏移块号
+	 */
 	block >>= inode->i_sb->s_blocksize_bits;
 
 	page = get_free_page(GFP_KERNEL);
@@ -1335,6 +1357,8 @@ void file_mmap_nopage(int error_code, struct vm_area_struct * area, unsigned lon
 		nr[j] = bmap(inode,block);
 	if (error_code & PAGE_RW)
 		prot |= PAGE_RW | PAGE_DIRTY;
+	/* 注意nr有8个元素，其中都是物理设备的逻辑块号
+	 */
 	page = bread_page(page, inode->i_dev, nr, inode->i_sb->s_blocksize, prot);
 
 	if (!(prot & PAGE_RW)) {
@@ -1368,6 +1392,10 @@ void file_mmap_free(struct vm_area_struct * area)
 /*
  * Compare the contents of the mmap entries, and decide if we are allowed to
  * share the pages
+ */
+
+/* 判断虚拟地址空间是否可以共享
+ * 只是进行了条件判断，并没有做任何的处理
  */
 int file_mmap_share(struct vm_area_struct * area1, 
 		    struct vm_area_struct * area2, 

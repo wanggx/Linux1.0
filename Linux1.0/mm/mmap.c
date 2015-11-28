@@ -371,8 +371,11 @@ int generic_mmap(struct inode * inode, struct file * file,
 	mpnt->vm_end = addr + len;
 	mpnt->vm_page_prot = prot;
 	mpnt->vm_share = NULL;
+	/*如果文件被映射到虚拟地址空间，
+	 *则inode的引用计数会增加1，其中off代表从文件中的第几个字节处
+	 *开始映射
+	 */
 	mpnt->vm_inode = inode;
-	inode->i_count++;
 	mpnt->vm_offset = off;
 	mpnt->vm_ops = &file_mmap;
 	insert_vm_struct(current, mpnt);

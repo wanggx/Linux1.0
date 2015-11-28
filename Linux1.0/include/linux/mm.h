@@ -45,7 +45,7 @@ struct vm_area_struct {
 	struct vm_area_struct * vm_next;	/* linked list */
 	struct vm_area_struct * vm_share;	/* linked list */
 	struct inode * vm_inode;
-	unsigned long vm_offset;
+	unsigned long vm_offset;		/*从文件的第几个字节处开始映射*/
 	struct vm_operations_struct * vm_ops;
 };
 

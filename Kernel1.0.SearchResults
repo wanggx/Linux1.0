@@ -1,3 +1,9 @@
----- ->nopage Matches (2 in 1 files) ----
-Memory.c (mm):		if (!mpnt->vm_ops || !mpnt->vm_ops->nopage) {
-Memory.c (mm):		mpnt->vm_ops->nopage(error_code, mpnt, address);
+---- file_systems Matches (8 in 2 files) ----
+Filesystems.c (fs):struct file_system_type file_systems[] = {
+Super.c (fs): * The definition of file_systems that used to be here is now in
+Super.c (fs):extern struct file_system_type file_systems[];
+Super.c (fs):		return &file_systems[0];
+Super.c (fs):	for(a = 0 ; file_systems[a].read_super ; a++)
+Super.c (fs):		if (!strcmp(name,file_systems[a].name))
+Super.c (fs):			return(&file_systems[a]);
+Super.c (fs):	for (fs_type = file_systems; fs_type->read_super; fs_type++) {

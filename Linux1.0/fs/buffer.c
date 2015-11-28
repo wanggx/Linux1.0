@@ -385,6 +385,8 @@ static inline void insert_into_queues(struct buffer_head * bh)
 }
 
 /* 从缓冲hash链中查找满足dev，block，size的缓冲块
+ * 注意此处并没有多链表进行处理，只是做了判断比较
+ * 使用的方法是在hash链表中查找
  */
 static struct buffer_head * find_buffer(dev_t dev, int block, int size)
 {		
@@ -783,6 +785,11 @@ static void read_buffers(struct buffer_head * bh[], int nrbuf)
 	}
 }
 
+/* first是根据dev，block条件hash出来的第一个节点
+ * 此函数是检测物理设备的多个逻辑块号对应的高速缓存数据b_data
+ * 是否在同一个物理页中连续，并且第一个块对应的数据块物理地址
+ * 是否和页对齐，如果是对齐的则将address对应的物理页给释放掉
+ */
 static unsigned long check_aligned(struct buffer_head * first, unsigned long address,
 	dev_t dev, int *b, int size)
 {
@@ -792,6 +799,9 @@ static unsigned long check_aligned(struct buffer_head * first, unsigned long add
 	int block;
 	int nrbuf;
 
+	/* 获取高速缓存的数据块，
+	 * 如果没有和4KB对齐则不做处理
+	 */
 	page = (unsigned long) first->b_data;
 	if (page & ~PAGE_MASK) {
 		brelse(first);
@@ -803,13 +813,16 @@ static unsigned long check_aligned(struct buffer_head * first, unsigned long add
 	/* 一页内存最多缓存块也就8块=4KB/412B
 	 */
 	for (offset = size ; offset < PAGE_SIZE ; offset += size) {
-		block = *++b;
+		block = *++b;   /* 获取b中的逻辑块号 */
 		if (!block)
 			goto no_go;
 		first = get_hash_table(dev, block, size);
 		if (!first)
 			goto no_go;
 		bh[nrbuf++] = first;
+		/* 保证多个逻辑块号对应的高速缓存数据在同一个页中连续存放
+		 * 其中第一个页的b_data在物理页的其实地址处
+		 */
 		if (page+offset != (unsigned long) first->b_data)
 			goto no_go;
 	}
@@ -826,6 +839,8 @@ no_go:
 	return 0;
 }
 
+/* 将b中逻辑块依次连续的读入到address对应的物理页中
+ */
 static unsigned long try_to_load_aligned(unsigned long address,
 	dev_t dev, int b[], int size)
 {
@@ -834,6 +849,9 @@ static unsigned long try_to_load_aligned(unsigned long address,
 	int * p;
 	int block;
 
+	/* 将address对应的物理页分成size大小的高速缓存数据区
+	 * 然后将逻辑块号对应的设备数据依次连续读入到address所在的页
+	 */
 	bh = create_buffers(address, size);
 	if (!bh)
 		return 0;
@@ -841,8 +859,10 @@ static unsigned long try_to_load_aligned(unsigned long address,
 	p = b;
 	for (offset = 0 ; offset < PAGE_SIZE ; offset += size) {
 		block = *(p++);
+		/*逻辑块号不能为0*/
 		if (!block)
 			goto not_aligned;
+		/*如果对应的逻辑块已经加载到了高速缓存则出错*/
 		if (find_buffer(dev, block, size))
 			goto not_aligned;
 	}
@@ -859,7 +879,7 @@ static unsigned long try_to_load_aligned(unsigned long address,
 		nr_buffers++;
 		insert_into_queues(bh);
 		if (bh->b_this_page)
-			bh = bh->b_this_page;
+			bh = bh->b_this_page; /*获取b_data相邻的下一个缓存节点*/
 		else
 			break;
 	}
@@ -899,12 +919,16 @@ static inline unsigned long try_to_share_buffers(unsigned long address,
 	block = b[0];
 	if (!block)
 		return 0;
+	/*从对应的hash链表中找到第一个可用的高速缓存节点*/
 	bh = get_hash_table(dev, block, size);
 	if (bh)
 		return check_aligned(bh, address, dev, b, size);
 	return try_to_load_aligned(address, dev, b, size);
 }
 
+
+/* 从物理地址from处复制size大小到to物理地址处
+ */
 #define COPYBLK(size,from,to) \
 __asm__ __volatile__("rep ; movsl": \
 	:"c" (((unsigned long) size) >> 2),"S" (from),"D" (to) \
@@ -916,6 +940,12 @@ __asm__ __volatile__("rep ; movsl": \
  * all at the same time, not waiting for one to be read, and then another
  * etc. This also allows us to optimize memory usage by sharing code pages
  * and filesystem buffers..
+ */
+
+/* 注意此处的address是物理地址
+ * size是物理设备中块的大小
+ * 该函数作用是从dev设备中读取多少块(逻辑块号)的数据到
+ * address开始的地址处
  */
 unsigned long bread_page(unsigned long address, dev_t dev, int b[], int size, int prot)
 {
@@ -929,11 +959,15 @@ unsigned long bread_page(unsigned long address, dev_t dev, int b[], int size, in
 			return where;
 	}
 	++current->maj_flt;
+	/*size大小不固定，所以需要读取的块数不一定就是8块
+	 *如果是512KB则是8块，如果是1024KB则是4块
+	 */
  	for (i=0, j=0; j<PAGE_SIZE ; i++, j+= size) {
 		bh[i] = NULL;
 		if (b[i])
 			bh[i] = getblk(dev, b[i], size);
 	}
+	/*将上面得到的多少块逻辑块读入到高速缓存*/
 	read_buffers(bh,i);
 	where = address;
  	for (i=0, j=0; j<PAGE_SIZE ; i++, j += size,address += size) {

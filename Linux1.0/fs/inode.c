@@ -298,6 +298,9 @@ int notify_change(int flags, struct inode * inode)
  * a DOS filesystem, which doesn't lend itself to bmap very well, but
  * you could still transfer files to/from the filesystem)
  */
+
+/* 实现文件的数据块号到物理设备的逻辑块号的映射
+ */
 int bmap(struct inode * inode, int block)
 {
 	if (inode->i_op && inode->i_op->bmap)
