@@ -29,6 +29,8 @@ struct hd_struct {
 	long nr_sects;
 };
 
+/* 磁盘结构体
+ */
 struct gendisk {
 	int major;			/* major number of driver */
 	char *major_name;		/* name of major driver */
@@ -38,7 +40,7 @@ struct gendisk {
 	int max_nr;			/* maximum number of real devices */
 
 	void (*init)(void);		/* Initialization called before we do our thing */
-	struct hd_struct *part;		/* partition table */
+	struct hd_struct *part;		/* partition table */  /*磁盘逻辑分区表*/
 	int *sizes;			/* size of device in blocks */
 	int nr_real;			/* number of real devices */
 

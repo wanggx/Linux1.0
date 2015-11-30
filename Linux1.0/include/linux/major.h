@@ -7,6 +7,7 @@
 
 /* limits */
 
+/*块设备，字符设备的最大支持数量为32个*/
 #define MAX_CHRDEV 32
 #define MAX_BLKDEV 32
 

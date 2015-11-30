@@ -1,9 +1,26 @@
----- file_systems Matches (8 in 2 files) ----
-Filesystems.c (fs):struct file_system_type file_systems[] = {
-Super.c (fs): * The definition of file_systems that used to be here is now in
-Super.c (fs):extern struct file_system_type file_systems[];
-Super.c (fs):		return &file_systems[0];
-Super.c (fs):	for(a = 0 ; file_systems[a].read_super ; a++)
-Super.c (fs):		if (!strcmp(name,file_systems[a].name))
-Super.c (fs):			return(&file_systems[a]);
-Super.c (fs):	for (fs_type = file_systems; fs_type->read_super; fs_type++) {
+---- blk_size Matches (25 in 7 files) ----
+Blk.h (drivers\block):extern int * blk_size[MAX_BLKDEV];
+Block_dev.c (fs):extern int *blk_size[];
+Block_dev.c (fs):	if (blk_size[MAJOR(dev)])
+Block_dev.c (fs):		size = (blk_size[MAJOR(dev)][MINOR(dev)] << BLOCK_SIZE_BITS) >> blocksize_bits;
+Block_dev.c (fs):	if (blk_size[MAJOR(dev)])
+Block_dev.c (fs):		size = blk_size[MAJOR(dev)][MINOR(dev)] << BLOCK_SIZE_BITS;
+Floppy.c (drivers\block):	blk_size[MAJOR_NR] = floppy_sizes;
+Genhd.c (drivers\block):extern int *blk_size[];
+Genhd.c (drivers\block):	blk_size[dev->major] = dev->sizes;
+Gus_wave.c (drivers\sound):  unsigned long   blk_size, blk_end, left, src_offs, target;
+Gus_wave.c (drivers\sound):      blk_size = sound_buffsizes[gus_devnum];
+Gus_wave.c (drivers\sound):      if (blk_size > left)
+Gus_wave.c (drivers\sound):	blk_size = left;
+Gus_wave.c (drivers\sound):      blk_end = target + blk_size;
+Gus_wave.c (drivers\sound):	  blk_size = blk_end - target;
+Gus_wave.c (drivers\sound):	for (i = 0; i < blk_size; i++)
+Gus_wave.c (drivers\sound):			blk_size);
+Gus_wave.c (drivers\sound):			  blk_size, DMA_MODE_WRITE);
+Gus_wave.c (drivers\sound):      left -= blk_size;
+Gus_wave.c (drivers\sound):      src_offs += blk_size;
+Gus_wave.c (drivers\sound):      target += blk_size;
+Ll_rw_blk.c (drivers\block):int * blk_size[MAX_BLKDEV] = { NULL, NULL, };
+Ll_rw_blk.c (drivers\block):	if (blk_size[major])
+Ll_rw_blk.c (drivers\block):		if (blk_size[major][MINOR(bh->b_dev)] < (sector + count)>>1) {
+Sr.c (drivers\scsi):	blk_size[MAJOR_NR] = sr_sizes;	

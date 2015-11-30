@@ -125,6 +125,8 @@ extern void time_init(void);
 
 static unsigned long memory_start = 0;	/* After mem_init, stores the */
 					/* amount of free user memory */
+
+/* 系统内核支持的最大物理和实际物理内存的较小的那个值*/
 static unsigned long memory_end = 0;
 static unsigned long low_memory_start = 0;
 
@@ -149,6 +151,7 @@ int root_mountflags = 0;
 
 static char fpu_error = 0;
 
+/*启动命令行初始化为空*/
 static char command_line[80] = { 0, };
 
 char *get_options(char *str, int *ints) 
@@ -326,11 +329,13 @@ static void parse_options(char *line)
 	envp_init[envs+1] = NULL;
 }
 
+/* 此函数主要是根据命令参数获取memory_end的大小 */
 static void copy_options(char * to, char * from)
 {
 	char c = ' ';
-
+	/* c是命令行的空格参数 */
 	do {
+		/* 解析到mem=xxx参数时设置memory_end */
 		if (c == ' ' && !memcmp("mem=", from, 4))
 			memory_end = simple_strtoul(from+4, &from, 0);
 		c = *(to++) = *(from++);
@@ -386,6 +391,7 @@ asmlinkage void start_kernel(void)
 	trap_init();
 	init_IRQ();
 	sched_init();
+	/*里面包含较多初始化和设置工作*/
 	parse_options(command_line);
 #ifdef CONFIG_PROFILE
 	prof_buffer = (unsigned long *) memory_start;
@@ -395,6 +401,7 @@ asmlinkage void start_kernel(void)
 #endif
 	memory_start = kmalloc_init(memory_start,memory_end);
 	memory_start = chr_dev_init(memory_start,memory_end);
+	/*块设备的初始化，其中包括对硬盘等其他设备的初始化*/
 	memory_start = blk_dev_init(memory_start,memory_end);
 	sti();
 	calibrate_delay();
@@ -491,7 +498,7 @@ static int printf(const char *fmt, ...)
 void init(void)
 {
 	int pid,i;
-
+	/*这个函数里面挂载了根文件系统*/
 	setup((void *) &drive_info);
 	sprintf(term, "TERM=con%dx%d", ORIG_VIDEO_COLS, ORIG_VIDEO_LINES);
 	(void) open("/dev/tty1",O_RDWR,0);

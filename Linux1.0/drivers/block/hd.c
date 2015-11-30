@@ -634,6 +634,7 @@ static struct sigaction hd_sigaction = {
 	NULL
 };
 
+/* 硬盘初始化 */
 static void hd_geninit(void)
 {
 	int drive, i;
@@ -698,6 +699,7 @@ static void hd_geninit(void)
 				hd_info[i].sect*hd_info[i].cyl;
 	}
 	if (NR_HD) {
+		/* 注册hd的中断处理*/
 		if (irqaction(HD_IRQ,&hd_sigaction)) {
 			printk("hd.c: unable to get IRQ%d for the harddisk driver\n",HD_IRQ);
 			NR_HD = 0;
@@ -722,6 +724,7 @@ static struct file_operations hd_fops = {
 	block_fsync		/* fsync */
 };
 
+/* 硬盘设备初始化 ，将hd_gendisk节点添加到gendisk_head链表中*/
 unsigned long hd_init(unsigned long mem_start, unsigned long mem_end)
 {
 	if (register_blkdev(MAJOR_NR,"hd",&hd_fops)) {

@@ -18,6 +18,7 @@ unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base)
 {
 	unsigned long result = 0,value;
 
+	/* 判断输入字符的进制，并且保存结果到base当中 */
 	if (!base) {
 		base = 10;
 		if (*cp == '0') {
@@ -29,6 +30,7 @@ unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base)
 			}
 		}
 	}
+	/*此时cp已经指向数字字符串的首位了，然后处理字符串，并获取字符串的数字值*/
 	while (isxdigit(*cp) && (value = isdigit(*cp) ? *cp-'0' : (islower(*cp)
 	    ? toupper(*cp) : *cp)-'A'+10) < base) {
 		result = result*base + value;
