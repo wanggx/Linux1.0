@@ -248,6 +248,7 @@ int fs_may_remount_ro(dev_t dev)
 	return 1;
 }
 
+/* 仅仅是将inode写到高速缓冲 */
 static void write_inode(struct inode * inode)
 {
 	if (!inode->i_dirt)
@@ -264,6 +265,7 @@ static void write_inode(struct inode * inode)
 	unlock_inode(inode);
 }
 
+/* 将此时inode中记录的dev，block，size的块中数据读取到高速缓冲 */
 static void read_inode(struct inode * inode)
 {
 	lock_inode(inode);
@@ -319,6 +321,7 @@ void invalidate_inodes(dev_t dev)
 		next = inode->i_next;		/* clear_inode() changes the queues.. */
 		if (inode->i_dev != dev)
 			continue;
+		/* 如果inode仍在使用当中，则不做处理 ，注意下面的printk打印 */
 		if (inode->i_count || inode->i_dirt || inode->i_lock) {
 			printk("VFS: inode busy on removed device %d/%d\n", MAJOR(dev), MINOR(dev));
 			continue;
@@ -342,6 +345,7 @@ void sync_inodes(dev_t dev)
 	}
 }
 
+/* 如果成功则增加一个空闲的inode */
 void iput(struct inode * inode)
 {
 	if (!inode)

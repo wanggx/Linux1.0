@@ -592,6 +592,13 @@ void brelse(struct buffer_head * buf)
  * bread() reads a specified block and returns the buffer that contains
  * it. It returns NULL if the block was unreadable.
  */
+
+/* 将设备中指定的块数据读取到高速缓存
+ * 在将设备中指定块数据读取到高速缓存之前
+ * 会在高速缓冲当中查找该块是否已经读取到高速缓冲当中
+ * 如果已经在高速缓冲中，但是不是最新的，则依然会从设备中
+ * 重新读取
+ */
 struct buffer_head * bread(dev_t dev, int block, int size)
 {
 	struct buffer_head * bh;

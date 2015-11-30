@@ -555,10 +555,14 @@ static struct buffer_head * ext2_update_inode (struct inode * inode)
 	else for (block = 0; block < EXT2_N_BLOCKS; block++)
 		raw_inode->i_block[block] = inode->u.ext2_i.i_data[block];
 	bh->b_dirt = 1;
-	inode->i_dirt = 0;
+	/* 写完之后inode就不是脏的了，
+	 * 注意此时inode并没有写到磁盘上，仅仅是在高速缓存
+	 */
+	inode->i_dirt = 0;  
 	return bh;
 }
 
+/* 仅仅是写到了高速缓冲，ext2_sync_inode函数才在这之后将内容写到了磁盘 */
 void ext2_write_inode (struct inode * inode)
 {
 	struct buffer_head * bh;
@@ -566,6 +570,8 @@ void ext2_write_inode (struct inode * inode)
 	brelse (bh);
 }
 
+
+/* 将inode数据线写入到高速缓存，然后将高速缓冲中数据写入到磁盘当中 */
 int ext2_sync_inode (struct inode *inode)
 {
 	int err = 0;

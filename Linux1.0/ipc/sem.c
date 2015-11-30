@@ -17,13 +17,18 @@ static int newary (key_t, int, int);
 static int findkey (key_t key);
 static void freeary (int id);
 
+/* 信号量数组最大为SEMMNI */
 static struct semid_ds *semary[SEMMNI];
+/*  注意newary函数中对used_sems的操作 */
 static int used_sems = 0, used_semids = 0;                    
-static struct wait_queue *sem_lock = NULL;
-static int max_semid = 0;
+static struct wait_queue *sem_lock = NULL; /* 等待使用信号量的一个队列 */
+/* 标记系统中已使用的最大信号量ID，可以增大也可以减小但不会超过SEMMNI */
+static int max_semid = 0;				
 
-static unsigned short sem_seq = 0;
+static unsigned short sem_seq = 0;     /* 信号量序列号 */
 
+
+/* 信号量通信初始化 */
 void sem_init (void)
 {
 	int i=0;
@@ -35,6 +40,10 @@ void sem_init (void)
 	return;
 }
 
+/* 寻找为key的信号量的索引，并返回索引，
+ * 注意没有被使用的信号量不在查找之列
+ * 如果信号量正好是IPC_NOID,则进程进入不可中断的睡眠
+ */
 static int findkey (key_t key)
 {
 	int id;
@@ -51,6 +60,7 @@ static int findkey (key_t key)
 	return -1;
 }
 
+/* 新建一个信号量集，该集中包含nsems个信号量 */
 static int newary (key_t key, int nsems, int semflg)
 {
 	int id;
@@ -60,8 +70,10 @@ static int newary (key_t key, int nsems, int semflg)
 
 	if (!nsems)
 		return -EINVAL;
+	/*信号量的总数不能超过SEMMNS*/
 	if (used_sems + nsems > SEMMNS)
 		return -ENOSPC;
+	/* 找到一个还没有被使用的信号量结构 */
 	for (id=0; id < SEMMNI; id++) 
 		if (semary[id] == IPC_UNUSED) {
 			semary[id] = (struct semid_ds *) IPC_NOID;
@@ -69,6 +81,7 @@ static int newary (key_t key, int nsems, int semflg)
 		}
 	return -ENOSPC;
 found:
+	/* 计算需要使用内存的大小 */
 	size = sizeof (*sma) + nsems * sizeof (struct sem);
 	used_sems += nsems;
 	sma = (struct semid_ds *) kmalloc (size, GFP_KERNEL);
@@ -80,13 +93,14 @@ found:
 		return -ENOMEM;
 	}
 	memset (sma, 0, size);
+	/* 注意使用了连续内存特性 0正好是一个struct semid_ds，1则是后续内存*/
 	sma->sem_base = (struct sem *) &sma[1];
 	ipcp = &sma->sem_perm;
 	ipcp->mode = (semflg & S_IRWXUGO);
 	ipcp->key = key;
 	ipcp->cuid = ipcp->uid = current->euid;
 	ipcp->gid = ipcp->cgid = current->egid;
-	ipcp->seq = sem_seq;
+	ipcp->seq = sem_seq;                /* 这个序列号起啥作用? */
 	sma->eventn = sma->eventz = NULL;
 	sma->sem_nsems = nsems;
 	sma->sem_ctime = CURRENT_TIME;
@@ -99,6 +113,7 @@ found:
 	return (int) sem_seq * SEMMNI + id;
 }
 
+/* 从系统中获取一个信号量 */
 int sys_semget (key_t key, int nsems, int semflg)
 {
 	int id;
@@ -109,6 +124,7 @@ int sys_semget (key_t key, int nsems, int semflg)
 	if (key == IPC_PRIVATE) 
 		return newary(key, nsems, semflg);
 	if ((id = findkey (key)) == -1) {  /* key not used */
+		/* 对应key的信号量没有找到，又不是创建标记则出错，否则创建一个新的 */
 		if (!(semflg & IPC_CREAT))
 			return -ENOENT;
 		return newary(key, nsems, semflg);
@@ -131,6 +147,9 @@ static void freeary (int id)
 	sma->sem_perm.seq++;
 	sem_seq++;
 	used_sems -= sma->sem_nsems;
+	/* 如果id正好是最大信号量id则，则会依次向下扫描，
+	 * 如果下面semarg为IPC_UNUSED，则会继续减小
+	 */
 	if (id == max_semid)
 		while (max_semid && (semary[--max_semid] == IPC_UNUSED));
 	semary[id] = (struct semid_ds *) IPC_UNUSED;
@@ -339,6 +358,11 @@ int sys_semctl (int semid, int semnum, int cmd, void *arg)
 	return 0;
 }
 
+/* 函数返回信号量的值
+ * semid信号量级标识符
+ * tsops进行操作的信号量集结构体数组的首地址
+ * nsops进行操作信号量的个数，即sops结构变量的个数，需大于或等于1
+ */
 int sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 {
 	int i, id;
@@ -492,6 +516,9 @@ found:
 				sma->sem_otime = CURRENT_TIME;
 				if (un->semadj > 0 && sma->eventn)
 					wake_up (&sma->eventn);
+				/* 如果当前进程中信号量的值大于0，
+				 * 且存在等待队列，则唤醒等待队列
+				 */
 				if (!sem->semval && sma->eventz)
 					wake_up (&sma->eventz);
 				break;
@@ -499,6 +526,7 @@ found:
 			if (current->signal & ~current->blocked)
 				break;
 			sem->semncnt++;
+			/* 意味着等待处理该信号的进程多了一个 */
 			interruptible_sleep_on (&sma->eventn);
 			sem->semncnt--;
 		}

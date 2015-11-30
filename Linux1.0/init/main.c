@@ -400,17 +400,20 @@ asmlinkage void start_kernel(void)
 	memory_start += prof_len * sizeof(unsigned long);
 #endif
 	memory_start = kmalloc_init(memory_start,memory_end);
+	/*字符设备初始化，包括鼠标，终端啊，声卡等的初始化*/
 	memory_start = chr_dev_init(memory_start,memory_end);
 	/*块设备的初始化，其中包括对硬盘等其他设备的初始化*/
 	memory_start = blk_dev_init(memory_start,memory_end);
 	sti();
 	calibrate_delay();
 #ifdef CONFIG_INET
+	/*网络设备初始化*/
 	memory_start = net_dev_init(memory_start,memory_end);
 #endif
 #ifdef CONFIG_SCSI
 	memory_start = scsi_dev_init(memory_start,memory_end);
 #endif
+	/* struct inode，struct file链表初始化 */
 	memory_start = inode_init(memory_start,memory_end);
 	memory_start = file_table_init(memory_start,memory_end);
 	mem_init(low_memory_start,memory_start,memory_end);

@@ -536,6 +536,7 @@ void mount_root(void)
 		/*读取每个文件系统的超级块*/
 		sb = read_super(ROOT_DEV,fs_type->name,root_mountflags,NULL,1);
 		if (sb) {
+			/* 注意s_mounted是文件系统的根节点 */
 			inode = sb->s_mounted;
 			inode->i_count += 3 ;	/* NOTE! it is logically used 4 times, not 1 */
 			sb->s_covered = inode;

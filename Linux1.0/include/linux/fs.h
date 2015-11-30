@@ -251,7 +251,7 @@ struct super_block {
 	unsigned long s_magic;
 	unsigned long s_time;
 	struct inode * s_covered;
-	struct inode * s_mounted;
+	struct inode * s_mounted;   /*文件系统的挂载点，如果是根文件系统则是/,否则就是挂载点的inode */
 	struct wait_queue * s_wait;
 	union {
 		struct minix_sb_info minix_sb;

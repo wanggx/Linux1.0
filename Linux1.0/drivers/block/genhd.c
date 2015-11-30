@@ -207,7 +207,7 @@ asmlinkage int sys_setup(void * BIOS)
 		return -1;
 	callable = 0;
 
-	/* gendisk_head链在blk_dev_init函数中初始化*/
+	/* gendisk_head链在blk_dev_init函数中初始化 */
 	for (p = gendisk_head ; p ; p=p->next) {
 		setup_dev(p);
 		nr += p->nr_real;

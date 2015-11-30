@@ -23,7 +23,7 @@ struct semid_ds {
   struct wait_queue *eventn;
   struct wait_queue *eventz;
   struct sem_undo  *undo;	  /* undo requests on this array */
-  ushort          sem_nsems;      /* no. of semaphores in array */
+  ushort          sem_nsems;      /* no. of semaphores in array */ /* 信号量集中信号量的数量 */
 };
 
 
