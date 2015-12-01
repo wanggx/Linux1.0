@@ -1,6 +1,10 @@
----- sys_ipc Matches (5 in 3 files) ----
-Sched.c (kernel):sys_wait4, sys_swapoff, sys_sysinfo, sys_ipc, sys_fsync, sys_sigreturn,
-Sys.h (include\linux):extern int sys_ipc();
-Util.c (ipc):asmlinkage int sys_ipc (uint call, int first, int second, int third, void *ptr); 
-Util.c (ipc):asmlinkage int sys_ipc (uint call, int first, int second, int third, void *ptr) 
-Util.c (ipc):asmlinkage int sys_ipc (uint call, int first, int second, int third, void *ptr) 
+---- ->semadj Matches (9 in 1 files) ----
+Sem.c (ipc):	        un->semadj = 0;
+Sem.c (ipc):				un->semadj = 0;
+Sem.c (ipc):			un->semadj = 0;
+Sem.c (ipc):			un->semadj = 0;
+Sem.c (ipc):		un->semadj -= sop->sem_op;
+Sem.c (ipc):		if (!un->semadj)
+Sem.c (ipc):			if (sem->semval + un->semadj >= 0) {
+Sem.c (ipc):				sem->semval += un->semadj;
+Sem.c (ipc):				if (un->semadj > 0 && sma->eventn)

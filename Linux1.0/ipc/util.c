@@ -46,6 +46,8 @@ void ipc_init (void)
  * Check user, group, other permissions for access
  * to ipc resources. return 0 if allowed
  */
+/* 注意查看上面注释，成功返回0
+ */
 int ipcperms (struct ipc_perm *ipcp, short flag)
 {	/* flag will most probably be 0 or S_...UGO from <linux/stat.h> */
 	int requested_mode, granted_mode;

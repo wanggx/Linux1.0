@@ -100,7 +100,7 @@ found:
 	ipcp->key = key;
 	ipcp->cuid = ipcp->uid = current->euid;
 	ipcp->gid = ipcp->cgid = current->egid;
-	ipcp->seq = sem_seq;                /* 这个序列号起啥作用? */
+	ipcp->seq = sem_seq;                /* 注意这个序列号和返回值关系 */
 	sma->eventn = sma->eventz = NULL;
 	sma->sem_nsems = nsems;
 	sma->sem_ctime = CURRENT_TIME;
@@ -110,6 +110,7 @@ found:
 	semary[id] = sma;
 	if (sem_lock)
 		wake_up (&sem_lock);
+	/* 为啥这么返回? */
 	return (int) sem_seq * SEMMNI + id;
 }
 
@@ -136,6 +137,7 @@ int sys_semget (key_t key, int nsems, int semflg)
 		return -EINVAL;
 	if (ipcperms(&sma->sem_perm, semflg))
 		return -EACCES;
+	/* 和newary返回联系 */
 	return sma->sem_perm.seq*SEMMNI + id;
 } 
 
@@ -154,8 +156,10 @@ static void freeary (int id)
 		while (max_semid && (semary[--max_semid] == IPC_UNUSED));
 	semary[id] = (struct semid_ds *) IPC_UNUSED;
 	used_semids--;
+	/* 这个操作会引起什么后果? ,和sem_exit函数最后处理联系 */
 	for (un=sma->undo; un; un=un->id_next)
 	        un->semadj = 0;
+	/*如果信号量集中还有等待队列，则唤醒等待队列 */
 	while (sma->eventz || sma->eventn) {
 		if (sma->eventz)
 			wake_up (&sma->eventz);
@@ -167,6 +171,7 @@ static void freeary (int id)
 	return;
 }
 
+/* 对信号集的操作 */
 int sys_semctl (int semid, int semnum, int cmd, void *arg)
 {
 	int i, id, val = 0;
@@ -209,6 +214,7 @@ int sys_semctl (int semid, int semnum, int cmd, void *arg)
 	}
 
 	case SEM_STAT:
+		/* 获取所在信号集的信息 */
 		if (!arg || ! (buf = (struct semid_ds *) get_fs_long((int *) arg)))
 			return -EFAULT;
 		i = verify_area (VERIFY_WRITE, buf, sizeof (*sma));
@@ -378,35 +384,47 @@ int sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 		return -E2BIG;
 	if (!tsops) 
 		return -EFAULT;
+	/* 将数据从tsops从复制到sops中 */
 	memcpy_fromfs (sops, tsops, nsops * sizeof(*tsops));  
+	/* 注意信号集的id不是在SEMMNI范围，SEMMNI只是信号集数组范围 */
 	id = semid % SEMMNI;
+	/* 首先信号集要是可用的 */
 	if ((sma = semary[id]) == IPC_UNUSED || sma == IPC_NOID)
 		return -EINVAL;
+	/* 先扫描一遍所有的信号操作，做一个基本统计，方便后续处理 */
 	for (i=0; i<nsops; i++) { 
 		sop = &sops[i];
+		/* 如果超过信号集中的信号数量，则返回失败 */
 		if (sop->sem_num > sma->sem_nsems)
 			return -EFBIG;
 		if (sop->sem_flg & SEM_UNDO)
 			undos++;
 		if (sop->sem_op) {
 			alter++;
+			/* 代表有进程释放资源，在函数返回的地方要唤醒等待资源的进程队列 */
 			if (sop->sem_op > 0)
 				semncnt ++;
 		}
 	}
+	/* 判断该信号集是否可以被操作 */
 	if (ipcperms(&sma->sem_perm, alter ? S_IWUGO : S_IRUGO))
 		return -EACCES;
 	/* 
 	 * ensure every sop with undo gets an undo structure 
 	 */
+	/* 将所有的undo操作添加到进程的semun链表当中，
+	 * 同时将undo操作添加到信号集的undo链表当中
+	 */
 	if (undos) {
 		for (i=0; i<nsops; i++) {
+			/* 如果不是SEM_UNDO则继续处理下一个 */
 			if (!(sops[i].sem_flg & SEM_UNDO))
 				continue;
 			for (un = current->semun; un; un = un->proc_next) 
 				if ((un->semid == semid) && 
 				    (un->sem_num == sops[i].sem_num))
 					break;
+			/* 如果该节点已经在进程的semun链表当中，则不需要再做处理 */
 			if (un)
 				continue;
 			un = (struct sem_undo *) 
@@ -426,11 +444,14 @@ int sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
  slept:
 	if (sma->sem_perm.seq != semid / SEMMNI) 
 		return -EIDRM;
+	/* 依次处理要操作的信号量 */
 	for (i=0; i<nsops; i++) {
 		sop = &sops[i];
 		curr = &sma->sem_base[sop->sem_num];
+		/* 如果超过信号值的最大值，则返回范围错误 */
 		if (sop->sem_op + curr->semval > SEMVMX)
 			return -ERANGE;
+		/* 如果sem_op为0,则该进程希望等待该信号值为0 */
 		if (!sop->sem_op && curr->semval) { 
 			if (sop->sem_flg & IPC_NOWAIT)
 				return -EAGAIN;
@@ -441,6 +462,7 @@ int sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 			curr->semzcnt--;
 			goto slept;
 		}
+		/* 如果要减少的信号值小于0，也就是资源不够用，则进程等待 */
 		if ((sop->sem_op + curr->semval < 0) ) { 
 			if (sop->sem_flg & IPC_NOWAIT)
 				return -EAGAIN;
@@ -457,10 +479,14 @@ int sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 		sop = &sops[i];
 		curr = &sma->sem_base[sop->sem_num];
 		curr->sempid = current->pid;
+		/* 此时信号值正好是0，则唤醒等待信号值为0的等待队列 */
 		if (!(curr->semval += sop->sem_op))
 			semzcnt++;
 		if (!(sop->sem_flg & SEM_UNDO))
 			continue;
+		/* 函数刚开始的for循环仅仅是将undo信号添加到了进程的semun
+		 * 队列当中，并没有对undo的semadj做处理。
+		 */
 		for (un = current->semun; un; un = un->proc_next) 
 			if ((un->semid == semid) && 
 			    (un->sem_num == sop->sem_num))
@@ -469,11 +495,16 @@ int sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
 			printk ("semop : no undo for op %d\n", i);
 			continue;
 		}
+		/* 找到了undo节点则调整semadj的值，
+		 * 如果是释放了资源则 sem_op > 0,
+		 * 则semadj是负的
+		 */
 		un->semadj -= sop->sem_op;
 	}
 	sma->sem_otime = CURRENT_TIME; 
-       	if (semncnt && sma->eventn)
+    if (semncnt && sma->eventn)
 		wake_up(&sma->eventn);
+	/* 如果有等待信号值为0的进程则唤醒等待队列 */
 	if (semzcnt && sma->eventz)
 		wake_up(&sma->eventz);
 	return curr->semval;
@@ -484,40 +515,52 @@ int sys_semop (int semid, struct sembuf *tsops, unsigned nsops)
  * undo structures are not freed when semaphore arrays are destroyed
  * so some of them may be out of date.
  */
+/* 进程退出时，会对进程占有的信号量资源进行释放，
+ * 防止其他进程无法使用已经退出的进程没有释放的资源
+ */
 void sem_exit (void)
 {
 	struct sem_undo *u, *un = NULL, **up, **unp;
 	struct semid_ds *sma;
 	struct sem *sem = NULL;
-	
+
+	/* 循环处理当前进程的undo信号链表，信号可能是多个信号集中的不同信号 */
 	for (up = &current->semun; (u = *up); *up = u->proc_next, kfree(u)) {
+		/* 获取undo信号所在的信号集 */
 		sma = semary[u->semid % SEMMNI];
 		if (sma == IPC_UNUSED || sma == IPC_NOID) 
 			continue;
 		if (sma->sem_perm.seq != u->semid / SEMMNI)
 			continue;
+		/* 然后在信号集中的undo链表中查找当前进程的semun链中的undo节点 */
 		for (unp = &sma->undo; (un = *unp); unp = &un->id_next) {
 			if (u == un) 
 				goto found;
 		}
+		/* 没找到则报错，因为每个undo的信号必须在信号集中被找到 */
 		printk ("sem_exit undo list error id=%d\n", u->semid);
 		break;
 found:
+		/* 更改信号中undo链表的关系，也就是删除un这个undo节点 */
 		*unp = un->id_next;
+		/* 因为最后一次信号量的值为0，所以不需要处理 */
 		if (!un->semadj)
 			continue;
 		while (1) {
+			/* 注意和newary中返回值关系 */
 			if (sma->sem_perm.seq != un->semid / SEMMNI)
 				break;
 			sem = &sma->sem_base[un->sem_num];
+			/* 进程退出时将信号占用的资源给释放掉 */
 			if (sem->semval + un->semadj >= 0) {
 				sem->semval += un->semadj;
 				sem->sempid = current->pid;
 				sma->sem_otime = CURRENT_TIME;
+				/*如果释放了资源，且仍有等待资源的进程队列，则唤醒队列*/
 				if (un->semadj > 0 && sma->eventn)
 					wake_up (&sma->eventn);
-				/* 如果当前进程中信号量的值大于0，
-				 * 且存在等待队列，则唤醒等待队列
+				/* 如果当前进程中信号量的值等于0，
+				 * 且存在等待信号值为0的等待队列，则唤醒等待队列
 				 */
 				if (!sem->semval && sma->eventz)
 					wake_up (&sma->eventz);
@@ -531,6 +574,7 @@ found:
 			sem->semncnt--;
 		}
 	}
+	/* 设置进程的undo信号链为空 */
 	current->semun = NULL;
 	return;
 }
