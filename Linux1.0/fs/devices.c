@@ -42,6 +42,10 @@ struct file_operations * get_chrfops(unsigned int major)
 	return chrdevs[major].fops;
 }
 
+/* ¡Á¡é2¨¢¡Á?¡¤?¨¦¨¨¡À?¦Ì????t2¨´¡Á¡Âo¡¥¨ºy
+ * major¨º??¡Â¨¦¨¨¡À?o?
+ * name¨¦¨¨¡À???3?
+ */
 int register_chrdev(unsigned int major, const char * name, struct file_operations *fops)
 {
 	if (major >= MAX_CHRDEV)
@@ -53,6 +57,8 @@ int register_chrdev(unsigned int major, const char * name, struct file_operation
 	return 0;
 }
 
+/* ?¨¦¨¦¨¨¡À????t?¨¢D¡äo¡¥¨ºy
+ */
 int register_blkdev(unsigned int major, const char * name, struct file_operations *fops)
 {
 	if (major >= MAX_BLKDEV)
@@ -64,6 +70,8 @@ int register_blkdev(unsigned int major, const char * name, struct file_operation
 	return 0;
 }
 
+/* ¡¤¡ä¡Á¡é2¨¢¡Á?¡¤?¨¦¨¨¡À?
+ */
 int unregister_chrdev(unsigned int major, const char * name)
 {
 	if (major >= MAX_CHRDEV)

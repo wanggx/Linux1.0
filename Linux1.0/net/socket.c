@@ -1073,6 +1073,9 @@ sock_init(void)
   int i;
 
   /* Set up our SOCKET VFS major device. */
+/* 注册网络设备读写函数，在Linux系统当中所有的设备操作都被
+ * 当成对文件系统的操作
+ */
   if (register_chrdev(SOCKET_MAJOR, "socket", &net_fops) < 0) {
 	printk("NET: cannot register major device %d!\n", SOCKET_MAJOR);
 	return;
@@ -1085,6 +1088,9 @@ sock_init(void)
   for (i = 0; i < NPROTO; ++i) pops[i] = NULL;
 
   /* Initialize the DDI module. */
+
+/* 设备驱动接口模块
+ */
   ddi_init();
 
   /* Initialize the ARP module. */

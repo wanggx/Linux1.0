@@ -48,6 +48,8 @@
  * 27 - qic117 tape
  */
 
+/* 不同类型的主设备号
+ */
 #define UNNAMED_MAJOR	0
 #define MEM_MAJOR	1
 #define FLOPPY_MAJOR	2

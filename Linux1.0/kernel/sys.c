@@ -406,11 +406,15 @@ asmlinkage int sys_brk(unsigned long brk)
 		return current->brk;
 	newbrk = PAGE_ALIGN(brk);
 	oldbrk = PAGE_ALIGN(current->brk);
+	/*如果相同则不做任何处理*/
 	if (oldbrk == newbrk)
 		return current->brk = brk;
 
 	/*
 	 * Always allow shrinking brk
+	 */
+
+	/* 如果是收缩brk大小则将收缩的部分反映射
 	 */
 	if (brk <= current->brk) {
 		current->brk = brk;

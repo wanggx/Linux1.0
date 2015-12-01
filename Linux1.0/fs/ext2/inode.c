@@ -406,6 +406,9 @@ struct buffer_head * ext2_bread (struct inode * inode, int block,
 	return NULL;
 }
 
+/* å¯¹åº”è¶…çº§å—ä¸­inodeçš„è¯»å–å‡½æ•°ï¼Œä¹Ÿå°±æ˜¯ä»
+ * ç¡¬ç›˜ä¸­è¯»å–æ–‡ä»¶inodeä¿¡æ¯ï¼ŒåŒæ—¶è®¾ç½®inodeï¼Œfileçš„æ“ä½œå‡½æ•°
+ */
 void ext2_read_inode (struct inode * inode)
 {
 	struct buffer_head * bh;
@@ -443,8 +446,8 @@ void ext2_read_inode (struct inode * inode)
 			    "inode=%lu, block=%lu", inode->i_ino, block);
 	raw_inode = ((struct ext2_inode *) bh->b_data) +
 		(inode->i_ino - 1) % EXT2_INODES_PER_BLOCK(inode->i_sb);
-	/* ´Ó´ÅÅÌÖĞ¶ÁÈ¡µÄext2ÎÄ¼şÏµÍ³ÖĞÎÄ¼şµÄinodeµÄÊı¾İ
-	 * ²¢¸³Öµ
+	/* ä»ç£ç›˜ä¸­è¯»å–çš„ext2æ–‡ä»¶ç³»ç»Ÿä¸­æ–‡ä»¶çš„inodeçš„æ•°æ®
+	 * å¹¶èµ‹å€¼
 	 */
 	inode->i_mode = raw_inode->i_mode;
 	inode->i_uid = raw_inode->i_uid;
@@ -476,7 +479,7 @@ void ext2_read_inode (struct inode * inode)
 		inode->u.ext2_i.i_data[block] = raw_inode->i_block[block];
 	brelse (bh);
 	inode->i_op = NULL;
-	/* Í¨¹ıÅĞ¶ÏÎÄ¼şÀàĞÍÀ´ÉèÖÃÎÄ¼şµÄ¶ÁĞ´º¯Êı
+	/* é€šè¿‡åˆ¤æ–­æ–‡ä»¶ç±»å‹æ¥è®¾ç½®æ–‡ä»¶çš„è¯»å†™å‡½æ•°
 	 */
 	if (inode->i_ino == EXT2_ACL_IDX_INO ||
 	    inode->i_ino == EXT2_ACL_DATA_INO)
@@ -555,14 +558,14 @@ static struct buffer_head * ext2_update_inode (struct inode * inode)
 	else for (block = 0; block < EXT2_N_BLOCKS; block++)
 		raw_inode->i_block[block] = inode->u.ext2_i.i_data[block];
 	bh->b_dirt = 1;
-	/* Ğ´ÍêÖ®ºóinode¾Í²»ÊÇÔàµÄÁË£¬
-	 * ×¢Òâ´ËÊ±inode²¢Ã»ÓĞĞ´µ½´ÅÅÌÉÏ£¬½ö½öÊÇÔÚ¸ßËÙ»º´æ
+	/* ÃÂ´ÃÃªÃ–Â®ÂºÃ³inodeÂ¾ÃÂ²Â»ÃŠÃ‡Ã”Ã ÂµÃ„ÃÃ‹Â£Â¬
+	 * Ã—Â¢Ã’Ã¢Â´Ã‹ÃŠÂ±inodeÂ²Â¢ÃƒÂ»Ã“ÃÃÂ´ÂµÂ½Â´Ã…Ã…ÃŒÃ‰ÃÂ£Â¬Â½Ã¶Â½Ã¶ÃŠÃ‡Ã”ÃšÂ¸ÃŸÃ‹Ã™Â»ÂºÂ´Ã¦
 	 */
 	inode->i_dirt = 0;  
 	return bh;
 }
 
-/* ½ö½öÊÇĞ´µ½ÁË¸ßËÙ»º³å£¬ext2_sync_inodeº¯Êı²ÅÔÚÕâÖ®ºó½«ÄÚÈİĞ´µ½ÁË´ÅÅÌ */
+/* Â½Ã¶Â½Ã¶ÃŠÃ‡ÃÂ´ÂµÂ½ÃÃ‹Â¸ÃŸÃ‹Ã™Â»ÂºÂ³Ã¥Â£Â¬ext2_sync_inodeÂºÂ¯ÃŠÃ½Â²Ã…Ã”ÃšÃ•Ã¢Ã–Â®ÂºÃ³Â½Â«Ã„ÃšÃˆÃÃÂ´ÂµÂ½ÃÃ‹Â´Ã…Ã…ÃŒ */
 void ext2_write_inode (struct inode * inode)
 {
 	struct buffer_head * bh;
@@ -571,7 +574,7 @@ void ext2_write_inode (struct inode * inode)
 }
 
 
-/* ½«inodeÊı¾İÏßĞ´Èëµ½¸ßËÙ»º´æ£¬È»ºó½«¸ßËÙ»º³åÖĞÊı¾İĞ´Èëµ½´ÅÅÌµ±ÖĞ */
+/* Â½Â«inodeÃŠÃ½Â¾ÃÃÃŸÃÂ´ÃˆÃ«ÂµÂ½Â¸ÃŸÃ‹Ã™Â»ÂºÂ´Ã¦Â£Â¬ÃˆÂ»ÂºÃ³Â½Â«Â¸ÃŸÃ‹Ã™Â»ÂºÂ³Ã¥Ã–ÃÃŠÃ½Â¾ÃÃÂ´ÃˆÃ«ÂµÂ½Â´Ã…Ã…ÃŒÂµÂ±Ã–Ã */
 int ext2_sync_inode (struct inode *inode)
 {
 	int err = 0;
