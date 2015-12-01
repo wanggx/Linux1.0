@@ -12,7 +12,9 @@ struct shmid_ds {
 	unsigned short	shm_lpid;	/* pid of last operator */
 	short	shm_nattch;		/* no. of current attaches */
 	/* the following are private */
+	/* 共享内存有多少页 */
 	unsigned short   shm_npages;  /* size of segment (pages) */
+	/* 每页共享内存的地址 */
 	unsigned long   *shm_pages;   /* array of ptrs to frames -> SHMMAX */ 
 	struct shm_desc *attaches;    /* descriptors for attaches */
 };
@@ -99,7 +101,9 @@ struct	shm_desc {
 	unsigned long shm_sgn;        /* signature for this attach */
 	unsigned long start;   /* virt addr of attach, multiple of SHMLBA */
 	unsigned long end;            /* multiple of SHMLBA */
+	/* 这条链表为进程所用 */
 	struct shm_desc *task_next;   /* next attach for task */
+	/* 这条链表为共享内存集使用 */
 	struct shm_desc *seg_next;    /* next attach for segment */
 };
 

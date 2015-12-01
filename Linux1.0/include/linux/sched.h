@@ -227,8 +227,14 @@ struct task_struct {
 	/* 虚拟地址链，在地址链表中，
 	 * 地址空间是按照从小到大的顺序来存放的
 	 */
-	struct vm_area_struct * mmap;  
+	struct vm_area_struct * mmap;
+	/* 进程的共享内存列表
+	 */
 	struct shm_desc *shm;
+	/* 进程的undo信号列表，也就是在进程退出的时候
+	 * 将进程信号量占用的资源给释放掉，不然需要该资源的
+	 * 其他进程无法得到资源，导致资源乱费
+	 */
 	struct sem_undo *semun;
 	struct file * filp[NR_OPEN];
 	/* 当子进程执行exec族函数替换子进程时，表示需要关闭的文件描述符

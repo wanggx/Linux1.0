@@ -23,6 +23,7 @@ static int msghdrs = 0;
 static unsigned short msg_seq = 0;
 static int used_queues = 0;
 static int max_msqid = 0;
+/* 消息的全局等待队列 */
 static struct wait_queue *msg_lock = NULL;
 
 void msg_init (void)
@@ -207,7 +208,7 @@ int sys_msgrcv (int msqid, struct msgbuf *msgp, int msgsz, long msgtyp,
 	return -1;
 }
 
-
+/* 找到为key的消息 */
 static int findkey (key_t key)
 {
 	int id;
@@ -231,6 +232,7 @@ static int newque (key_t key, int msgflg)
 	struct ipc_perm *ipcp;
 
 	for (id=0; id < MSGMNI; id++) 
+		/* 找到一个可用的 */
 		if (msgque[id] == IPC_UNUSED) {
 			msgque[id] = (struct msqid_ds *) IPC_NOID;
 			goto found;
@@ -262,6 +264,7 @@ found:
 		max_msqid = id;
 	msgque[id] = msq;
 	used_queues++;
+	/* 和共享内存里面道理差不多 */
 	if (msg_lock)
 		wake_up (&msg_lock);
 	return (int) msg_seq * MSGMNI + id;

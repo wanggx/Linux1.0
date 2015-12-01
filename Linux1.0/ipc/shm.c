@@ -20,11 +20,12 @@ static int newseg (key_t key, int shmflg, int size);
 static int shm_map (struct shm_desc *shmd, int remap);
 static void killseg (int id);
 
+/* 共享内存在内存当中占用的总页数 */
 static int shm_tot = 0;  /* total number of shared memory pages */
 static int shm_rss = 0; /* number of shared memory pages that are in memory */
 static int shm_swp = 0; /* number of shared memory pages that are in swap */
 static int max_shmid = 0; /* every used id is <= max_shmid */
-static struct wait_queue *shm_lock = NULL;
+static struct wait_queue *shm_lock = NULL; /* 等待使用共享内存的列表 */
 static struct shmid_ds *shm_segs[SHMMNI];
 
 static unsigned short shm_seq = 0; /* incremented, for recognizing stale ids */
@@ -45,6 +46,7 @@ void shm_init (void)
 	return;
 }
 
+/* 找为key的共享内存 */
 static int findkey (key_t key)    
 {
 	int id;
@@ -64,9 +66,14 @@ static int findkey (key_t key)
 /* 
  * allocate new shmid_ds and pgtable. protected by shm_segs[id] = NOID.
  */
+/* 在这个函数当中仅仅是初始化了共享内存的数据结构，
+ * 并没有给共享内存分配实际的物理内存，只有在实际使用的时候
+ * 才会分配
+ */
 static int newseg (key_t key, int shmflg, int size)
 {
 	struct shmid_ds *shp;
+	/* 共享的内存要正好是一整页 */
 	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
 	int id, i;
 
@@ -99,6 +106,7 @@ found:
 		return -ENOMEM;
 	}
 
+	/* 将共享内存的物理页地址都设置为0，在使用时才会分配，并相应的赋值 */
 	for (i=0; i< numpages; shp->shm_pages[i++] = 0);
 	shm_tot += numpages;
 	shp->shm_perm.key = key;
@@ -118,11 +126,15 @@ found:
 		max_shmid = id;
 	shm_segs[id] = shp;
 	used_segs++;
+	/* 当改变共享内存集中某一项为IPC_NOID时，
+	 * 唤醒另一个正在执行findkey的进程
+	 */
 	if (shm_lock)
 		wake_up (&shm_lock);
 	return id + (int)shm_seq*SHMMNI;
 }
 
+/* 获取一段共享内存 */
 int sys_shmget (key_t key, int size, int shmflg)
 {
 	struct shmid_ds *shp;
@@ -167,6 +179,7 @@ static void killseg (int id)
 	shp->shm_perm.seq++;     /* for shmat */
 	numpages = shp->shm_npages; 
 	shm_seq++;
+	/*从新设置共享内存集为空*/
 	shm_segs[id] = (struct shmid_ds *) IPC_UNUSED;
 	used_segs--;
 	if (id == max_shmid) 
@@ -175,6 +188,8 @@ static void killseg (int id)
 		printk ("shm nono: killseg shp->pages=NULL. id=%d\n", id);
 		return;
 	}
+
+	/* 将共享内存的所有物理页给释放掉 */
 	for (i=0; i< numpages ; i++) {
 		if (!(page = shp->shm_pages[i]))
 			continue;
@@ -335,7 +350,9 @@ static int shm_map (struct shm_desc *shmd, int remap)
 	unsigned long page_dir = shmd->task->tss.cr3;
 	
 	/* check that the range is unmapped and has page_tables */
+	/* 处理共享内存的所有页，如果该线性地址已经被映射，则从新映射，如果不是从新映射则返回无效 */
 	for (tmp = shmd->start; tmp < shmd->end; tmp += PAGE_SIZE) { 
+		/* 获取页目录表中的项 */
 		page_table = PAGE_DIR_OFFSET(page_dir,tmp);
 		if (*page_table & PAGE_PRESENT) {
 			page_table = (ulong *) (PAGE_MASK & *page_table);
@@ -353,24 +370,27 @@ static int shm_map (struct shm_desc *shmd, int remap)
 			}
 			continue;
 		}  
-	      {
-		unsigned long new_pt;
-		if(!(new_pt = get_free_page(GFP_KERNEL)))	/* clearing needed?  SRB. */
-			return -ENOMEM;
-		*page_table = new_pt | PAGE_TABLE;
-		tmp |= ((PAGE_SIZE << 10) - PAGE_SIZE);
-	}}
+	    {
+			/* 如果线性地址映射的页表不在内存当中，则申请一个页表 */
+			unsigned long new_pt;
+			if(!(new_pt = get_free_page(GFP_KERNEL)))	/* clearing needed?  SRB. */
+				return -ENOMEM;
+			*page_table = new_pt | PAGE_TABLE;
+			tmp |= ((PAGE_SIZE << 10) - PAGE_SIZE);
+		}
+	}
 	if (invalid)
 		invalidate();
 
 	/* map page range */
 	shm_sgn = shmd->shm_sgn;
+	/* 开始映射线性地址 */
 	for (tmp = shmd->start; tmp < shmd->end; tmp += PAGE_SIZE, 
 	     shm_sgn += (1 << SHM_IDX_SHIFT)) { 
 		page_table = PAGE_DIR_OFFSET(page_dir,tmp);
 		page_table = (ulong *) (PAGE_MASK & *page_table);
 		page_table += (tmp >> PAGE_SHIFT) & (PTRS_PER_PAGE-1);
-		*page_table = shm_sgn;
+		*page_table = shm_sgn;  /* 内存并没有实际分配，只是给了一个标记而已 */
 	}
 	return 0;
 }
@@ -379,6 +399,11 @@ static int shm_map (struct shm_desc *shmd, int remap)
  * Fix shmaddr, allocate descriptor, map shm, add attach descriptor to lists.
  * raddr is needed to return addresses above 2Gig.
  * Specific attaches are allowed over the executable....
+ */
+
+/* 将共享内存映射到进程的地址空间 
+ * shmid共享内存标识符
+ * shmaddr线性地址
  */
 int sys_shmat (int shmid, char *shmaddr, int shmflg, ulong *raddr)
 {
@@ -401,11 +426,13 @@ int sys_shmat (int shmid, char *shmaddr, int shmflg, ulong *raddr)
 	if (shp == IPC_UNUSED || shp == IPC_NOID)
 		return -EINVAL;
 
+	/*如果指定线性地址为0，则系统来选择一个地址 */
 	if (!(addr = (ulong) shmaddr)) {
 		if (shmflg & SHM_REMAP)
 			return -EINVAL;
 		/* set addr below  all current unspecified attaches */
 		addr = SHM_RANGE_END; 
+		/* 扫描进程的共享链表 */
 		for (shmd = current->shm; shmd; shmd = shmd->task_next) {
 			if (shmd->start < SHM_RANGE_START)
 				continue;
@@ -435,6 +462,7 @@ int sys_shmat (int shmid, char *shmaddr, int shmflg, ulong *raddr)
 	if (shp->shm_perm.seq != shmid / SHMMNI) 
 		return -EIDRM;
 
+	/* 分配一个新的共享内存描述符 */
 	shmd = (struct shm_desc *) kmalloc (sizeof(*shmd), GFP_KERNEL);
 	if (!shmd)
 		return -ENOMEM;
@@ -461,7 +489,8 @@ int sys_shmat (int shmid, char *shmaddr, int shmflg, ulong *raddr)
 		kfree_s (shmd, sizeof (*shmd));
 		return err;
 	}
-		
+
+	/*将新的共享内存段，添加到进程共享链表和内核共享集的共享内存链表中*/
 	shmd->task_next = current->shm;
 	current->shm = shmd;
 	shmd->seg_next = shp->attaches;
@@ -496,10 +525,12 @@ static void detach (struct shm_desc **shmdp)
  	printk("detach: shm segment (id=%d) attach list inconsistent\n",id);
 	
  found:
+ 	/* 解除共享内存的线性地址映射 */
 	unmap_page_range (shmd->start, shp->shm_segsz); /* sleeps */
 	kfree_s (shmd, sizeof (*shmd));
   	shp->shm_lpid = current->pid;
 	shp->shm_dtime = CURRENT_TIME;
+	/* 如果共享内存集的所有内存都被分离，则释放该共享集 */
 	if (--shp->shm_nattch <= 0 && shp->shm_perm.mode & SHM_DEST)
 		killseg (id); /* sleeps */
   	return;
@@ -509,11 +540,15 @@ static void detach (struct shm_desc **shmdp)
  * detach and kill segment if marked destroyed.
  * The work is done in detach.
  */
+
+/* 断开共享内存和地址空间的映射
+ */
 int sys_shmdt (char *shmaddr)
 {
 	struct shm_desc *shmd, **shmdp;	
 	
 	for (shmdp = &current->shm; (shmd = *shmdp); shmdp=&shmd->task_next) { 
+		/* 找到进程的内存共享段 */
 		if (shmd->start == (ulong) shmaddr) {
 			detach (shmdp);
 			return 0;
