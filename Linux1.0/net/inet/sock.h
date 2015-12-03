@@ -170,6 +170,7 @@ struct sock {
   
 };
 
+/* 具体网络协议的操作函数 */
 struct proto {
   struct sk_buff *	(*wmalloc)(struct sock *sk,
 				    unsigned long size, int force,
@@ -227,7 +228,7 @@ struct proto {
   unsigned short	max_header;
   unsigned long		retransmits;
   struct sock *		sock_array[SOCK_ARRAY_SIZE];
-  char			name[80];
+  char			name[80];   /* 协议名称如TCP,UDP等等 */
 };
 
 #define TIME_WRITE	1

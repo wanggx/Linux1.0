@@ -15,6 +15,8 @@
 #include <linux/fcntl.h>
 #include <linux/errno.h>
 
+
+/* 设备结构体 name为设备名称，fops为设备的文件操作函数 */
 struct device_struct {
 	const char * name;
 	struct file_operations * fops;
@@ -28,6 +30,7 @@ static struct device_struct blkdevs[MAX_BLKDEV] = {
 	{ NULL, NULL },
 };
 
+/* 获取块设备的文件操作函数*/
 struct file_operations * get_blkfops(unsigned int major)
 {
 	if (major >= MAX_BLKDEV)
@@ -35,6 +38,7 @@ struct file_operations * get_blkfops(unsigned int major)
 	return blkdevs[major].fops;
 }
 
+/* 获取字符设备的文件操作函数*/
 struct file_operations * get_chrfops(unsigned int major)
 {
 	if (major >= MAX_CHRDEV)
@@ -42,9 +46,10 @@ struct file_operations * get_chrfops(unsigned int major)
 	return chrdevs[major].fops;
 }
 
-/* ×￠2á×?·?éè±?μ????t2ù×÷oˉêy
- * majorê??÷éè±?o?
- * nameéè±???3?
+/* 注册字符设备的名称和文件操作函数
+ * major为主设备号
+ * name设备名称
+ * fops设备文件操作函数
  */
 int register_chrdev(unsigned int major, const char * name, struct file_operations *fops)
 {
@@ -57,8 +62,12 @@ int register_chrdev(unsigned int major, const char * name, struct file_operation
 	return 0;
 }
 
-/* ?ééè±????t?áD′oˉêy
+/* 注册块设备的名称和文件操作函数
+ * major为主设备号
+ * name设备名称
+ * fops设备文件操作函数
  */
+
 int register_blkdev(unsigned int major, const char * name, struct file_operations *fops)
 {
 	if (major >= MAX_BLKDEV)
@@ -70,7 +79,7 @@ int register_blkdev(unsigned int major, const char * name, struct file_operation
 	return 0;
 }
 
-/* ·′×￠2á×?·?éè±?
+/* 取消字符设备注册
  */
 int unregister_chrdev(unsigned int major, const char * name)
 {

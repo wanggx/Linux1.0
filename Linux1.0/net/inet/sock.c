@@ -1810,7 +1810,7 @@ inet_fioctl(struct inode *inode, struct file *file,
 }
 
 
-
+/* 这个文件操作和net_fops有啥区别?*/
 
 static struct file_operations inet_fops = {
   NULL,		/* LSEEK	*/
@@ -1854,6 +1854,9 @@ static struct proto_ops inet_proto_ops = {
 extern unsigned long seq_offset;
 
 /* Called by ddi.c on kernel startup.  */
+
+/* AF_INET族协议初始化
+ */
 void inet_proto_init(struct ddi_proto *pro)
 {
   struct inet_protocol *p;
@@ -1879,6 +1882,7 @@ void inet_proto_init(struct ddi_proto *pro)
 	raw_prot.sock_array[i] = NULL;
   }
   printk("IP Protocols: ");
+  /*将静态变量组成的一个链进行初始化，全部添加到inet_protocol协议数组当中*/
   for(p = inet_protocol_base; p != NULL;) {
 	struct inet_protocol *tmp;
 

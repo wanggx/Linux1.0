@@ -26,6 +26,7 @@ static int max_msqid = 0;
 /* 消息的全局等待队列 */
 static struct wait_queue *msg_lock = NULL;
 
+/* 消息初始化 */
 void msg_init (void)
 {
 	int id;

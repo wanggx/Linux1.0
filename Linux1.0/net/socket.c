@@ -1046,8 +1046,10 @@ static struct file_operations net_fops = {
  * advertise its address family, and have it linked into the
  * SOCKET module.
  */
-int
-sock_register(int family, struct proto_ops *ops)
+
+/* 注册不同地址族的协议操作函数
+ */
+int sock_register(int family, struct proto_ops *ops)
 {
   int i;
 

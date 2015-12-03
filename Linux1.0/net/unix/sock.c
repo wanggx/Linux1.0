@@ -924,9 +924,8 @@ static struct proto_ops unix_proto_ops = {
   NULL				/* unix_proto_fcntl	*/
 };
 
-
-void
-unix_proto_init(struct ddi_proto *pro)
+/* AF_UNIX族协议操作函数 */
+void unix_proto_init(struct ddi_proto *pro)
 {
   struct unix_proto_data *upd;
 

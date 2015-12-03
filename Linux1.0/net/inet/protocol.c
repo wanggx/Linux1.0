@@ -64,6 +64,10 @@ static struct inet_protocol udp_protocol = {
 };
 
 
+/* 互联网控制信息协议 
+ * internet control message protocol
+ * 基于网络层的一种协议，用来传递查询报文与差错报文的一种协议
+ */
 static struct inet_protocol icmp_protocol = {
   icmp_rcv,		/* ICMP handler		*/
   NULL,			/* ICMP never fragments anyway */
@@ -81,9 +85,8 @@ struct inet_protocol *inet_protos[MAX_INET_PROTOS] = {
   NULL
 };
 
-
-struct inet_protocol *
-inet_get_protocol(unsigned char prot)
+/* 通过协议id获取协议 */
+struct inet_protocol *inet_get_protocol(unsigned char prot)
 {
   unsigned char hash;
   struct inet_protocol *p;
@@ -97,13 +100,14 @@ inet_get_protocol(unsigned char prot)
   return(NULL);
 }
 
-
-void
-inet_add_protocol(struct inet_protocol *prot)
+/* 将prot协议添加到inet_protos协议数组当中
+ */
+void inet_add_protocol(struct inet_protocol *prot)
 {
   unsigned char hash;
   struct inet_protocol *p2;
 
+  /* 注意是通过协议id来hash得到的一个hash数组中的索引的 */
   hash = prot->protocol & (MAX_INET_PROTOS - 1);
   prot ->next = inet_protos[hash];
   inet_protos[hash] = prot;

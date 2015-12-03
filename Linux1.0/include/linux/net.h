@@ -79,8 +79,10 @@ struct socket {
   struct inode		*inode;
 };
 
+/* 获取socket中的inode节点 */
 #define SOCK_INODE(S)	((S)->inode)
 
+/* 协议操作函数，其中family代表地址族 */
 struct proto_ops {
   int	family;
 

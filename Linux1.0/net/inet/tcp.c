@@ -3691,7 +3691,7 @@ int tcp_getsockopt(struct sock *sk, int level, int optname, char *optval, int *o
   	return(0);
 }	
 
-
+/* 注意和struct inet_protocol结构区别 */
 struct proto tcp_prot = {
   sock_wmalloc,
   sock_rmalloc,

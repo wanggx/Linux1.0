@@ -36,6 +36,7 @@
 #include "inet/ax25call.h"
 #endif
 
+/* 设备驱动接口协议 */
 struct ddi_proto protocols[] = {
 #ifdef	CONFIG_UNIX
   { "UNIX",	unix_proto_init	},

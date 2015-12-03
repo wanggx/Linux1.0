@@ -161,8 +161,8 @@ struct buffer_head {
 /* inode中有一部分数据是在磁盘当中的
  */
 struct inode {
-	dev_t		i_dev;
-	unsigned long	i_ino;
+	dev_t		i_dev;			/* 设备号 */
+	unsigned long	i_ino;		/* i节点号 */
 	umode_t		i_mode;
 	nlink_t		i_nlink;
 	uid_t		i_uid;           /*创建文件的用户ID*/
@@ -179,12 +179,12 @@ struct inode {
 	struct super_block * i_sb;      /*对应的超级块*/
 	struct wait_queue * i_wait;
 	struct file_lock * i_flock;
-	struct vm_area_struct * i_mmap;
+	struct vm_area_struct * i_mmap; /* 该文件映射到的虚拟地址段的地址 */
 	struct inode * i_next, * i_prev;     /*空闲双向链表*/
 	struct inode * i_hash_next, * i_hash_prev; /*hash双向链表*/
 	struct inode * i_bound_to, * i_bound_by;
 	struct inode * i_mount;
-	struct socket * i_socket;
+	struct socket * i_socket;  /*如果是网络inode，则指向网络数据*/
 	unsigned short i_count;
 	unsigned short i_flags;
 	unsigned char i_lock;
@@ -192,6 +192,9 @@ struct inode {
 	unsigned char i_pipe;
 	unsigned char i_seek;
 	unsigned char i_update;
+	/* 因为Linux采用的时VFS文件系统，上面数据是所有文件系统都需要使用的数据 
+	 * 下面的数据是相应文件系统对应的特定inode的信息
+	 */
 	union {
 		struct pipe_inode_info pipe_i;
 		struct minix_inode_info minix_i;

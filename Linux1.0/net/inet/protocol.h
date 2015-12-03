@@ -40,11 +40,11 @@ struct inet_protocol {
 				       unsigned long daddr,
 				       unsigned long saddr,
 				       struct inet_protocol *protocol);
-  struct inet_protocol *next;
-  unsigned char		protocol;
+  struct inet_protocol *next;  
+  unsigned char		protocol;  /*不同协议的一个ID,通过枚举来赋值的*/
   unsigned char		copy:1;
   void			*data;
-  char 			*name;
+  char 			*name;	/* 协议名称 */
 };
 
 

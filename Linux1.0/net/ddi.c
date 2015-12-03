@@ -65,8 +65,7 @@ ddi_map(const char *id)
  * system startup.  Its purpose is to walk trough the "devices"
  * table (defined above), and to call all moduled defined in it.
  */
-void
-ddi_init(void)
+void ddi_init(void)
 {
   struct ddi_proto *pro;
   struct ddi_device *dev;
