@@ -71,6 +71,7 @@ struct socket {
   socket_state		state;
   long			flags;
   struct proto_ops	*ops;		/* protocols do most everything	*/
+  /* 这就是socket的协议数据，其实就是struct sock结构 */
   void			*data;		/* protocol data		*/
   struct socket		*conn;		/* server socket connected to	*/
   struct socket		*iconn;		/* incomplete client conn.s	*/

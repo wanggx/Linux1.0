@@ -70,6 +70,8 @@ static struct file_operations socket_file_ops = {
 };
 
 static struct socket sockets[NSOCKETS];
+
+/* 等待使用struct socket结构的进程队列，目前系统中支持的struct sockets结构为NSOCKETS个 */
 static struct wait_queue *socket_wait_free = NULL;
 static struct proto_ops *pops[NPROTO];
 static int net_debug = 0;
@@ -94,8 +96,12 @@ dprintf(int level, char *fmt, ...)
 #endif
 
 /* Obtains the first available file descriptor and sets it up for use. */
-static int
-get_fd(struct inode *inode)
+
+/* 返回socket文件的文件描述符，因为事先已经创建好了inode，
+ * 然后在进程的file数组当中查找一个可用的file，然后相互
+ * 初始化file和inode，最后返回file的索引，即文件描述符
+ */
+static int get_fd(struct inode *inode)
 {
   int fd;
   struct file *file;
@@ -133,17 +139,21 @@ toss_fd(int fd)
   sys_close(fd);		/* the count protects us from iput */
 }
 
-
-struct socket *
-socki_lookup(struct inode *inode)
+/* 根据inode来查找struct socket结构 */
+struct socket *socki_lookup(struct inode *inode)
 {
   struct socket *sock;
 
+  /* 如果当前inode的i_socket不为空，且两者相互指向，则返回 */
   if ((sock = inode->i_socket) != NULL) {
 	if (sock->state != SS_FREE && SOCK_INODE(sock) == inode)
 		return sock;
 	printk("socket.c: uhhuh. stale inode->i_socket pointer\n");
   }
+  /* 如果inode当中没有struct socket的指针，
+    * 则在socket数组中查找socket中inode指向参数inode的项
+    * 如果找到了则返回，否则返回为空。
+    */
   for (sock = sockets; sock <= last_socket; ++sock)
 	if (sock->state != SS_FREE && SOCK_INODE(sock) == inode) {
 		printk("socket.c: uhhuh. Found socket despite no inode->i_socket pointer\n");
@@ -152,7 +162,7 @@ socki_lookup(struct inode *inode)
   return(NULL);
 }
 
-
+/* 根据文件描述符来查找struct socket */
 static inline struct socket *
 sockfd_lookup(int fd, struct file **pfile)
 {
@@ -163,9 +173,10 @@ sockfd_lookup(int fd, struct file **pfile)
   return(socki_lookup(file->f_inode));
 }
 
-
-static struct socket *
-sock_alloc(int wait)
+/* 查找一个空闲的struct socket结构，并初始化相应的关系
+ * 如sock中有inode节点指针，inode中有struct socket指针
+ */
+static struct socket *sock_alloc(int wait)
 {
   struct socket *sock;
 
@@ -208,6 +219,7 @@ sock_alloc(int wait)
 	sti();
 	if (!wait) return(NULL);
 	DPRINTF((net_debug, "NET: sock_alloc: no free sockets, sleeping...\n"));
+	/* 如果没找到，则在socket_wait_free队列中睡眠，当有释放时，则唤醒该进程 */
 	interruptible_sleep_on(&socket_wait_free);
 	if (current->signal & ~current->blocked) {
 		DPRINTF((net_debug, "NET: sock_alloc: sleep was interrupted\n"));

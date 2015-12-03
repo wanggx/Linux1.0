@@ -1,4 +1,11 @@
----- inet_protocol_base Matches (3 in 3 files) ----
-Protocol.c (net\inet):struct inet_protocol *inet_protocol_base = &icmp_protocol;
-Protocol.h (net\inet):extern struct inet_protocol *inet_protocol_base;
-Sock.c (net\inet):  for(p = inet_protocol_base; p != NULL;) {
+---- sock_socket Matches (10 in 1 files) ----
+Socket.c (net):sock_socket(int family, int type, int protocol)
+Socket.c (net):	"NET: sock_socket: family = %d, type = %d, protocol = %d\n",
+Socket.c (net):	DPRINTF((net_debug, "NET: sock_socket: family not found\n"));
+Socket.c (net):	printk("sock_socket: no more sockets\n");
+Socket.c (net):sock_socketpair(int family, int type, int protocol, unsigned long usockvec[2])
+Socket.c (net):	"NET: sock_socketpair: family = %d, type = %d, protocol = %d\n",
+Socket.c (net):  if ((fd1 = sock_socket(family, type, protocol)) < 0) return(fd1);
+Socket.c (net):  if ((fd2 = sock_socket(family, type, protocol)) < 0) {
+Socket.c (net):		return(sock_socket(get_fs_long(args+0),
+Socket.c (net):		return(sock_socketpair(get_fs_long(args+0),

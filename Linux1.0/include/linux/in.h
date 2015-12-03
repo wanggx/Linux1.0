@@ -35,6 +35,7 @@ enum {
 };
 
 
+/*网络ip地址，long int 正好是4个字节，每个字节的数字范围为0-255*/
 /* Internet address. */
 struct in_addr {
 	unsigned long int	s_addr;

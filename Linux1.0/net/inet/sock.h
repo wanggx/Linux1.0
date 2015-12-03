@@ -87,7 +87,7 @@ struct sock {
 				nonagle;
   unsigned long		        lingertime;
   int				proc;
-  struct sock			*next;
+  struct sock			*next;   /* 形成struct sock的一个链表 */
   struct sock			*pair;
   struct sk_buff		*volatile send_tail;
   struct sk_buff		*volatile send_head;
@@ -98,6 +98,8 @@ struct sock {
   struct sk_buff		*volatile wback,
 				*volatile wfront,
 				*volatile rqueue;
+  /* 不同协议的协议操作函数，注意和struct proto_ops结构区分
+    */
   struct proto			*prot;
   struct wait_queue		**sleep;
   unsigned long			daddr;
@@ -110,7 +112,7 @@ struct sock {
   volatile unsigned short	mss;       /* current eff. mss - can change */
   volatile unsigned short	user_mss;  /* mss requested by user in ioctl */
   volatile unsigned short	max_window;
-  unsigned short		num;
+  unsigned short		num;  		/*对应端口号*/
   volatile unsigned short	cong_window;
   volatile unsigned short	cong_count;
   volatile unsigned short	ssthresh;
@@ -160,6 +162,7 @@ struct sock {
   struct timer_list		timer;
 
   /* identd */
+  /* 协议数据对应的socket指针 */
   struct socket			*socket;
   
   /* Callbacks */
@@ -227,6 +230,7 @@ struct proto {
   				char *optval, int *option);  	 
   unsigned short	max_header;
   unsigned long		retransmits;
+  /* 通过端口号和SOCK_ARRAY_SIZE取与得到索引 */
   struct sock *		sock_array[SOCK_ARRAY_SIZE];
   char			name[80];   /* 协议名称如TCP,UDP等等 */
 };

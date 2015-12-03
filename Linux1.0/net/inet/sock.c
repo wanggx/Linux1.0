@@ -212,8 +212,8 @@ get_new_socknum(struct proto *prot, unsigned short base)
 }
 
 
-void
-put_sock(unsigned short num, struct sock *sk)
+/* num为端口号 */
+void put_sock(unsigned short num, struct sock *sk)
 {
   struct sock *sk1;
   struct sock *sk2;
@@ -232,6 +232,7 @@ put_sock(unsigned short num, struct sock *sk)
 	return;
   }
   sti();
+  /* 最多循环三次 */
   for(mask = 0xff000000; mask != 0xffffffff; mask = (mask >> 8) | mask) {
 	if ((mask & sk->saddr) &&
 	    (mask & sk->saddr) != (mask & 0xffffffff)) {
@@ -266,8 +267,7 @@ put_sock(unsigned short num, struct sock *sk)
 }
 
 
-static void
-remove_sock(struct sock *sk1)
+static void remove_sock(struct sock *sk1)
 {
   struct sock *sk2;
 
@@ -1009,8 +1009,8 @@ inet_release(struct socket *sock, struct socket *peer)
    the rebinding of sockets.   What error
    should it return? */
 
-static int
-inet_bind(struct socket *sock, struct sockaddr *uaddr,
+/* 开始真正的绑定 */
+static int inet_bind(struct socket *sock, struct sockaddr *uaddr,
 	       int addr_len)
 {
   struct sockaddr_in addr;
@@ -1018,6 +1018,7 @@ inet_bind(struct socket *sock, struct sockaddr *uaddr,
   unsigned short snum;
   int err;
 
+  /* 获取协议数据 */
   sk = (struct sock *) sock->data;
   if (sk == NULL) {
 	printk("Warning: sock->data = NULL: %d\n" ,__LINE__);
@@ -1033,6 +1034,7 @@ inet_bind(struct socket *sock, struct sockaddr *uaddr,
   	return err;
   memcpy_fromfs(&addr, uaddr, min(sizeof(addr), addr_len));
 
+  /* 获取绑定地址端口号 */
   snum = ntohs(addr.sin_port);
   DPRINTF((DBG_INET, "bind sk =%X to port = %d\n", sk, snum));
   sk = (struct sock *) sock->data;
@@ -1045,8 +1047,11 @@ inet_bind(struct socket *sock, struct sockaddr *uaddr,
   if (snum == 0) {
 	snum = get_new_socknum(sk->prot, 0);
   }
+
+  /* 只有超级用户才能使用0-1024的端口 */
   if (snum < PROT_SOCK && !suser()) return(-EACCES);
 
+  /* 绑定的地址必须是本机的 */
   if (addr.sin_addr.s_addr!=0 && chk_addr(addr.sin_addr.s_addr)!=IS_MYADDR)
   	return(-EADDRNOTAVAIL);	/* Source address MUST be ours! */
   	

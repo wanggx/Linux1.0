@@ -37,7 +37,7 @@
 #define FREE_READ	1
 #define FREE_WRITE	0
 
-
+/* 套接字缓冲区结构 */
 struct sk_buff {
   unsigned long			magic_debug_cookie;
   struct sk_buff		*volatile next;

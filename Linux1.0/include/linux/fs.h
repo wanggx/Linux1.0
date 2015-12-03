@@ -159,6 +159,7 @@ struct buffer_head {
 
 
 /* inode中有一部分数据是在磁盘当中的
+ * 注意inode中并没有struct file的指针
  */
 struct inode {
 	dev_t		i_dev;			/* 设备号 */
