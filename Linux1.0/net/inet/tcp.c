@@ -142,8 +142,9 @@ static inline void print_th(struct tcphdr *th)
 }
 
 /* This routine grabs the first thing off of a rcv queue. */
-static struct sk_buff *
-get_firstr(struct sock *sk)
+
+/* 获取结构包队列中的第一个sk_buff */
+static struct sk_buff *get_firstr(struct sock *sk)
 {
   return skb_dequeue(&sk->rqueue);
 }
@@ -2884,8 +2885,9 @@ tcp_fin(struct sock *sk, struct tcphdr *th,
 
 
 /* This will accept the next outstanding connection. */
-static struct sock *
-tcp_accept(struct sock *sk, int flags)
+/* sk是监听的sock
+ */
+static struct sock *tcp_accept(struct sock *sk, int flags)
 {
   struct sock *newsk;
   struct sk_buff *skb;
@@ -2897,6 +2899,8 @@ tcp_accept(struct sock *sk, int flags)
    * We need to make sure that this socket is listening,
    * and that it has something pending.
    */
+  /* 如果套接字不是监听状态，则返回
+    */
   if (sk->state != TCP_LISTEN) {
 	sk->err = EINVAL;
 	return(NULL); 
@@ -2905,6 +2909,9 @@ tcp_accept(struct sock *sk, int flags)
   /* avoid the race. */
   cli();
   sk->inuse = 1;
+  /* 获取接收队列的第一个sk_buff，如果没有收到数据，
+   * 则阻塞，循环等待，如果是非阻塞标记，则直接返回NULL
+   */
   while((skb = get_firstr(sk)) == NULL) {
 	if (flags & O_NONBLOCK) {
 		sti();
@@ -2935,8 +2942,12 @@ tcp_accept(struct sock *sk, int flags)
 
 
 /* This will initiate an outgoing connection. */
-static int
-tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
+/* 传输层套接字连接服务器，
+ * sk连接套接字
+ * usin服务器地址
+ * addr_len地址长度
+ */
+static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
 {
   struct sk_buff *buff;
   struct sockaddr_in sin;
@@ -2978,6 +2989,7 @@ tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
   sk->dummy_th.dest = sin.sin_port;
   release_sock(sk);
 
+  /* 分配了一个新的sk_buff */
   buff = sk->prot->wmalloc(sk,MAX_SYN_SIZE,0, GFP_KERNEL);
   if (buff == NULL) {
 	return(-ENOMEM);

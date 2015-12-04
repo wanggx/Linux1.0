@@ -148,23 +148,33 @@ print_skb(struct sk_buff *skb)
 }
 
 
-
-static int
-sk_inuse(struct proto *prot, int num)
+/* 用于检测一个端口号是否已被使用
+ * prot表示传输层操作函数的一个结构
+ * 每个传输层协议都有一个proto结构对应
+ * 所有使用某种协议的套接字均被插入到sock_array数据中
+ * 元素指向的sock结构链表当中
+ */
+static int sk_inuse(struct proto *prot, int num)
 {
   struct sock *sk;
-
+  /* 首先根据端口号hash出一个套接字 */
   for(sk = prot->sock_array[num & (SOCK_ARRAY_SIZE -1 )];
       sk != NULL;
       sk=sk->next) {
+	  /* 如果在端口号对应的sock链中找到了该端口号的sock，
+	    * 则表示该端口已被占用
+	    */
 	if (sk->num == num) return(1);
   }
+  /* 该端口没有占用 */
   return(0);
 }
 
-
-unsigned short
-get_new_socknum(struct proto *prot, unsigned short base)
+/* 获取一个新的空闲端口号 
+ * prot表示所使用的协议，
+ * base表示最小起始端口号
+ */
+unsigned short get_new_socknum(struct proto *prot, unsigned short base)
 {
   static int start=0;
 
@@ -174,15 +184,18 @@ get_new_socknum(struct proto *prot, unsigned short base)
    */
   int i, j;
   int best = 0;
+  /* sock链表的最大长度 */
   int size = 32767; /* a big num. */
   struct sock *sk;
 
+  /* 1024之下的端口号保留，或者必须使用特权才能使用 */
   if (base == 0) base = PROT_SOCK+1+(start % 1024);
   if (base <= PROT_SOCK) {
 	base += PROT_SOCK+(start % 1024);
   }
 
   /* Now look through the entire array and try to find an empty ptr. */
+  /* 从套接字中所有的hash链表中查找 */
   for(i=0; i < SOCK_ARRAY_SIZE; i++) {
 	j = 0;
 	sk = prot->sock_array[(i+base+1) &(SOCK_ARRAY_SIZE -1)];
@@ -190,12 +203,17 @@ get_new_socknum(struct proto *prot, unsigned short base)
 		sk = sk->next;
 		j++;
 	}
+	/* 该端口对应的链尚未使用，可以直接返回端口号 */
 	if (j == 0) {
 		start =(i+1+start )%1024;
 		DPRINTF((DBG_INET, "get_new_socknum returning %d, start = %d\n",
 							i + base + 1, start));
 		return(i+base+1);
 	}
+	/* 否则取最小j值的表项，
+	 * 此处的j代表的是端口号对应表项的长度，
+	 * 也就是找出hash数组中对应链表长度最短的那个项
+	 */
 	if (j < size) {
 		best = i;
 		size = j;
@@ -212,7 +230,11 @@ get_new_socknum(struct proto *prot, unsigned short base)
 }
 
 
-/* num为端口号 */
+/* 因为每一个struct proto结构都有一个sock_array数组，
+ * 该数组是一个hash数组，根据端口号来hash出sock在数组中的
+ * 索引，然后数组中的每一项都是一个单链表
+ * num为端口号 
+ */
 void put_sock(unsigned short num, struct sock *sk)
 {
   struct sock *sk1;
@@ -222,10 +244,12 @@ void put_sock(unsigned short num, struct sock *sk)
   DPRINTF((DBG_INET, "put_sock(num = %d, sk = %X\n", num, sk));
   sk->num = num;
   sk->next = NULL;
+  /* 获取在hash数组中的索引 */
   num = num &(SOCK_ARRAY_SIZE -1);
 
   /* We can't have an interupt re-enter here. */
   cli();
+  /* 如果hash链表的首部为NULL，则直接赋值 */
   if (sk->prot->sock_array[num] == NULL) {
 	sk->prot->sock_array[num] = sk;
 	sti();
@@ -243,6 +267,7 @@ void put_sock(unsigned short num, struct sock *sk)
   DPRINTF((DBG_INET, "mask = %X\n", mask));
 
   cli();
+  /* 使用本地地址掩码进行地址排列 */
   sk1 = sk->prot->sock_array[num];
   for(sk2 = sk1; sk2 != NULL; sk2=sk2->next) {
 	if (!(sk2->saddr & mask)) {
@@ -266,7 +291,7 @@ void put_sock(unsigned short num, struct sock *sk)
   sti();
 }
 
-
+/* 移除一个指定sock结构 */
 static void remove_sock(struct sock *sk1)
 {
   struct sock *sk2;
@@ -284,17 +309,22 @@ static void remove_sock(struct sock *sk1)
 
   /* We can't have this changing out from under us. */
   cli();
+  /* 使用sock的端口号hash出sock在sock_array中的位置，
+   * 并取得hash链表的链首
+   */
   sk2 = sk1->prot->sock_array[sk1->num &(SOCK_ARRAY_SIZE -1)];
+  /* 如果找到了，则sk1从链表首部删除，将下一个sock作为首部 */
   if (sk2 == sk1) {
 	sk1->prot->sock_array[sk1->num &(SOCK_ARRAY_SIZE -1)] = sk1->next;
 	sti();
 	return;
   }
 
+  /* 开始搜索hash链表 */	
   while(sk2 && sk2->next != sk1) {
 	sk2 = sk2->next;
   }
-
+  /* 如果找到了，则更改链表关系，也就是将sk1从单链表中删除 */	
   if (sk2) {
 	sk2->next = sk1->next;
 	sti();
@@ -305,9 +335,9 @@ static void remove_sock(struct sock *sk1)
   if (sk1->num != 0) DPRINTF((DBG_INET, "remove_sock: sock not found.\n"));
 }
 
-
-void
-destroy_sock(struct sock *sk)
+/* 这里是真正意义上的销毁套接字了
+ */
+void destroy_sock(struct sock *sk)
 {
 	struct sk_buff *skb;
 
@@ -704,9 +734,8 @@ int sock_getsockopt(struct sock *sk, int level, int optname,
 
 
 
-
-static int
-inet_listen(struct socket *sock, int backlog)
+/* 开始监听套接字，并没有什么特别操作，只是将sock的状态修改了 */
+static int inet_listen(struct socket *sock, int backlog)
 {
   struct sock *sk;
 
@@ -750,9 +779,8 @@ static void def_callback2(struct sock *sk,int len)
 		wake_up_interruptible(sk->sleep);
 }
 
-
-static int
-inet_create(struct socket *sock, int protocol)
+/* 根据协议来创建传输层套接字 */
+static int inet_create(struct socket *sock, int protocol)
 {
   struct sock *sk;
   struct proto *prot;
@@ -901,6 +929,7 @@ inet_create(struct socket *sock, int protocol)
   sk->timer.function = &net_timer;
   sk->back_log = NULL;
   sk->blog = 0;
+  /* 指定套接字的协议数据，此时的套接字数据仅仅是被初始化 */
   sock->data =(void *) sk;
   sk->dummy_th.doff = sizeof(sk->dummy_th)/4;
   sk->dummy_th.res1=0;
@@ -922,6 +951,9 @@ inet_create(struct socket *sock, int protocol)
   sk->write_space = def_callback1;
   sk->error_report = def_callback1;
 
+  /* 在创建套接字的时候，就把套接字对应的sock加入到协议的
+    * hash结构当中
+    */
   if (sk->num) {
 	/*
 	 * It assumes that any protocol which allows
@@ -943,9 +975,8 @@ inet_create(struct socket *sock, int protocol)
   return(0);
 }
 
-
-static int
-inet_dup(struct socket *newsock, struct socket *oldsock)
+/* 复制一个socket结构，其实就是创建一个新的socket */
+static int inet_dup(struct socket *newsock, struct socket *oldsock)
 {
   return(inet_create(newsock,
 		   ((struct sock *)(oldsock->data))->protocol));
@@ -1044,6 +1075,7 @@ static int inet_bind(struct socket *sock, struct sockaddr *uaddr,
    * be bound to a privileged port. However, since there seems to
    * be a bug here, we will leave it if the port is not privileged.
    */
+  /* 如果没有指定端口号，则系统自定获取一个空闲端口号 */
   if (snum == 0) {
 	snum = get_new_socknum(sk->prot, 0);
   }
@@ -1064,6 +1096,7 @@ static int inet_bind(struct socket *sock, struct sockaddr *uaddr,
   /* Make sure we are allowed to bind here. */
   cli();
 outside_loop:
+  /* 依次扫描端口号对应的hash链表 */
   for(sk2 = sk->prot->sock_array[snum & (SOCK_ARRAY_SIZE -1)];
 					sk2 != NULL; sk2 = sk2->next) {
 #if 	1	/* should be below! */
@@ -1181,9 +1214,11 @@ inet_socketpair(struct socket *sock1, struct socket *sock2)
   return(-EOPNOTSUPP);
 }
 
-
-static int
-inet_accept(struct socket *sock, struct socket *newsock, int flags)
+/* sock监听的套接字
+ * newsock是accept中分配的的新的套接字
+ * 返回0表示成功
+ */
+static int inet_accept(struct socket *sock, struct socket *newsock, int flags)
 {
   struct sock *sk1, *sk2;
   int err;
@@ -1199,6 +1234,8 @@ inet_accept(struct socket *sock, struct socket *newsock, int flags)
    * We need to free it up because the tcp module creates
    * it's own when it accepts one.
    */
+
+  /* 释放新套接字的协议数据 */
   if (newsock->data) kfree_s(newsock->data, sizeof(struct sock));
   newsock->data = NULL;
 
@@ -1580,9 +1617,10 @@ inet_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
   return(0);
 }
 
-
-struct sk_buff *
-sock_wmalloc(struct sock *sk, unsigned long size, int force,
+/* 可以通过force=1来设置强制打破这个sndbuf这个限制
+ * 分配成功后，增加sk->wmem_alloc数量
+ */
+struct sk_buff *sock_wmalloc(struct sock *sk, unsigned long size, int force,
 	     int priority)
 {
   if (sk) {
@@ -1650,15 +1688,17 @@ sock_wspace(struct sock *sk)
   return(0);
 }
 
-
-void
-sock_wfree(struct sock *sk, void *mem, unsigned long size)
+/* 释放sk_buff 同时减少sock中sk_buff占用内存大小
+ */
+void sock_wfree(struct sock *sk, void *mem, unsigned long size)
 {
   DPRINTF((DBG_INET, "sock_wfree(sk=%X, mem=%X, size=%d)\n", sk, mem, size));
 
   IS_SKB(mem);
+  /* 释放mem处size大小的内存 */
   kfree_skbmem(mem, size);
   if (sk) {
+  	/* 减少sock中sk_buff大小 */
 	sk->wmem_alloc -= size;
 
 	/* In case it might be waiting for more memory. */
@@ -1881,6 +1921,7 @@ void inet_proto_init(struct ddi_proto *pro)
   seq_offset = CURRENT_TIME*250;
 
   /* Add all the protocols. */
+  /* 将各种协议的套接字数组置空，也就是协议的套接字链表为空 */
   for(i = 0; i < SOCK_ARRAY_SIZE; i++) {
 	tcp_prot.sock_array[i] = NULL;
 	udp_prot.sock_array[i] = NULL;

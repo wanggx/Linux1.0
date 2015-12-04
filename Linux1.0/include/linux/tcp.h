@@ -22,7 +22,7 @@
 
 
 struct tcphdr {
-  unsigned short	source;
+  unsigned short	source;  /* ¶Ë¿ÚºÅ */
   unsigned short	dest;
   unsigned long		seq;
   unsigned long		ack_seq;

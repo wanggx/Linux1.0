@@ -237,9 +237,8 @@ sock_release_peer(struct socket *peer)
   wake_up_interruptible(peer->wait);
 }
 
-
-static void
-sock_release(struct socket *sock)
+/* 释放一个socket结构，并唤醒socket_wait_free队列 */
+static void sock_release(struct socket *sock)
 {
   int oldstate;
   struct inode *inode;
@@ -479,6 +478,7 @@ sock_socket(int family, int type, int protocol)
   }
   sock->type = type;
   sock->ops = ops;
+  /* 根据不同的协议族函数集来创建socket */
   if ((i = sock->ops->create(sock, protocol)) < 0) {
 	sock_release(sock);
 	return(i);
@@ -576,6 +576,7 @@ sock_listen(int fd, int backlog)
   DPRINTF((net_debug, "NET: sock_listen: fd = %d\n", fd));
   if (fd < 0 || fd >= NR_OPEN || current->filp[fd] == NULL)
 								return(-EBADF);
+  /* 找到文件描述符的socket结构 */
   if (!(sock = sockfd_lookup(fd, NULL))) return(-ENOTSOCK);
   if (sock->state != SS_UNCONNECTED) {
 	DPRINTF((net_debug, "NET: sock_listen: socket isn't unconnected\n"));
@@ -592,8 +593,9 @@ sock_listen(int fd, int backlog)
  * with the client, wake up the client, then return the new
  * connected fd.
  */
-static int
-sock_accept(int fd, struct sockaddr *upeer_sockaddr, int *upeer_addrlen)
+/* fd是监听的套接字
+ */
+static int sock_accept(int fd, struct sockaddr *upeer_sockaddr, int *upeer_addrlen)
 {
   struct file *file;
   struct socket *sock, *newsock;
@@ -602,7 +604,8 @@ sock_accept(int fd, struct sockaddr *upeer_sockaddr, int *upeer_addrlen)
   DPRINTF((net_debug, "NET: sock_accept: fd = %d\n", fd));
   if (fd < 0 || fd >= NR_OPEN || ((file = current->filp[fd]) == NULL))
 								return(-EBADF);
-  
+
+  /* 找到监听fd的socket结构 */
   if (!(sock = sockfd_lookup(fd, &file))) return(-ENOTSOCK);
   if (sock->state != SS_UNCONNECTED) {
 	DPRINTF((net_debug, "NET: sock_accept: socket isn't unconnected\n"));
@@ -614,10 +617,12 @@ sock_accept(int fd, struct sockaddr *upeer_sockaddr, int *upeer_addrlen)
 	return(-EINVAL);
   }
 
+	/* 非阻塞的获取一个socket结构 */
   if (!(newsock = sock_alloc(0))) {
 	printk("NET: sock_accept: no more sockets\n");
 	return(-EAGAIN);
   }
+  /* 两个socket的类型，协议族操作函数相同 */
   newsock->type = sock->type;
   newsock->ops = sock->ops;
   if ((i = sock->ops->dup(newsock, sock)) < 0) {
@@ -631,6 +636,7 @@ sock_accept(int fd, struct sockaddr *upeer_sockaddr, int *upeer_addrlen)
 	return(i);
   }
 
+  /* 给新的socket分配一个文件描述符 */
   if ((fd = get_fd(SOCK_INODE(newsock))) < 0) {
 	sock_release(newsock);
 	return(-EINVAL);
@@ -642,13 +648,18 @@ sock_accept(int fd, struct sockaddr *upeer_sockaddr, int *upeer_addrlen)
   if (upeer_sockaddr)
 	newsock->ops->getname(newsock, upeer_sockaddr, upeer_addrlen, 1);
 
+  /* 返回新的socket文件描述符 */
   return(fd);
 }
 
 
 /* Attempt to connect to a socket with the server address. */
-static int
-sock_connect(int fd, struct sockaddr *uservaddr, int addrlen)
+/* 去连接服务器
+ * fd是连接套接字的文件描述符
+ * uservaddr是服务器地址
+ * addrlen地址长度
+ */
+static int sock_connect(int fd, struct sockaddr *uservaddr, int addrlen)
 {
   struct socket *sock;
   struct file *file;
@@ -675,6 +686,7 @@ sock_connect(int fd, struct sockaddr *uservaddr, int addrlen)
 			"NET: sock_connect: socket not unconnected\n"));
 		return(-EINVAL);
   }
+  /* 开始真正的连接服务器 */
   i = sock->ops->connect(sock, uservaddr, addrlen, file->f_flags);
   if (i < 0) {
 	DPRINTF((net_debug, "NET: sock_connect: connect failed\n"));

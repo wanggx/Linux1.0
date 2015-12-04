@@ -44,14 +44,17 @@
 /*
  *	Resource tracking variables
  */
-
+ 
+/* 系统中sk_buff占用的内存大大小
+ */
 volatile unsigned long net_memory=0;
+/* 系统中sk_buff的数量
+ */
 volatile unsigned long net_skbcount=0;
 
 /*
  *	Debugging paranoia. Can go later when this crud stack works
  */
-
 
 
 void skb_check(struct sk_buff *skb, int line, char *file)
@@ -147,6 +150,8 @@ void skb_queue_tail(struct sk_buff *volatile* list, struct sk_buff *newsk)
  *	so you can grab read and free buffers as another process adds them.
  */
 
+/* 将list为队首的双向队列中的第一个给取出
+ */
 struct sk_buff *skb_dequeue(struct sk_buff *volatile* list)
 {
 	long flags;
@@ -162,6 +167,7 @@ struct sk_buff *skb_dequeue(struct sk_buff *volatile* list)
 	}
 
 	result=*list;
+	/* 如果只有一个节点 */
 	if(result->next==result)
 		*list=NULL;
 	else
@@ -178,6 +184,7 @@ struct sk_buff *skb_dequeue(struct sk_buff *volatile* list)
 		printk("Dequeued packet has invalid list pointer\n");
 
 	result->list=0;
+	/* 断开双向连接 */
 	result->next=0;
 	result->prev=0;
 	return(result);
@@ -423,6 +430,7 @@ void kfree_skb(struct sk_buff *skb, int rw)
  *	fields and also do memory statistics to find all the [BEEP] leaks.
  */
 
+/* kmalloc一个sk_buf，并初始化sk_buf数据*/
 struct sk_buff *alloc_skb(unsigned int size,int priority)
 {
 	struct sk_buff *skb;
@@ -454,6 +462,8 @@ struct sk_buff *alloc_skb(unsigned int size,int priority)
  *	Free an skbuff by memory
  */
 
+/* 释放kmalloc申请的内存
+ */
 void kfree_skbmem(void *mem,unsigned size)
 {
 	struct sk_buff *x=mem;

@@ -53,6 +53,9 @@
  */
 struct sock {
   struct options		*opt;
+  /*wmem_alloc是一个计数器，用来累计为本插口分配的sk_buff存储空间，
+    * 一般不应该超过限额sndbuf
+    */
   volatile unsigned long	wmem_alloc;
   volatile unsigned long	rmem_alloc;
   unsigned long			write_seq;
@@ -97,12 +100,15 @@ struct sock {
   long				retransmits;
   struct sk_buff		*volatile wback,
 				*volatile wfront,
-				*volatile rqueue;
+				*volatile rqueue; /* 结构包队列 */
   /* 不同协议的协议操作函数，注意和struct proto_ops结构区分
     */
   struct proto			*prot;
+  /* 如果还没有收到数据，则在该等待队列中等待
+   */
   struct wait_queue		**sleep;
   unsigned long			daddr;
+  /*绑定地址*/
   unsigned long			saddr;
   unsigned short		max_unacked;
   unsigned short		window;
@@ -127,6 +133,7 @@ struct sock {
   volatile unsigned short	backoff;
   volatile short		err;
   unsigned char			protocol;
+  /* 套接字状态 */
   volatile unsigned char	state;
   volatile unsigned char	ack_backlog;
   unsigned char			max_ack_backlog;

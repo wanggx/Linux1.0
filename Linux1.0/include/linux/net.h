@@ -66,6 +66,9 @@ typedef enum {
  * wait		sleep for clients,	sleep for connection,
  *		sleep for i/o		sleep for i/o
  */
+/* BSD socket层对应的套接字结构，这是一个通用的套接字结构
+ * INET socket层则使用的是sock结构，sock比socket复杂好多
+ */
 struct socket {
   short			type;		/* SOCK_STREAM, ...		*/
   socket_state		state;

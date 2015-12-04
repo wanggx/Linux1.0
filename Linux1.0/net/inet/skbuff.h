@@ -40,14 +40,15 @@
 /* 套接字缓冲区结构 */
 struct sk_buff {
   unsigned long			magic_debug_cookie;
+  /* sk_buff是一个双向循环链表 */
   struct sk_buff		*volatile next;
   struct sk_buff		*volatile prev;
   struct sk_buff		*volatile link3;
   struct sk_buff		*volatile* list;
-  struct sock			*sk;
+  struct sock			*sk;     /* 指定这个sk_buff是那个sock的 */
   volatile unsigned long	when;	/* used to compute rtt's	*/
   struct device			*dev;
-  void				*mem_addr;
+  void				*mem_addr; /* 记录自己在内存中地址 */
   union {
 	struct tcphdr	*th;
 	struct ethhdr	*eth;

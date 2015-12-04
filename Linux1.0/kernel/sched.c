@@ -435,6 +435,7 @@ void add_timer(struct timer_list * timer)
 	restore_flags(flags);
 }
 
+/* É¾³ıÊ±ÖÓÁ´±í */
 int del_timer(struct timer_list * timer)
 {
 	unsigned long flags;
