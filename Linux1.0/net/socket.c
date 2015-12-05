@@ -80,8 +80,7 @@ static int net_debug = 0;
 
 #ifdef SOCK_DEBUG
 /* Module debugging. */
-static void
-dprintf(int level, char *fmt, ...)
+static void dprintf(int level, char *fmt, ...)
 {
   char buff[1024];
   va_list args;
@@ -133,8 +132,7 @@ static int get_fd(struct inode *inode)
  * the descriptor, but makes sure it does nothing more. Called when
  * an incomplete socket must be closed, along with sock_release().
  */
-static inline void
-toss_fd(int fd)
+static inline void toss_fd(int fd)
 {
   sys_close(fd);		/* the count protects us from iput */
 }
@@ -163,8 +161,7 @@ struct socket *socki_lookup(struct inode *inode)
 }
 
 /* 根据文件描述符来查找struct socket */
-static inline struct socket *
-sockfd_lookup(int fd, struct file **pfile)
+static inline struct socket *sockfd_lookup(int fd, struct file **pfile)
 {
   struct file *file;
 
@@ -175,6 +172,8 @@ sockfd_lookup(int fd, struct file **pfile)
 
 /* 查找一个空闲的struct socket结构，并初始化相应的关系
  * 如sock中有inode节点指针，inode中有struct socket指针
+ * wait表示在获取socket结构的时候，该函数是不是阻塞的，
+ * wait>0表示阻塞，=0表示非阻塞
  */
 static struct socket *sock_alloc(int wait)
 {
@@ -230,8 +229,10 @@ static struct socket *sock_alloc(int wait)
 }
 
 
-static inline void
-sock_release_peer(struct socket *peer)
+/* 关闭socket连接，并且唤醒所有正在等待使用该socket的进程
+ * 该函数只作用于UNIX域
+ */
+static inline void sock_release_peer(struct socket *peer)
 {
   peer->state = SS_DISCONNECTING;
   wake_up_interruptible(peer->wait);
@@ -246,6 +247,7 @@ static void sock_release(struct socket *sock)
 
   DPRINTF((net_debug, "NET: sock_release: socket 0x%x, inode 0x%x\n",
 						sock, SOCK_INODE(sock)));
+  /* 设置socket的状态为正在关闭连接 */
   if ((oldstate = sock->state) != SS_UNCONNECTED)
 			sock->state = SS_DISCONNECTING;
 
@@ -333,8 +335,7 @@ sock_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 }
 
 
-static int
-sock_select(struct inode *inode, struct file *file, int sel_type, select_table * wait)
+static int sock_select(struct inode *inode, struct file *file, int sel_type, select_table * wait)
 {
   struct socket *sock;
 
@@ -352,9 +353,8 @@ sock_select(struct inode *inode, struct file *file, int sel_type, select_table *
   return(0);
 }
 
-
-void
-sock_close(struct inode *inode, struct file *file)
+/* 关闭socket文件 */
+void sock_close(struct inode *inode, struct file *file)
 {
   struct socket *sock;
 
@@ -367,6 +367,7 @@ sock_close(struct inode *inode, struct file *file)
 	printk("NET: sock_close: can't find socket for inode!\n");
 	return;
   }
+  /* 将socket释放 */
   sock_release(sock);
 }
 

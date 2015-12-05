@@ -72,6 +72,7 @@ struct inode_operations ext2_file_inode_operations = {
 	ext2_permission		/* permission */
 };
 
+/* ext2文件系统的文件读函数 */
 static int ext2_file_read (struct inode * inode, struct file * filp,
 		    char * buf, int count)
 {
@@ -293,6 +294,11 @@ static int ext2_file_write (struct inode * inode, struct file * filp,
  * Called when a inode is released. Note that this is different
  * from ext2_open: open gets called at every open, but release
  * gets called only when /all/ the files are closed.
+ */
+
+/* sys_close关闭文件时，在确定最后需要关闭文件的时候，
+ * 也就是f_count=1
+ * 会调用此函数
  */
 static void ext2_release_file (struct inode * inode, struct file * filp)
 {

@@ -43,7 +43,9 @@
 #define SYS_SETSOCKOPT	14		/* sys_setsockopt(2)		*/
 #define SYS_GETSOCKOPT	15		/* sys_getsockopt(2)		*/
 
-
+/* socket的几种状态 ,
+ * 空闲，未连接，已连接，正在连接，正在关闭
+ */
 typedef enum {
   SS_FREE = 0,				/* not allocated		*/
   SS_UNCONNECTED,			/* unconnected to any socket	*/
@@ -76,9 +78,11 @@ struct socket {
   struct proto_ops	*ops;		/* protocols do most everything	*/
   /* 这就是socket的协议数据，其实就是struct sock结构 */
   void			*data;		/* protocol data		*/
+  /* 在INET域中下面两个指针为NULL */
   struct socket		*conn;		/* server socket connected to	*/
   struct socket		*iconn;		/* incomplete client conn.s	*/
   struct socket		*next;
+  /* 等待使用该socket的进程队列 */
   struct wait_queue	**wait;		/* ptr to place to wait on	*/
   struct inode		*inode;
 };

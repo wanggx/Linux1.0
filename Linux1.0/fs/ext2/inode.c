@@ -131,6 +131,8 @@ static int ext2_alloc_block (struct inode * inode, unsigned long goal)
 }
 
 
+/* 将文件的数据块号block映射到设备的逻辑块号
+ */
 int ext2_bmap (struct inode * inode, int block)
 {
 	int i;

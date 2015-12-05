@@ -160,6 +160,10 @@ struct buffer_head {
 
 /* inode中有一部分数据是在磁盘当中的
  * 注意inode中并没有struct file的指针
+ * 注意inode是VFS中一个重要的结构体，
+ * inode中除了存储一些VFS中必须的数据，
+ * 还存储了特定文件系统中的inode信息，
+ * 如ext2中的struct ext2_inode_info等等
  */
 struct inode {
 	dev_t		i_dev;			/* 设备号 */
@@ -211,10 +215,10 @@ struct inode {
 };
 
 struct file {
-	mode_t f_mode;
+	mode_t f_mode;		    /* 文件不存在时，创建文件的权限 */
 	dev_t f_rdev;			/* needed for /dev/tty */
-	off_t f_pos;
-	unsigned short f_flags;
+	off_t f_pos;            /* 文件读写偏移量 */
+	unsigned short f_flags; /* 以什么样的方式打开文件，如只读，只写等等 */
 	unsigned short f_count;  /*文件的引用计数*/
 	unsigned short f_reada;
 	struct file *f_next, *f_prev;

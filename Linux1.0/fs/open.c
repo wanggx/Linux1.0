@@ -460,6 +460,9 @@ asmlinkage int sys_creat(const char * pathname, int mode)
 	return sys_open(pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
 }
 
+/* 在关闭的时候会考虑两个比较的重要的东西，
+ * f_count和i_count
+ */
 int close_fp(struct file *filp, unsigned int fd)
 {
 	struct inode *inode;
@@ -478,12 +481,17 @@ int close_fp(struct file *filp, unsigned int fd)
 	}
 	if (filp->f_op && filp->f_op->release)
 		filp->f_op->release(inode,filp);
+	/* 设置struct file中的f_count和f_inode指针，
+	 * 此处只是斩断了struct file和struct inode的关系，
+	 * f_inode并不一定就释放了。
+	 */
 	filp->f_count--;
 	filp->f_inode = NULL;
 	iput(inode);
 	return 0;
 }
 
+/* 关闭fd描述符指向的文件，同时将对应的struct file指针设置为NULL */
 asmlinkage int sys_close(unsigned int fd)
 {	
 	struct file * filp;

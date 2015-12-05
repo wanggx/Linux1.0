@@ -1,4 +1,6 @@
----- sys_select Matches (3 in 3 files) ----
-Sched.c (kernel):sys_select, sys_symlink, sys_lstat, sys_readlink, sys_uselib,
-Select.c (fs):asmlinkage int sys_select( unsigned long *buffer )
-Sys.h (include\linux):extern int sys_select();
+---- sock_select Matches (5 in 1 files) ----
+Socket.c (net):static int sock_select(struct inode *inode, struct file *file, int which, select_table *seltable);
+Socket.c (net):  sock_select,
+Socket.c (net):static int sock_select(struct inode *inode, struct file *file, int sel_type, select_table * wait)
+Socket.c (net):  DPRINTF((net_debug, "NET: sock_select: inode = 0x%x, kind = %s\n", inode,
+Socket.c (net):	printk("NET: sock_select: can't find socket for inode!\n");
