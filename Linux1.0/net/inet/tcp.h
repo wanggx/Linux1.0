@@ -78,6 +78,8 @@
  * The next routines deal with comparing 32 bit unsigned ints
  * and worry about wraparound (automatic with unsigned arithmetic).
  */
+
+/* seq1是否在seq2前面，在tcp当中数据是有序号的 */
 static inline int before(unsigned long seq1, unsigned long seq2)
 {
         return (long)(seq1-seq2) < 0;

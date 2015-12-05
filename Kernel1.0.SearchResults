@@ -1,15 +1,4 @@
----- tcp_prot Matches (14 in 6 files) ----
-D_link.c (drivers\net):	extern struct proto tcp_prot;
-D_link.c (drivers\net):	tcp_prot.rspace = d_link_rspace; /* was: sock_rspace */
-D_link.c (drivers\net):	tcp_prot.rspace = sock_rspace; /* see comment above! */
-Proc.c (net\inet):  return get__netinfo(&tcp_prot, buffer,0);
-Protocol.c (net\inet):static struct inet_protocol tcp_protocol = {
-Protocol.c (net\inet):  &tcp_protocol,	/* next			*/
-Sock.c (net\inet):			if (sk->prot == &tcp_prot) 
-Sock.c (net\inet):		prot = &tcp_prot;
-Sock.c (net\inet):	tcp_prot.sock_array[i] = NULL;
-Tcp.c (net\inet):  sk = get_sock(&tcp_prot, th->source/*dest*/, daddr, th->dest/*source*/, saddr);
-Tcp.c (net\inet):  sk = get_sock(&tcp_prot, th->dest, saddr, th->source, daddr);
-Tcp.c (net\inet):			tcp_reset(daddr, saddr, th, &tcp_prot, opt,dev,skb->ip_hdr->tos,255);
-Tcp.c (net\inet):struct proto tcp_prot = {
-Tcp.h (net\inet):extern struct proto tcp_prot;
+---- sys_select Matches (3 in 3 files) ----
+Sched.c (kernel):sys_select, sys_symlink, sys_lstat, sys_readlink, sys_uselib,
+Select.c (fs):asmlinkage int sys_select( unsigned long *buffer )
+Sys.h (include\linux):extern int sys_select();

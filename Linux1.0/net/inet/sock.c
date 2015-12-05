@@ -1333,8 +1333,10 @@ inet_getname(struct socket *sock, struct sockaddr *uaddr,
 }
 
 
-static int
-inet_read(struct socket *sock, char *ubuf, int size, int noblock)
+/* 从socket中读取数据 
+ * noblock表示读取操作是否是阻塞的
+ */
+static int inet_read(struct socket *sock, char *ubuf, int size, int noblock)
 {
   struct sock *sk;
 
@@ -1354,9 +1356,8 @@ inet_read(struct socket *sock, char *ubuf, int size, int noblock)
   return(sk->prot->read(sk, (unsigned char *) ubuf, size, noblock,0));
 }
 
-
-static int
-inet_recv(struct socket *sock, void *ubuf, int size, int noblock,
+/* 几乎和inet_read函数功能一样 */
+static int inet_recv(struct socket *sock, void *ubuf, int size, int noblock,
 	  unsigned flags)
 {
   struct sock *sk;
@@ -1378,8 +1379,8 @@ inet_recv(struct socket *sock, void *ubuf, int size, int noblock,
 }
 
 
-static int
-inet_write(struct socket *sock, char *ubuf, int size, int noblock)
+/* 向socket文件中写入数据 */
+static int inet_write(struct socket *sock, char *ubuf, int size, int noblock)
 {
   struct sock *sk;
 
@@ -1405,8 +1406,8 @@ inet_write(struct socket *sock, char *ubuf, int size, int noblock)
 }
 
 
-static int
-inet_send(struct socket *sock, void *ubuf, int size, int noblock, 
+/* 和inet_write功能一样 */
+static int inet_send(struct socket *sock, void *ubuf, int size, int noblock, 
 	       unsigned flags)
 {
   struct sock *sk;

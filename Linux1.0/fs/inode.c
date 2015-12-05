@@ -282,6 +282,9 @@ static void read_inode(struct inode * inode)
  * NFS uses this to get the authentication correct.  -- jrs
  */
 
+/* 当文件被修改时，需要通知一下自己被更改了,在ext,ext2当中notify_change
+ * 函数都为NULL，只有在NFS当中才会发起通知
+ */
 int notify_change(int flags, struct inode * inode)
 {
 	if (inode->i_sb && inode->i_sb->s_op  &&

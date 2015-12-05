@@ -802,8 +802,9 @@ tcp_build_header(struct tcphdr *th, struct sock *sk, int push)
  * This routine copies from a user buffer into a socket,
  * and starts the transmit system.
  */
-static int
-tcp_write(struct sock *sk, unsigned char *from,
+/* 向sock中写入数据
+ */
+static int tcp_write(struct sock *sk, unsigned char *from,
 	  int len, int nonblock, unsigned flags)
 {
   int copied = 0;
@@ -1162,8 +1163,7 @@ tcp_read_wakeup(struct sock *sk)
  * It should consider sending an ACK to let the
  * other end know we now have a bigger window.
  */
-static void
-cleanup_rbuf(struct sock *sk)
+static void cleanup_rbuf(struct sock *sk)
 {
   unsigned long flags;
   int left;
@@ -1296,6 +1296,7 @@ tcp_read_urg(struct sock * sk, int nonblock,
 
 
 /* This routine copies from a sock struct into the user buffer. */
+/* 从套接字中读取数据,主要是从sk_buff中读取数据 */
 static int tcp_read(struct sock *sk, unsigned char *to,
 	int len, int nonblock, unsigned flags)
 {
@@ -1306,6 +1307,8 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 	unsigned long used;
 	int err;
 
+	/* 读取的数据必须要大于0 
+	 */
 	if (len == 0)
 		return 0;
 
@@ -1324,11 +1327,17 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 	if (flags & MSG_OOB)
 		return tcp_read_urg(sk, nonblock, to, len, flags);
 
+	/* 已经取走的最后序号 */
 	peek_seq = sk->copied_seq;
 	seq = &sk->copied_seq;
 	if (flags & MSG_PEEK)
 		seq = &peek_seq;
 
+	/* 在数据读取开始之前想将当前进程添加到sock的等待队列之中
+	 * 一直等到len长度的数据读取完毕，或者socket结束，才会返回
+	 * 在读取数据的过程当中，当前进程可能被中断，或者进程自己主动
+	 * 放弃CPU
+	 */
 	add_wait_queue(sk->sleep, &wait);
 	sk->inuse = 1;
 	while (len > 0) {
@@ -1342,7 +1351,7 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 			break;
 
 		current->state = TASK_INTERRUPTIBLE;
-
+		/* 开始处理sock的接收包队列 */
 		skb = sk->rqueue;
 		do {
 			if (!skb)
@@ -1429,6 +1438,7 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 		if (!(flags & MSG_PEEK) && (used + offset >= skb->len))
 			skb->used = 1;
 	}
+	/*完成任务之后才将字节从等待队列中删除 */
 	remove_wait_queue(sk->sleep, &wait);
 	current->state = TASK_RUNNING;
 

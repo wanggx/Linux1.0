@@ -277,14 +277,17 @@ asmlinkage int sys_fchmod(unsigned int fd, mode_t mode)
 	return notify_change(NOTIFY_MODE, inode);
 }
 
+/* 改变文件或目录的操作权限，在Linux中目录是一种特殊的文件 */
 asmlinkage int sys_chmod(const char * filename, mode_t mode)
 {
 	struct inode * inode;
 	int error;
 
+	/* 找到路径对应文件的inode */
 	error = namei(filename,&inode);
 	if (error)
 		return error;
+	/* 只有文件属主的进程或者超级用户才可以修改 */
 	if ((current->euid != inode->i_uid) && !suser()) {
 		iput(inode);
 		return -EPERM;
@@ -298,6 +301,7 @@ asmlinkage int sys_chmod(const char * filename, mode_t mode)
 	inode->i_mode = (mode & S_IALLUGO) | (inode->i_mode & ~S_IALLUGO);
 	if (!suser() && !in_group_p(inode->i_gid))
 		inode->i_mode &= ~S_ISGID;
+	/* 修改inode的修改时间和脏标记，以便回写数据 */
 	inode->i_ctime = CURRENT_TIME;
 	inode->i_dirt = 1;
 	error = notify_change(NOTIFY_MODE, inode);
@@ -332,6 +336,7 @@ asmlinkage int sys_fchown(unsigned int fd, uid_t user, gid_t group)
 	return -EPERM;
 }
 
+/* 更改文件属主 */
 asmlinkage int sys_chown(const char * filename, uid_t user, gid_t group)
 {
 	struct inode * inode;

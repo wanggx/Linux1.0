@@ -56,7 +56,7 @@ static int sock_select(struct inode *inode, struct file *file, int which, select
 static int sock_ioctl(struct inode *inode, struct file *file,
 		      unsigned int cmd, unsigned long arg);
 
-
+/* 操作socket的文件操作函数，在Read_write.c中调用到这里 */
 static struct file_operations socket_file_ops = {
   sock_lseek,
   sock_read,
@@ -278,13 +278,13 @@ sock_lseek(struct inode *inode, struct file *file, off_t offset, int whence)
   return(-ESPIPE);
 }
 
-
-static int
-sock_read(struct inode *inode, struct file *file, char *ubuf, int size)
+/* 从socket文件中读取数据 */
+static int sock_read(struct inode *inode, struct file *file, char *ubuf, int size)
 {
   struct socket *sock;
 
   DPRINTF((net_debug, "NET: sock_read: buf=0x%x, size=%d\n", ubuf, size));
+  /* 通过inode找到socket结构体 */
   if (!(sock = socki_lookup(inode))) {
 	printk("NET: sock_read: can't find socket for inode!\n");
 	return(-EBADF);
@@ -293,9 +293,8 @@ sock_read(struct inode *inode, struct file *file, char *ubuf, int size)
   return(sock->ops->read(sock, ubuf, size, (file->f_flags & O_NONBLOCK)));
 }
 
-
-static int
-sock_write(struct inode *inode, struct file *file, char *ubuf, int size)
+/* 向socket文件中写数据 */
+static int sock_write(struct inode *inode, struct file *file, char *ubuf, int size)
 {
   struct socket *sock;
 
@@ -435,8 +434,7 @@ sock_awaitconn(struct socket *mysock, struct socket *servsock)
  * Perform the socket system call. we locate the appropriate
  * family, then create a fresh socket.
  */
-static int
-sock_socket(int family, int type, int protocol)
+static int sock_socket(int family, int type, int protocol)
 {
   int i, fd;
   struct socket *sock;
@@ -447,6 +445,7 @@ sock_socket(int family, int type, int protocol)
 						family, type, protocol));
 
   /* Locate the correct protocol family. */
+  /* 找到协议族的操作函数 */
   for (i = 0; i < NPROTO; ++i) {
 	if (pops[i] == NULL) continue;
 	if (pops[i]->family == family) break;
@@ -722,8 +721,7 @@ sock_getpeername(int fd, struct sockaddr *usockaddr, int *usockaddr_len)
 }
 
 
-static int
-sock_send(int fd, void * buff, int len, unsigned flags)
+static int sock_send(int fd, void * buff, int len, unsigned flags)
 {
   struct socket *sock;
   struct file *file;

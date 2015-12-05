@@ -193,6 +193,9 @@ struct inode *nfs_fhget(struct super_block *sb, struct nfs_fh *fhandle,
 	return inode;
 }
 
+/* 在网络文件系统当中，如果文件的inode被修改，
+ * 则会调用该函数发起一个通知 
+ */
 int nfs_notify_change(int flags, struct inode *inode)
 {
 	struct nfs_sattr sattr;

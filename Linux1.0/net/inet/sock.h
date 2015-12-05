@@ -100,7 +100,7 @@ struct sock {
   long				retransmits;
   struct sk_buff		*volatile wback,
 				*volatile wfront,
-				*volatile rqueue; /* 结构包队列 */
+				*volatile rqueue; /* socket接收包队列，读取的时候是从这个队列中读取的 */
   /* 不同协议的协议操作函数，注意和struct proto_ops结构区分
     */
   struct proto			*prot;
