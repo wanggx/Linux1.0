@@ -435,6 +435,9 @@ sock_awaitconn(struct socket *mysock, struct socket *servsock)
  * Perform the socket system call. we locate the appropriate
  * family, then create a fresh socket.
  */
+/* 创建一个socket的套接字，一般会根据type的类型来确定protocol的类型，
+ * protocol的类型一般默认为IPPROTO_IP
+ */
 static int sock_socket(int family, int type, int protocol)
 {
   int i, fd;

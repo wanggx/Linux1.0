@@ -1,6 +1,8 @@
----- sock_select Matches (5 in 1 files) ----
-Socket.c (net):static int sock_select(struct inode *inode, struct file *file, int which, select_table *seltable);
-Socket.c (net):  sock_select,
-Socket.c (net):static int sock_select(struct inode *inode, struct file *file, int sel_type, select_table * wait)
-Socket.c (net):  DPRINTF((net_debug, "NET: sock_select: inode = 0x%x, kind = %s\n", inode,
-Socket.c (net):	printk("NET: sock_select: can't find socket for inode!\n");
+---- IPPROTO_UDP Matches (7 in 4 files) ----
+In.h (include\linux):  IPPROTO_UDP = 17,		/* User Datagram Protocol		*/
+Protocol.c (net\inet):  IPPROTO_UDP,		/* protocol ID		*/
+Sock.c (net\inet):		if (protocol && protocol != IPPROTO_UDP) {
+Sock.c (net\inet):		protocol = IPPROTO_UDP;
+Udp.c (net\inet):	  : "0"(daddr), "c"(saddr), "d"((ntohs(len) << 16) + IPPROTO_UDP*256)
+Udp.c (net\inet):			saddr, sin->sin_addr.s_addr, dev, IPPROTO_UDP, skb->mem_len));
+Udp.c (net\inet):			       &dev, IPPROTO_UDP, sk->opt, skb->mem_len,sk->ip_tos,sk->ip_ttl);

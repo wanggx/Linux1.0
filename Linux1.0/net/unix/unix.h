@@ -27,7 +27,7 @@
 
 #ifdef _LINUX_UN_H
 
-
+/* UNIX域协议数据 */
 struct unix_proto_data {
 	int		refcnt;		/* cnt of reference 0=free	*/
 					/* -1=not initialised	-bgm	*/

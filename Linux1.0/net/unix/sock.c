@@ -247,12 +247,12 @@ unix_data_lookup(struct sockaddr_un *sockun, int sockaddr_len,
 }
 
 
-static struct unix_proto_data *
-unix_data_alloc(void)
+static struct unix_proto_data *unix_data_alloc(void)
 {
   struct unix_proto_data *upd;
 
   cli();
+  /* 扫描数组 */
   for(upd = unix_datas; upd <= last_unix_data; ++upd) {
 	if (!upd->refcnt) {
 		upd->refcnt = -1;	/* unix domain socket not yet initialised - bgm */
@@ -284,8 +284,7 @@ unix_data_ref(struct unix_proto_data *upd)
 }
 
 
-static void
-unix_data_deref(struct unix_proto_data *upd)
+static void unix_data_deref(struct unix_proto_data *upd)
 {
   if (!upd) {
     dprintf(1, "UNIX: data_deref: upd = NULL\n");
@@ -307,8 +306,9 @@ unix_data_deref(struct unix_proto_data *upd)
  * Upon a create, we allocate an empty protocol data,
  * and grab a page to buffer writes.
  */
-static int
-unix_proto_create(struct socket *sock, int protocol)
+/* 创建一个UNIX域的socket
+ */
+static int unix_proto_create(struct socket *sock, int protocol)
 {
   struct unix_proto_data *upd;
 
@@ -335,8 +335,7 @@ unix_proto_create(struct socket *sock, int protocol)
 }
 
 
-static int
-unix_proto_dup(struct socket *newsock, struct socket *oldsock)
+static int unix_proto_dup(struct socket *newsock, struct socket *oldsock)
 {
   struct unix_proto_data *upd = UN_DATA(oldsock);
 
@@ -377,8 +376,7 @@ unix_proto_release(struct socket *sock, struct socket *peer)
  *	  Here we return EINVAL, but it may be necessary to re-bind.
  *	  I think thats what BSD does in the case of datagram sockets...
  */
-static int
-unix_proto_bind(struct socket *sock, struct sockaddr *umyaddr,
+static int unix_proto_bind(struct socket *sock, struct sockaddr *umyaddr,
 		int sockaddr_len)
 {
   char fname[sizeof(((struct sockaddr_un *)0)->sun_path) + 1];

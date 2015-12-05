@@ -791,6 +791,10 @@ static int inet_create(struct socket *sock, int protocol)
   	return(-ENOMEM);
   sk->num = 0;
   sk->reuse = 0;
+  /* 注意在此处会根据socket的类型来确定协议的类型，
+    * 如下面如果是SOCK_STREAM类型的，则协议只能是IPPROTO_TCP
+    * 否则返回出错
+    */
   switch(sock->type) {
 	case SOCK_STREAM:
 	case SOCK_SEQPACKET:
