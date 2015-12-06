@@ -35,7 +35,7 @@ struct unix_proto_data {
 	int		protocol;
 	struct sockaddr_un	sockaddr_un;
 	short		sockaddr_len;	/* >0 if name bound		*/
-	char		*buf;
+	char		*buf;   /* 一页的缓冲大小 */
 	int		bp_head, bp_tail;
 	struct inode	*inode;
 	struct unix_proto_data	*peerupd;

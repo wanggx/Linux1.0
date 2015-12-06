@@ -173,6 +173,7 @@ struct sock {
   struct socket			*socket;
   
   /* Callbacks */
+  /* 唤醒等待socket的进程 */
   void				(*state_change)(struct sock *sk);
   void				(*data_ready)(struct sock *sk,int bytes);
   void				(*write_space)(struct sock *sk);

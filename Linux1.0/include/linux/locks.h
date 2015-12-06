@@ -39,6 +39,7 @@ extern inline void wait_on_super(struct super_block * sb)
 		__wait_on_super(sb);
 }
 
+/* 锁住超级块 */
 extern inline void lock_super(struct super_block * sb)
 {
 	if (sb->s_lock)
@@ -46,6 +47,7 @@ extern inline void lock_super(struct super_block * sb)
 	sb->s_lock = 1;
 }
 
+/* 解锁超级块 */
 extern inline void unlock_super(struct super_block * sb)
 {
 	sb->s_lock = 0;

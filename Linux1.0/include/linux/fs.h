@@ -168,7 +168,7 @@ struct buffer_head {
 struct inode {
 	dev_t		i_dev;			/* 设备号 */
 	unsigned long	i_ino;		/* i节点号 */
-	umode_t		i_mode;
+	umode_t		i_mode;			/* 文件类型以及文件权限 */
 	nlink_t		i_nlink;
 	uid_t		i_uid;           /*创建文件的用户ID*/
 	gid_t		i_gid;			 /*创建文件的用户组ID*/
@@ -179,7 +179,7 @@ struct inode {
 	time_t		i_ctime;
 	unsigned long	i_blksize;
 	unsigned long	i_blocks;
-	struct semaphore i_sem;
+	struct semaphore i_sem;    /* 操作inode的信号量 */
 	struct inode_operations * i_op;
 	struct super_block * i_sb;      /*对应的超级块*/
 	struct wait_queue * i_wait;
@@ -247,11 +247,15 @@ struct file_lock {
 #include <linux/xia_fs_sb.h>
 #include <linux/sysv_fs_sb.h>
 
+/* super_block和inode道理一样，除了超级块的公共信息之外，
+ * 还包含一些特定文件系统的超级块的数据，该数据是用一个union
+ * 来表示的。
+ */
 struct super_block {
 	dev_t s_dev;					/*对应设备号*/
-	unsigned long s_blocksize;
-	unsigned char s_blocksize_bits;
-	unsigned char s_lock;
+	unsigned long s_blocksize;      /* 设备数据块的大小 */
+	unsigned char s_blocksize_bits; /* 块大小用2的幂次方表示的幂*/
+	unsigned char s_lock;  /* 超级块是否被锁住 */
 	unsigned char s_rd_only;
 	unsigned char s_dirt;
 	struct super_operations *s_op;

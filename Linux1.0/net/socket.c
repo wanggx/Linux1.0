@@ -198,11 +198,17 @@ static struct socket *sock_alloc(int wait)
 			 * inode.  The close system call will iput this inode
 			 * for us.
 			 */
+			/* 此处给socket分配了一个inode，但是inode是空的，
+			 * 并没有包含有效数据的 
+			 */
 			if (!(SOCK_INODE(sock) = get_empty_inode())) {
 				printk("NET: sock_alloc: no more inodes\n");
 				sock->state = SS_FREE;
 				return(NULL);
 			}
+			/* 此时设置inode和socket之间的关系,
+			 * S_IFSOCK指明inode指向的时socket文件 
+			 */
 			SOCK_INODE(sock)->i_mode = S_IFSOCK;
 			SOCK_INODE(sock)->i_uid = current->euid;
 			SOCK_INODE(sock)->i_gid = current->egid;

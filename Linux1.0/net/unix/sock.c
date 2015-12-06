@@ -335,6 +335,7 @@ static int unix_proto_create(struct socket *sock, int protocol)
 }
 
 
+/* 在accept的时候会复制一个监听的文件描述符 */
 static int unix_proto_dup(struct socket *newsock, struct socket *oldsock)
 {
   struct unix_proto_data *upd = UN_DATA(oldsock);
@@ -380,6 +381,7 @@ static int unix_proto_bind(struct socket *sock, struct sockaddr *umyaddr,
 		int sockaddr_len)
 {
   char fname[sizeof(((struct sockaddr_un *)0)->sun_path) + 1];
+  /* 获取UNIX域的协议数据 */
   struct unix_proto_data *upd = UN_DATA(sock);
   unsigned long old_fs;
   int i;

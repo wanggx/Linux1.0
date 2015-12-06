@@ -414,6 +414,7 @@ int do_mknod(const char * filename, int mode, dev_t dev)
 	struct inode * dir;
 
 	mode &= ~current->umask;
+	/* 获取filename路径中目录的inode */
 	error = dir_namei(filename,&namelen,&basename, NULL, &dir);
 	if (error)
 		return error;
@@ -433,8 +434,10 @@ int do_mknod(const char * filename, int mode, dev_t dev)
 		iput(dir);
 		return -EPERM;
 	}
+	/* 先占用该目录 */
 	down(&dir->i_sem);
 	error = dir->i_op->mknod(dir,basename,namelen,mode,dev);
+	/* 用完之后就释放该目录 */
 	up(&dir->i_sem);
 	return error;
 }

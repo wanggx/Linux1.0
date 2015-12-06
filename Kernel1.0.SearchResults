@@ -1,8 +1,11 @@
----- IPPROTO_UDP Matches (7 in 4 files) ----
-In.h (include\linux):  IPPROTO_UDP = 17,		/* User Datagram Protocol		*/
-Protocol.c (net\inet):  IPPROTO_UDP,		/* protocol ID		*/
-Sock.c (net\inet):		if (protocol && protocol != IPPROTO_UDP) {
-Sock.c (net\inet):		protocol = IPPROTO_UDP;
-Udp.c (net\inet):	  : "0"(daddr), "c"(saddr), "d"((ntohs(len) << 16) + IPPROTO_UDP*256)
-Udp.c (net\inet):			saddr, sin->sin_addr.s_addr, dev, IPPROTO_UDP, skb->mem_len));
-Udp.c (net\inet):			       &dev, IPPROTO_UDP, sk->opt, skb->mem_len,sk->ip_tos,sk->ip_ttl);
+---- set_blocksize Matches (10 in 7 files) ----
+Buffer.c (fs):void set_blocksize(dev_t dev, int size)
+Buffer.c (fs):		default: panic("Invalid blocksize passed to set_blocksize");
+Fs.h (include\linux):extern void set_blocksize(dev_t dev, int size);
+Hpfs_fs.c (fs\hpfs):	set_blocksize(dev, 512);
+Inode.c (fs\ext):	set_blocksize(dev, BLOCK_SIZE);
+Inode.c (fs\isofs):	set_blocksize(dev, blocksize);
+Inode.c (fs\xiafs):    set_blocksize(dev, BLOCK_SIZE);
+Inode.c (fs\xiafs):      set_blocksize(dev, s->s_blocksize);
+Super.c (fs\ext2):	set_blocksize (dev, BLOCK_SIZE);
+Super.c (fs\ext2):		set_blocksize (dev, sb->s_blocksize);

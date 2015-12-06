@@ -181,7 +181,7 @@ static inline void unlock_inode(struct inode * inode)
  */
 
 /* 如在设备被拔掉情况下，设备文件的inode仍然在内存
- * 将inode从两个链表中删除，并清楚数据，但不改变inode的等待队列
+ * 将inode从两个链表中删除，并清除数据，但不改变inode的等待队列
  */
 void clear_inode(struct inode * inode)
 {
@@ -421,7 +421,8 @@ repeat:
 			goto repeat;
 		}
 	inode = best;
-	/* 
+	/* 运行到这个地方，则找到的合适的inode已经存放在inode当中，
+	 * 如果inode为NULL，则表示还没有找到
 	 */ 
 	if (!inode) {
 		printk("VFS: No free inodes - contact Linus\n");
@@ -490,6 +491,9 @@ struct inode * iget(struct super_block * sb,int nr)
 	return __iget(sb,nr,1);
 }
 
+/* 获取超级块对应i节点号的数据，先是获取一个空的inode，
+ * 然后根据inode调用read_inode函数从硬盘中读取ext2_inode的数据
+ */
 struct inode * __iget(struct super_block * sb, int nr, int crossmntp)
 {
 	static struct wait_queue * update_wait = NULL;

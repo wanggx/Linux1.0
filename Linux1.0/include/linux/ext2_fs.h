@@ -160,12 +160,12 @@ struct ext2_old_group_desc
 
 struct ext2_group_desc
 {
-	unsigned long  bg_block_bitmap;		/* Blocks bitmap block */
-	unsigned long  bg_inode_bitmap;		/* Inodes bitmap block */
-	unsigned long  bg_inode_table;		/* Inodes table block */
-	unsigned short bg_free_blocks_count;	/* Free blocks count */
-	unsigned short bg_free_inodes_count;	/* Free inodes count */
-	unsigned short bg_used_dirs_count;	/* Directories count */
+	unsigned long  bg_block_bitmap;		/* Blocks bitmap block */ /* 块位图块号 */
+	unsigned long  bg_inode_bitmap;		/* Inodes bitmap block */ /* inode位图块号 */
+	unsigned long  bg_inode_table;		/* Inodes table block */ /* 第一个索引节点表块块号 */
+	unsigned short bg_free_blocks_count;	/* Free blocks count */ /* 组中空闲块个数 */
+	unsigned short bg_free_inodes_count;	/* Free inodes count */ /* 组中空闲索引节点个数 */
+	unsigned short bg_used_dirs_count;	/* Directories count */ /* 组中目录个数 */
 	unsigned short bg_pad;
 	unsigned long  bg_reserved[3];
 };
@@ -186,6 +186,7 @@ struct ext2_group_desc
 /*
  * Constants relative to the data blocks
  */
+/* 文件数据块的映射，12块直接映射，通过这个可以算出ext2可以支持的最大文件大小 */
 #define	EXT2_NDIR_BLOCKS		12
 #define	EXT2_IND_BLOCK			EXT2_NDIR_BLOCKS
 #define	EXT2_DIND_BLOCK			(EXT2_IND_BLOCK + 1)
@@ -211,8 +212,11 @@ struct ext2_group_desc
 /*
  * Structure of an inode on the disk
  */
+
+/* 在硬盘中inode的数据 
+ */
 struct ext2_inode {
-	unsigned short i_mode;		/* File mode */
+	unsigned short i_mode;		/* File mode */ /* 文件类型和访问权限 */
 	unsigned short i_uid;		/* Owner Uid */
 	unsigned long  i_size;		/* Size in bytes */
 	unsigned long  i_atime;		/* Access time */
@@ -220,11 +224,11 @@ struct ext2_inode {
 	unsigned long  i_mtime;		/* Modification time */
 	unsigned long  i_dtime;		/* Deletion Time */
 	unsigned short i_gid;		/* Group Id */
-	unsigned short i_links_count;	/* Links count */
-	unsigned long  i_blocks;	/* Blocks count */
+	unsigned short i_links_count;	/* Links count */ /* 硬链接计数器 */
+	unsigned long  i_blocks;	/* Blocks count */ /* 文件数据块数 */
 	unsigned long  i_flags;		/* File flags */
 	unsigned long  i_reserved1;
-	unsigned long  i_block[EXT2_N_BLOCKS];/* Pointers to blocks */
+	unsigned long  i_block[EXT2_N_BLOCKS];/* Pointers to blocks */ /* 指向数据块的指针 */
 	unsigned long  i_version;	/* File version (for NFS) */
 	unsigned long  i_file_acl;	/* File ACL */
 	unsigned long  i_dir_acl;	/* Directory ACL */
@@ -281,8 +285,13 @@ struct ext2_super_block {
 	unsigned long  s_r_blocks_count;/* Reserved blocks count */
 	unsigned long  s_free_blocks_count;/* Free blocks count */
 	unsigned long  s_free_inodes_count;/* Free inodes count */
+	/* 第一个可以被使用的数据块，之前的都是保留的 */
 	unsigned long  s_first_data_block;/* First Data Block */
+	/* 以2的幂次方表示块的大小，用1024字节作为单位，0表示1024字节的大小，
+	 * 1表示2048块的大小
+	 */
 	unsigned long  s_log_block_size;/* Block size */
+	/* 和s_log_block_size 一样的表示方法 */
 	long           s_log_frag_size;	/* Fragment size */
 	unsigned long  s_blocks_per_group;/* # Blocks per group */
 	unsigned long  s_frags_per_group;/* # Fragments per group */

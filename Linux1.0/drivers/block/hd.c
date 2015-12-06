@@ -50,7 +50,7 @@ static inline unsigned char CMOS_READ(unsigned char addr)
 #define MAX_ERRORS     16	/* Max read/write errors/sector */
 #define RESET_FREQ      8	/* Reset controller every 8th retry */
 #define RECAL_FREQ      4	/* Recalibrate every 4th retry */
-#define MAX_HD		2
+#define MAX_HD		2       /* 支持hd的最大数量 */
 
 static void recal_intr(void);
 static void bad_rw_intr(void);
@@ -707,6 +707,7 @@ static void hd_geninit(void)
 	}
 	hd_gendisk.nr_real = NR_HD;
 
+	/* 设置硬盘设备的数据块的块大小 */
 	for(i=0;i<(MAX_HD << 6);i++) hd_blocksizes[i] = 1024;
 	blksize_size[MAJOR_NR] = hd_blocksizes;
 }

@@ -98,7 +98,8 @@ repeat:
    return until all buffer writes have completed.  Sync() may return
    before the writes have finished; fsync() may not. */
 
-/* 将设备dev在缓存中的数据全部写回到设备
+/* 将设备dev在缓存中的数据全部写回到设备，
+ * wait大于0，则表示阻塞，否则非阻塞
  */
 static int sync_buffers(dev_t dev, int wait)
 {
@@ -426,6 +427,8 @@ struct buffer_head * get_hash_table(dev_t dev, int block, int size)
 	}
 }
 
+/* 设置设备数据块的大小，dev包含设备的主设备号，次设备号
+ */
 void set_blocksize(dev_t dev, int size)
 {
 	int i;
@@ -445,6 +448,8 @@ void set_blocksize(dev_t dev, int size)
 	}
 	if (blksize_size[MAJOR(dev)][MINOR(dev)] == size)
 		return;
+
+	/* 如果设备的数据块大小发生了更改，则将之前的文件都写入到设备 */
 	sync_buffers(dev, 2);
 	blksize_size[MAJOR(dev)][MINOR(dev)] = size;
 
