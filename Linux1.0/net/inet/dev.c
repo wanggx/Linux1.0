@@ -167,15 +167,15 @@ get_mask(unsigned long addr)
   return(0);
 }
 
-
-int
-ip_addr_match(unsigned long me, unsigned long him)
+/* 匹配ip地址，如果相同则返回1，否则返回0*/
+int ip_addr_match(unsigned long me, unsigned long him)
 {
   int i;
   unsigned long mask=0xFFFFFFFF;
   DPRINTF((DBG_DEV, "ip_addr_match(%s, ", in_ntoa(me)));
   DPRINTF((DBG_DEV, "%s)\n", in_ntoa(him)));
 
+	/* 如果两个地址相同则返回> 1 */
   if (me == him) 
   	return(1);
   for (i = 0; i < 4; i++, me >>= 8, him >>= 8, mask >>= 8) {
@@ -184,6 +184,8 @@ ip_addr_match(unsigned long me, unsigned long him)
 		 * The only way this could be a match is for
 		 * the rest of addr1 to be 0 or 255.
 		 */
+		/* 判断me是不是在0-255范围，
+		  * 0和255是不做判断的*/
 		if (me != 0 && me != mask) return(0);
 		return(1);
 	}

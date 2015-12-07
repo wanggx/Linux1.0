@@ -42,6 +42,9 @@
 
 
 /* Display an IP address in readable format. */
+/* 将ip地址转换成字符串形式
+  * 该ip地址是用一个长整型的数来表示的
+  */
 char *in_ntoa(unsigned long in)
 {
   static char buff[18];

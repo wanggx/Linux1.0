@@ -1496,8 +1496,7 @@ inet_recvfrom(struct socket *sock, void *ubuf, int size, int noblock,
 }
 
 
-static int
-inet_shutdown(struct socket *sock, int how)
+static int inet_shutdown(struct socket *sock, int how)
 {
   struct sock *sk;
 
@@ -1645,9 +1644,11 @@ struct sk_buff *sock_wmalloc(struct sock *sk, unsigned long size, int force,
   return(alloc_skb(size, priority));
 }
 
-
-struct sk_buff *
-sock_rmalloc(struct sock *sk, unsigned long size, int force, int priority)
+/* 用于分配接收缓冲区，内存分配基本
+  * 相同，只不过此时更新的是接收缓冲区
+  * 该函数功能和sock_wmalloc差不多
+  */
+struct sk_buff *sock_rmalloc(struct sock *sk, unsigned long size, int force, int priority)
 {
   if (sk) {
 	if (sk->rmem_alloc + size < sk->rcvbuf || force) {
@@ -1666,9 +1667,9 @@ sock_rmalloc(struct sock *sk, unsigned long size, int force, int priority)
   return(alloc_skb(size, priority));
 }
 
-
-unsigned long
-sock_rspace(struct sock *sk)
+/* sock_rspace 函数用于检查接收缓冲区空闲空间大小
+  */
+unsigned long sock_rspace(struct sock *sk)
 {
   int amt;
 
@@ -1681,9 +1682,8 @@ sock_rspace(struct sock *sk)
   return(0);
 }
 
-
-unsigned long
-sock_wspace(struct sock *sk)
+/* 获取发送缓冲区空闲空间的大小*/
+unsigned long sock_wspace(struct sock *sk)
 {
   if (sk != NULL) {
 	if (sk->shutdown & SEND_SHUTDOWN) return(0);
@@ -1717,8 +1717,8 @@ void sock_wfree(struct sock *sk, void *mem, unsigned long size)
 }
 
 
-void
-sock_rfree(struct sock *sk, void *mem, unsigned long size)
+
+void sock_rfree(struct sock *sk, void *mem, unsigned long size)
 {
   DPRINTF((DBG_INET, "sock_rfree(sk=%X, mem=%X, size=%d)\n", sk, mem, size));
   IS_SKB(mem);
@@ -1737,6 +1737,9 @@ sock_rfree(struct sock *sk, void *mem, unsigned long size)
  * This routine must find a socket given a TCP or UDP header.
  * Everyhting is assumed to be in net order.
  */
+
+/* 获取协议上操作某个端口的sock
+  */
 struct sock *get_sock(struct proto *prot, unsigned short num,
 				unsigned long raddr,
 				unsigned short rnum, unsigned long laddr)
