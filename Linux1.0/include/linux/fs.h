@@ -178,7 +178,7 @@ struct inode {
 	time_t		i_mtime;
 	time_t		i_ctime;
 	unsigned long	i_blksize;
-	unsigned long	i_blocks;
+	unsigned long	i_blocks;	/* 文件数据块数 */
 	struct semaphore i_sem;    /* 操作inode的信号量 */
 	struct inode_operations * i_op;
 	struct super_block * i_sb;      /*对应的超级块*/

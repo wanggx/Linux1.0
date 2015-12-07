@@ -486,7 +486,7 @@ void set_blocksize(dev_t dev, int size)
 /* 注意该函数获取对应设备dev，block，size
   * 大小的高速缓存，如果在查找的过程当中
   * 没有找到相应的高速缓存，则会去grow_buffer
-  * 注意此函数是一个阻塞式的函数
+  * 注意此函数是一个阻塞式的函数，block为设备的逻辑块号，size为设备的块大小
   */
 #define BADNESS(bh) (((bh)->b_dirt<<1)+(bh)->b_lock)
 struct buffer_head * getblk(dev_t dev, int block, int size)

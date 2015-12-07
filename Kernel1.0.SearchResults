@@ -1,11 +1,4 @@
----- set_blocksize Matches (10 in 7 files) ----
-Buffer.c (fs):void set_blocksize(dev_t dev, int size)
-Buffer.c (fs):		default: panic("Invalid blocksize passed to set_blocksize");
-Fs.h (include\linux):extern void set_blocksize(dev_t dev, int size);
-Hpfs_fs.c (fs\hpfs):	set_blocksize(dev, 512);
-Inode.c (fs\ext):	set_blocksize(dev, BLOCK_SIZE);
-Inode.c (fs\isofs):	set_blocksize(dev, blocksize);
-Inode.c (fs\xiafs):    set_blocksize(dev, BLOCK_SIZE);
-Inode.c (fs\xiafs):      set_blocksize(dev, s->s_blocksize);
-Super.c (fs\ext2):	set_blocksize (dev, BLOCK_SIZE);
-Super.c (fs\ext2):		set_blocksize (dev, sb->s_blocksize);
+---- ext2_update_inode Matches (3 in 1 files) ----
+Inode.c (fs\ext2):static struct buffer_head * ext2_update_inode (struct inode * inode)
+Inode.c (fs\ext2):	bh = ext2_update_inode (inode);
+Inode.c (fs\ext2):	bh = ext2_update_inode (inode);
