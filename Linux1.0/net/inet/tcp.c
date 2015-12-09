@@ -2942,6 +2942,7 @@ static struct sock *tcp_accept(struct sock *sk, int flags)
   sti();
 
   /* Now all we need to do is return skb->sk. */
+  /* 如果从接收队列中能够读取一个sk_buf则将sk_buf中的sock给返回*/
   newsk = skb->sk;
 
   kfree_skb(skb, FREE_READ);

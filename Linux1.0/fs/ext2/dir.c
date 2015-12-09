@@ -46,6 +46,9 @@ static struct file_operations ext2_dir_operations = {
 /*
  * directories can handle most operations...
  */
+
+/* 目录inode的操作函数
+ */
 struct inode_operations ext2_dir_inode_operations = {
 	&ext2_dir_operations,	/* default directory file-ops */
 	ext2_create,		/* create */

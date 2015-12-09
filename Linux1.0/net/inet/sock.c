@@ -1259,6 +1259,7 @@ static int inet_accept(struct socket *sock, struct socket *newsock, int flags)
 		return(-err);
 	}
   }
+  /* 设置新socket的协议数据,sk2是从监听socket的接收队列中获取的 */
   newsock->data = (void *)sk2;
   sk2->sleep = newsock->wait;
   newsock->conn = NULL;
@@ -1285,6 +1286,7 @@ static int inet_accept(struct socket *sock, struct socket *newsock, int flags)
 	newsock->data = NULL;
 	return(err);
   }
+  /* 设置接收的newsock的状态为链接状态 */
   newsock->state = SS_CONNECTED;
   return(0);
 }

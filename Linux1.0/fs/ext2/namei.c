@@ -100,6 +100,7 @@ static struct buffer_head * ext2_find_entry (struct inode * dir,
 	for (block = 0; block < NAMEI_RA_SIZE; ++block) {
 		struct buffer_head * bh;
 
+		/* 如果超过文件大小 */
 		if ((block << EXT2_BLOCK_SIZE_BITS (sb)) >= dir->i_size)
 			break;
 		bh = ext2_getblk (dir, block, 0, &err);
@@ -167,6 +168,7 @@ failure:
 	return NULL;
 }
 
+/* 从目录中查找名称为name长度为len的文件或目录 */
 int ext2_lookup (struct inode * dir, const char * name, int len,
 		 struct inode ** result)
 {
@@ -177,6 +179,7 @@ int ext2_lookup (struct inode * dir, const char * name, int len,
 	*result = NULL;
 	if (!dir)
 		return -ENOENT;
+	/* 如果dir对应的不是目录的inode则返回出错 */
 	if (!S_ISDIR(dir->i_mode)) {
 		iput (dir);
 		return -ENOENT;

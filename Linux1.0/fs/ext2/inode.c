@@ -67,6 +67,9 @@ static int block_bmap (struct buffer_head * bh, int nr)
  * here, since ext2_new_block will do the necessary locking and we
  * can't block until then.
  */
+
+/* 丢弃所有的预分配剩余的块
+ */
 void ext2_discard_prealloc (struct inode * inode)
 {
 #ifdef EXT2_PREALLOCATE
@@ -80,6 +83,7 @@ void ext2_discard_prealloc (struct inode * inode)
 #endif
 }
 
+/* 返回一个逻辑块号，表示新块的首选位置 */
 static int ext2_alloc_block (struct inode * inode, unsigned long goal)
 {
 #ifdef EXT2FS_DEBUG
@@ -91,6 +95,7 @@ static int ext2_alloc_block (struct inode * inode, unsigned long goal)
 	wait_on_super (inode->i_sb);
 
 #ifdef EXT2_PREALLOCATE
+	/* 如果先前有预分配，则返回预分配的逻辑块号 */
 	if (inode->u.ext2_i.i_prealloc_count &&
 	    (goal == inode->u.ext2_i.i_prealloc_block ||
 	     goal + 1 == inode->u.ext2_i.i_prealloc_block))
@@ -202,7 +207,9 @@ int ext2_bmap (struct inode * inode, int block)
 
 /* 获取文件nr逻辑块的数据到高速缓存，并返回该高速缓存，
  * 如果nr有效，则直接读取，否则给文件创建一个新的数据块
- * 如果create参数不为0
+ * 如果create参数不为0，其中new_block是要分配的逻辑块号
+ * 如果nr块已经在内存了，那么直接返回对应的高速缓存，
+ * 则new_block不起作用
  */
 static struct buffer_head * inode_getblk (struct inode * inode, int nr,
 					  int create, int new_block, int * err)
@@ -215,7 +222,7 @@ static struct buffer_head * inode_getblk (struct inode * inode, int nr,
 	p = inode->u.ext2_i.i_data + nr;
 repeat:
 	tmp = *p;
-	/* 如果设备逻辑块号有效 */
+	/* 如果设备逻辑块号有效,否则就要创建一个新的块，如果create为1 */
 	if (tmp) {
 		result = getblk (inode->i_dev, tmp, inode->i_sb->s_blocksize);
 		/* 这个判断是防止在getblk的时候inode的数据被其他进程修改 */
@@ -348,11 +355,14 @@ repeat:
 	return result;
 }
 
+/* 只是分配了逻辑块号的高速缓存 */
 struct buffer_head * ext2_getblk (struct inode * inode, long block,
 				  int create, int * err)
 {
 	struct buffer_head * bh;
 	unsigned long b;
+
+	/* 每个数据块可以存放的地址数量 */
 	unsigned long addr_per_block = EXT2_ADDR_PER_BLOCK(inode->i_sb);
 
 	*err = -EIO;
@@ -360,6 +370,8 @@ struct buffer_head * ext2_getblk (struct inode * inode, long block,
 		ext2_warning (inode->i_sb, "ext2_getblk", "block < 0");
 		return NULL;
 	}
+
+	/* 如果大于系统支持的最大文件块数 */
 	if (block > EXT2_NDIR_BLOCKS + addr_per_block  +
 		    addr_per_block * addr_per_block +
 		    addr_per_block * addr_per_block * addr_per_block) {
@@ -528,7 +540,7 @@ void ext2_read_inode (struct inode * inode)
 		inode->i_flags |= MS_SYNC;
 }
 
-/* 将inode对应的文件写回硬盘 */
+/* 将inode对应的文件写回高速缓存 */
 static struct buffer_head * ext2_update_inode (struct inode * inode)
 {
 	struct buffer_head * bh;
@@ -611,7 +623,7 @@ void ext2_write_inode (struct inode * inode)
 }
 
 
-/* 将inode数据线写入到高速缓存，然后将高速缓冲中数据写入到磁盘当中 */
+/* 将inode数据先写入到高速缓存，然后将高速缓冲中数据写入到磁盘当中 */
 int ext2_sync_inode (struct inode *inode)
 {
 	int err = 0;

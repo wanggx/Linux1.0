@@ -173,11 +173,11 @@ struct inode {
 	uid_t		i_uid;           /*创建文件的用户ID*/
 	gid_t		i_gid;			 /*创建文件的用户组ID*/
 	dev_t		i_rdev;
-	off_t		i_size;
+	off_t		i_size;			/* 文件大小单位为字节 */
 	time_t		i_atime;
 	time_t		i_mtime;
-	time_t		i_ctime;
-	unsigned long	i_blksize;
+	time_t		i_ctime;		/* inode的修改时间 */
+	unsigned long	i_blksize;	/* 数据块大小 */
 	unsigned long	i_blocks;	/* 文件数据块数 */
 	struct semaphore i_sem;    /* 操作inode的信号量 */
 	struct inode_operations * i_op;

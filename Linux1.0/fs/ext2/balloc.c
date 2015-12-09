@@ -116,6 +116,9 @@ static inline char * find_first_zero_byte (char * addr, int size)
 	return res;
 }
 
+/* 返回block_group号块组数据在高速缓存中的指针，同时将数据所在
+ * 的高速缓存块的指针放在bh当中
+ */
 static struct ext2_group_desc * get_group_desc (struct super_block * sb,
 						unsigned int block_group,
 						struct buffer_head ** bh)
@@ -124,13 +127,16 @@ static struct ext2_group_desc * get_group_desc (struct super_block * sb,
 	unsigned long desc;
 	struct ext2_group_desc * gdp;
 
+	/* 如果块组号大于系统最大块组数 ，则出错 */
 	if (block_group >= sb->u.ext2_sb.s_groups_count)
 		ext2_panic (sb, "get_group_desc",
 			    "block_group >= groups_count\n"
 			    "block_group = %d, groups_count = %lu",
 			    block_group, sb->u.ext2_sb.s_groups_count);
 
+	/* 获取存放块组的数据块的第几块，因为存放块组描述符的数据块是连续的 */
 	group_desc = block_group / EXT2_DESC_PER_BLOCK(sb);
+	/* desc表示块组描述符在数据块内的偏移 */
 	desc = block_group % EXT2_DESC_PER_BLOCK(sb);
 	if (!sb->u.ext2_sb.s_group_desc[group_desc])
 		ext2_panic (sb, "get_group_desc",
@@ -330,6 +336,10 @@ void ext2_free_blocks (struct super_block * sb, unsigned long block,
  * each block group the search first looks for an entire free byte in the block
  * bitmap, and then for any free bit if that fails.
  */
+
+/* 函数返回一个被文件真正使用的空闲块，goal只是你希望使用的数据块号，但是在真正分配的
+ * 时候，它不一定可用，这个块可能已经分配给别人了，如果已经被用，则在goal附近寻找可用的空闲块
+ */
 int ext2_new_block (struct super_block * sb, unsigned long goal,
 		    unsigned long * prealloc_count,
 		    unsigned long * prealloc_block)
@@ -352,6 +362,7 @@ int ext2_new_block (struct super_block * sb, unsigned long goal,
 	}
 	lock_super (sb);
 	es = sb->u.ext2_sb.s_es;
+	/* 如果空闲的块号少于预留的数量，则不用分配，除非你是超级用户 */
 	if (es->s_free_blocks_count <= es->s_r_blocks_count && !suser()) {
 		unlock_super (sb);
 		return 0;
@@ -363,10 +374,13 @@ repeat:
 	/*
 	 * First, test whether the goal block is free.
 	 */
+	/* 限定goal的有效范围 */
 	if (goal < es->s_first_data_block || goal >= es->s_blocks_count)
 		goal = es->s_first_data_block;
+	/* 获取goal块号所在的块组号 */
 	i = (goal - es->s_first_data_block) / EXT2_BLOCKS_PER_GROUP(sb);
 	gdp = get_group_desc (sb, i, &bh2);
+	/* 如果goal所在的块组当中还有空闲的块 */
 	if (gdp->bg_free_blocks_count > 0) {
 		j = ((goal - es->s_first_data_block) % EXT2_BLOCKS_PER_GROUP(sb));
 #ifdef EXT2FS_DEBUG

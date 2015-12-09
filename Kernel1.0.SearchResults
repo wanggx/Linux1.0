@@ -1,4 +1,18 @@
----- ext2_update_inode Matches (3 in 1 files) ----
-Inode.c (fs\ext2):static struct buffer_head * ext2_update_inode (struct inode * inode)
-Inode.c (fs\ext2):	bh = ext2_update_inode (inode);
-Inode.c (fs\ext2):	bh = ext2_update_inode (inode);
+---- DONT_USE_DCACHE Matches (17 in 5 files) ----
+Dcache.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Dir.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Ext2_fs.h (include\linux):#define DONT_USE_DCACHE
+Ext2_fs.h (include\linux):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Namei.c (fs\ext2):#ifndef DONT_USE_DCACHE
+Super.c (fs\ext2):#ifndef DONT_USE_DCACHE
