@@ -103,9 +103,9 @@ int do_mmap(struct file * file, unsigned long addr, unsigned long len,
 					continue;
 				if (addr + len <= vmm->vm_start)
 					continue;
-				/*å¦‚æœæœ‰äº¤å‰åˆ™åœæ­¢ï¼Œä¹Ÿæœ‰å¯èƒ½addr,lenå’Œå¤šä¸ªåœ°å€ç©ºé—´äº¤å‰ï¼Œ
-				 * æ‰€ä»¥åœ¨æ‰¾åˆ°ç¬¬ä¸€ä¸ªä¹‹åå°±å°†addrè®¾ç½®ä¸ºvmmæŒ‡å‘çš„åœ°å€ç©ºé—´æœ«ç«¯ï¼Œ
-				 * ç„¶åç»§ç»­æŸ¥æ‰¾ä»å‰ä¸€ä¸ªè™šæ‹Ÿåœ°å€ç©ºé—´çš„ç»“å°¾å¤„
+				/*Èç¹ûÓĞ½»²æÔòÍ£Ö¹£¬Ò²ÓĞ¿ÉÄÜaddr,lenºÍ¶à¸öµØÖ·¿Õ¼ä½»²æ£¬
+				 * ËùÒÔÔÚÕÒµ½µÚÒ»¸öÖ®ºó¾Í½«addrÉèÖÃÎªvmmÖ¸ÏòµÄµØÖ·¿Õ¼äÄ©¶Ë£¬
+				 * È»ºó¼ÌĞø²éÕÒ´ÓÇ°Ò»¸öĞéÄâµØÖ·¿Õ¼äµÄ½áÎ²´¦
 				 */
 				addr = PAGE_ALIGN(vmm->vm_end);
 				break;
@@ -138,7 +138,7 @@ int do_mmap(struct file * file, unsigned long addr, unsigned long len,
 	do_munmap(addr, len);	/* Clear old maps */
 
 	if (file)
-		/* è°ƒç”¨æœ¬æ–‡ä»¶ä¸­çš„generic_mmapå‡½æ•°
+		/* µ÷ÓÃ±¾ÎÄ¼şÖĞµÄgeneric_mmapº¯Êı
 	      */
 		error = file->f_op->mmap(file->f_inode, file, addr, len, mask, off);
 	else
@@ -152,11 +152,12 @@ int do_mmap(struct file * file, unsigned long addr, unsigned long len,
 	return -1;
 }
 
-/* æ–‡ä»¶æ˜ å°„åŠŸèƒ½
- * è¯¥å‡½æ•°ä¸­ï¼Œä¸€ä¸ªæ–‡ä»¶åªä¼šæ˜ å°„åˆ°ä¸€ä¸ªè™šæ‹Ÿåœ°å€ç©ºé—´
- * ä¹Ÿå°±æ˜¯current->mmapé“¾è¡¨ä¸­çš„ä¸€ä¸ªèŠ‚ç‚¹è€Œå·²ï¼Œ
- * å¹¶ä¸”æ˜ å°„çš„åœ°å€ç©ºé—´æ˜¯æœ‰é™çš„ã€‚
+/* ÎÄ¼şÓ³Éä¹¦ÄÜ
+ * ¸Ãº¯ÊıÖĞ£¬Ò»¸öÎÄ¼şÖ»»áÓ³Éäµ½Ò»¸öĞéÄâµØÖ·¿Õ¼ä
+ * Ò²¾ÍÊÇcurrent->mmapÁ´±íÖĞµÄÒ»¸ö½Úµã¶øÒÑ£¬
+ * ²¢ÇÒÓ³ÉäµÄµØÖ·¿Õ¼äÊÇÓĞÏŞµÄ¡£
  */
+
 asmlinkage int sys_mmap(unsigned long *buffer)
 {
 	int error;
@@ -292,27 +293,27 @@ int do_munmap(unsigned long addr, size_t len)
 	for (mpnt = *npp; mpnt != NULL; mpnt = *npp) {
 		unsigned long end = addr+len;
 
-		/* åœ¨é€ä¸ªåˆ¤æ–­åœ°å€çš„è¿‡ç¨‹ä¸­ï¼Œ
-		 *   å¦‚æœè™šæ‹Ÿåœ°å€é“¾æ²¡æœ‰å’Œaddrä¸ºèµ·å§‹é•¿åº¦ä¸ºlençš„åœ°å€ç©ºé—´äº¤å‰ï¼Œåˆ™ç»§ç»­åˆ¤æ–­ä¸‹ä¸€ä¸ª
+		/* ÔÚÖğ¸öÅĞ¶ÏµØÖ·µÄ¹ı³ÌÖĞ£¬
+		 *   Èç¹ûĞéÄâµØÖ·Á´Ã»ÓĞºÍaddrÎªÆğÊ¼³¤¶ÈÎªlenµÄµØÖ·¿Õ¼ä½»²æ£¬Ôò¼ÌĞøÅĞ¶ÏÏÂÒ»¸ö
 		 */
 		if ((addr < mpnt->vm_start && end <= mpnt->vm_start) ||
 		    (addr >= mpnt->vm_end && end > mpnt->vm_end))
 		{
-			/* nppä¸€ç›´æŒ‡å‘äº¤å‰åœ°å€ç©ºé—´çš„è¿™ä¸€ä¸ªèŠ‚ç‚¹
+			/* nppÒ»Ö±Ö¸Ïò½»²æµØÖ·¿Õ¼äµÄÕâÒ»¸ö½Úµã
 			 */
 			npp = &mpnt->vm_next;
 			continue;
 		}
-		/* å¦‚æœå­˜åœ¨äº¤å‰ï¼Œåˆ™å°†è¯¥è™šæ‹Ÿåœ°å€èŠ‚ç‚¹æ·»åŠ åˆ°é‡Šæ”¾é“¾è¡¨å½“ä¸­ï¼Œ
-		 * å¦‚ä¸€ä¸ªåæ˜ å°„çš„åœ°å€ç©ºé—´æ¯”è¾ƒå¤§ï¼Œå’Œcurrent->mmapé“¾ä¸­çš„å¤šä¸ªèŠ‚ç‚¹æœ‰äº¤å‰
-		 * åˆ™äº¤å‰çš„æ‰€æœ‰èŠ‚ç‚¹éƒ½å¿…é¡»é‡Šæ”¾
+		/* Èç¹û´æÔÚ½»²æ£¬Ôò½«¸ÃĞéÄâµØÖ·½ÚµãÌí¼Óµ½ÊÍ·ÅÁ´±íµ±ÖĞ£¬
+		 * ÈçÒ»¸ö·´Ó³ÉäµÄµØÖ·¿Õ¼ä±È½Ï´ó£¬ºÍcurrent->mmapÁ´ÖĞµÄ¶à¸ö½ÚµãÓĞ½»²æ
+		 * Ôò½»²æµÄËùÓĞ½Úµã¶¼±ØĞëÊÍ·Å
 		 */
 		*npp = mpnt->vm_next;
 		mpnt->vm_next = free;
 		free = mpnt;
 	}
 
-	/*å¦‚æœæ²¡æœ‰æ‰¾åˆ°ä»»ä½•äº¤å‰çš„åœ°å€ç©ºé—´ï¼Œåˆ™ä¸åšå¤„ç†ï¼Œç›´æ¥è¿”å›*/
+	/*Èç¹ûÃ»ÓĞÕÒµ½ÈÎºÎ½»²æµÄµØÖ·¿Õ¼ä£¬Ôò²»×ö´¦Àí£¬Ö±½Ó·µ»Ø*/
 	if (free == NULL)
 		return 0;
 
@@ -328,8 +329,8 @@ int do_munmap(unsigned long addr, size_t len)
 		mpnt = free;
 		free = free->vm_next;
 
-		/* å°†é“¾ä¸­äº¤å‰çš„ä¸€æ®µç»™å–å‡ºæ¥ï¼Œå¦‚æœæœ‰äº¤å‰ï¼Œä½†ä¸æ˜¯æ•´ä¸ªåœ°å€ç©ºé—´äº¤å‰
-		 * åˆ™åªå¤„ç†äº¤å‰éƒ¨åˆ†
+		/* ½«Á´ÖĞ½»²æµÄÒ»¶Î¸øÈ¡³öÀ´£¬Èç¹ûÓĞ½»²æ£¬µ«²»ÊÇÕû¸öµØÖ·¿Õ¼ä½»²æ
+		 * ÔòÖ»´¦Àí½»²æ²¿·Ö
 		 */
 		st = addr < mpnt->vm_start ? mpnt->vm_start : addr;
 		end = addr+len;
@@ -371,9 +372,9 @@ int generic_mmap(struct inode * inode, struct file * file,
 	}
 	brelse(bh);
 
-	/* åˆ†é…ä¸€ä¸ªè™šæ‹Ÿåœ°å€ç©ºé—´ï¼Œè¿è¡Œåˆ°è¿™ä¸ªä½ç½®å°±ä»£è¡¨
-	 * èµ·å§‹åœ°å€addré•¿åº¦ä¸ºlençš„è™šæ‹Ÿåœ°å€ç©ºé—´åªå¯ä»¥
-	 * æ˜ å°„åˆ°è¿›ç¨‹çš„åœ°å€ç©ºé—´å½“ä¸­çš„ã€‚
+	/* ·ÖÅäÒ»¸öĞéÄâµØÖ·¿Õ¼ä£¬ÔËĞĞµ½Õâ¸öÎ»ÖÃ¾Í´ú±í
+	 * ÆğÊ¼µØÖ·addr³¤¶ÈÎªlenµÄĞéÄâµØÖ·¿Õ¼äÖ»¿ÉÒÔ
+	 * Ó³Éäµ½½ø³ÌµÄµØÖ·¿Õ¼äµ±ÖĞµÄ¡£
 	 */
 	mpnt = (struct vm_area_struct * ) kmalloc(sizeof(struct vm_area_struct), GFP_KERNEL);
 	if (!mpnt)
@@ -385,9 +386,9 @@ int generic_mmap(struct inode * inode, struct file * file,
 	mpnt->vm_end = addr + len;
 	mpnt->vm_page_prot = prot;
 	mpnt->vm_share = NULL;
-	/*å¦‚æœæ–‡ä»¶è¢«æ˜ å°„åˆ°è™šæ‹Ÿåœ°å€ç©ºé—´ï¼Œ
-	 *åˆ™inodeçš„å¼•ç”¨è®¡æ•°ä¼šå¢åŠ 1ï¼Œå…¶ä¸­offä»£è¡¨ä»æ–‡ä»¶ä¸­çš„ç¬¬å‡ ä¸ªå­—èŠ‚å¤„
-	 *å¼€å§‹æ˜ å°„
+	/*Èç¹ûÎÄ¼ş±»Ó³Éäµ½ĞéÄâµØÖ·¿Õ¼ä£¬
+	 *ÔòinodeµÄÒıÓÃ¼ÆÊı»áÔö¼Ó1£¬ÆäÖĞoff´ú±í´ÓÎÄ¼şÖĞµÄµÚ¼¸¸ö×Ö½Ú´¦
+	 *¿ªÊ¼Ó³Éä
 	 */
 	mpnt->vm_inode = inode;
 	inode->i_count++;
@@ -406,9 +407,10 @@ int generic_mmap(struct inode * inode, struct file * file,
  * JSGF
  */
 
-/* å°†ä¸€ä¸ªçº¿æ€§åœ°å€æ®µæ’å…¥åˆ°è¿›ç¨‹çš„åœ°å€ç©ºé—´å½“ä¸­ï¼Œ
- * æœ€åæ’åºä»å°åˆ°å¤§
+/* ½«Ò»¸öÏßĞÔµØÖ·¶Î²åÈëµ½½ø³ÌµÄµØÖ·¿Õ¼äµ±ÖĞ£¬
+ * ×îºóÅÅĞò´ÓĞ¡µ½´ó
  */
+
 void insert_vm_struct(struct task_struct *t, struct vm_area_struct *vmp)
 {
 	struct vm_area_struct **nxtpp, *mpnt;
@@ -441,9 +443,10 @@ void insert_vm_struct(struct task_struct *t, struct vm_area_struct *vmp)
  * This assumes that the list is ordered by address.
  */
 
-/* å¦‚æœç›¸é‚»çš„è™šæ‹Ÿåœ°å€ç©ºé—´(åœ°å€æ®µ)å¯ä»¥åˆå¹¶ï¼Œ
- * åˆ™å°†å¯ä»¥åˆå¹¶çš„åœ°å€ç©ºé—´åˆå¹¶
+/* Èç¹ûÏàÁÚµÄĞéÄâµØÖ·¿Õ¼ä(µØÖ·¶Î)¿ÉÒÔºÏ²¢£¬
+ * Ôò½«¿ÉÒÔºÏ²¢µÄµØÖ·¿Õ¼äºÏ²¢
  */
+
 void merge_segments(struct vm_area_struct *mpnt,
 		    map_mergep_fnp mergep, void *mpd)
 {

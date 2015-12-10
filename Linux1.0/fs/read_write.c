@@ -16,6 +16,8 @@
  * Count is not yet used: but we'll probably support reading several entries
  * at once in the future. Use count=1 in the library for future expansions.
  */
+/* 读取目录文件的一个目录 
+ */
 asmlinkage int sys_readdir(unsigned int fd, struct dirent * dirent, unsigned int count)
 {
 	int error;

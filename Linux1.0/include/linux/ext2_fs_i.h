@@ -31,8 +31,8 @@ struct ext2_inode_info {
 	unsigned long  i_dtime;
 	unsigned long  i_version;
 	unsigned long  i_block_group;  /* 数据所在块组号 */
-	unsigned long  i_next_alloc_block;
-	unsigned long  i_next_alloc_goal;
+	unsigned long  i_next_alloc_block;  /* 下一个文件分配的逻辑块号 */
+	unsigned long  i_next_alloc_goal; /* 下一个分配的设备逻辑块号 */
 	unsigned long  i_prealloc_block; /*存放下一次要使用的预分配的逻辑块号 */
 	unsigned long  i_prealloc_count; /*存放预分配给文件的还没有使用的数据块的数量 */
 };

@@ -14,6 +14,9 @@
 #include <linux/ioctl.h>
 #include <linux/sched.h>
 
+/* 向文件发送一个命令，如获取文件信息的命令，
+ * 将文件的信息拷贝到arg所指向的内存，如关于文件的flag和版本等信息
+ */
 int ext2_ioctl (struct inode * inode, struct file * filp, unsigned int cmd,
 		unsigned long arg)
 {

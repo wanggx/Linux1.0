@@ -83,7 +83,9 @@ void ext2_discard_prealloc (struct inode * inode)
 #endif
 }
 
-/* 返回一个逻辑块号，表示新块的首选位置 */
+/* 返回一个设备的逻辑块号，表示新块的实际分配位置 
+ * goal只是希望分配得到的块号
+ */
 static int ext2_alloc_block (struct inode * inode, unsigned long goal)
 {
 #ifdef EXT2FS_DEBUG
@@ -95,12 +97,19 @@ static int ext2_alloc_block (struct inode * inode, unsigned long goal)
 	wait_on_super (inode->i_sb);
 
 #ifdef EXT2_PREALLOCATE
-	/* 如果先前有预分配，则返回预分配的逻辑块号 */
+	/* 如果先前有预分配，且希望分配的块号真好是预先分配的块号，
+	 * 则返回预分配的逻辑块号 
+	 */
 	if (inode->u.ext2_i.i_prealloc_count &&
 	    (goal == inode->u.ext2_i.i_prealloc_block ||
 	     goal + 1 == inode->u.ext2_i.i_prealloc_block))
 	{		
+		/* 返回之前预先分配的块号，同时增加下一次预先分配的块号，
+		 * 在ext2文件系统中为文件分配的块号尽量靠在一起，所以预先分配的块号
+		 * 会紧邻之前已经分配的块号 
+		 */
 		result = inode->u.ext2_i.i_prealloc_block++;
+		/* 较小预先分配的块数量 */
 		inode->u.ext2_i.i_prealloc_count--;
 		ext2_debug ("preallocation hit (%lu/%lu).\n",
 			    ++alloc_hits, ++alloc_attempts);
@@ -237,18 +246,31 @@ repeat:
 		*err = -EFBIG;
 		return NULL;
 	}
+
+	/* 如果要分配的一块正好和inode中记录的下一个分配的块号相同，
+	 * 则把下一个要分配的设备逻辑块号给goal
+	 */
 	if (inode->u.ext2_i.i_next_alloc_block == new_block)
 		goal = inode->u.ext2_i.i_next_alloc_goal;
 
 	ext2_debug ("hint = %d,", goal);
 
+	/* 如果没有合适的分配目标 */
 	if (!goal) {
+		/* 扫描文件nr之前的逻辑块号，
+		 * 设置goal为文件最后一个有效逻辑块号对应的设备逻辑块号,
+		 * goal只是希望分到的设备逻辑块号，但在真正使用的时候，
+		 * 最终不一定实际分配的就是goal这块
+		 */
 		for (tmp = nr - 1; tmp >= 0; tmp--) {
 			if (inode->u.ext2_i.i_data[tmp]) {
 				goal = inode->u.ext2_i.i_data[tmp];
 				break;
 			}
 		}
+		/* 如果依然没有找到(这种情况在一个空文件的情况下，一个字节都没有写入)，
+		 * 则希望分到inode所在的组中的第一块
+		 */
 		if (!goal)
 			goal = (inode->u.ext2_i.i_block_group * 
 				EXT2_BLOCKS_PER_GROUP(inode->i_sb)) +
@@ -260,12 +282,14 @@ repeat:
 	tmp = ext2_alloc_block (inode, goal);
 	if (!tmp)
 		return NULL;
+	/* 为设备的逻辑块分配一个高速缓存 */
 	result = getblk (inode->i_dev, tmp, inode->i_sb->s_blocksize);
 	if (*p) {
 		ext2_free_blocks (inode->i_sb, tmp, 1);
 		brelse (result);
 		goto repeat;
 	}
+	/* 设置文件逻辑块号对应的设备逻辑块号 */
 	*p = tmp;
 	inode->u.ext2_i.i_next_alloc_block = new_block;
 	inode->u.ext2_i.i_next_alloc_goal = tmp;
@@ -278,6 +302,7 @@ repeat:
 	return result;
 }
 
+/* 从文件的非直接映射块中获取文件逻辑块号为new_block的设备逻辑块号 */
 static struct buffer_head * block_getblk (struct inode * inode,
 					  struct buffer_head * bh, int nr,
 					  int create, int blocksize, 
@@ -290,6 +315,7 @@ static struct buffer_head * block_getblk (struct inode * inode,
 
 	if (!bh)
 		return NULL;
+	/* 首先块要是最新的，否则返回失败 */
 	if (!bh->b_uptodate) {
 		ll_rw_block (READ, 1, &bh);
 		wait_on_buffer (bh);
@@ -298,10 +324,13 @@ static struct buffer_head * block_getblk (struct inode * inode,
 			return NULL;
 		}
 	}
+	/* 获取bh块中偏移为nr的块地址 */
 	p = (unsigned long *) bh->b_data + nr;
 repeat:
+	/* 获取对应的逻辑块号 */
 	tmp = *p;
 	if (tmp) {
+		/* 这个判断是防止在getblk的时候inode的数据被其他进程修改 */
 		result = getblk (bh->b_dev, tmp, blocksize);
 		if (tmp == *p) {
 			brelse (bh);
@@ -317,6 +346,7 @@ repeat:
 		*err = -EFBIG;
 		return NULL;
 	}
+	/* 这段goal的道理和inode_getblk差不多 */
 	if (inode->u.ext2_i.i_next_alloc_block == new_block)
 		goal = inode->u.ext2_i.i_next_alloc_goal;
 	if (!goal) {
@@ -340,6 +370,7 @@ repeat:
 		brelse (result);
 		goto repeat;
 	}
+	/* 这是文件逻辑块号对应的设备逻辑块号 */
 	*p = tmp;
 	bh->b_dirt = 1;
 	if (IS_SYNC(inode)) {
@@ -355,7 +386,10 @@ repeat:
 	return result;
 }
 
-/* 只是分配了逻辑块号的高速缓存 */
+/* 只是分配了逻辑块号的高速缓存，
+ * 但并没有将文件相应逻辑块的数据读入到高速缓存 ,
+ * block代表文件的逻辑块号
+ */
 struct buffer_head * ext2_getblk (struct inode * inode, long block,
 				  int create, int * err)
 {
@@ -395,6 +429,7 @@ struct buffer_head * ext2_getblk (struct inode * inode, long block,
 
 	*err = -ENOSPC;
 	b = block;
+	/* 如果是直接映射，则在inode所在的块组中分配一个空闲数据块 */
 	if (block < EXT2_NDIR_BLOCKS)
 		return inode_getblk (inode, block, create, b, err);
 	block -= EXT2_NDIR_BLOCKS;
@@ -404,6 +439,7 @@ struct buffer_head * ext2_getblk (struct inode * inode, long block,
 				     inode->i_sb->s_blocksize, b, err);
 	}
 	block -= addr_per_block;
+	/* 开始处理二级映射的逻辑块号 ，再减依次就是三级映射处理 */
 	if (block < addr_per_block * addr_per_block) {
 		bh = inode_getblk (inode, EXT2_DIND_BLOCK, create, b, err);
 		bh = block_getblk (inode, bh, block / addr_per_block, create,
@@ -421,6 +457,8 @@ struct buffer_head * ext2_getblk (struct inode * inode, long block,
 			     inode->i_sb->s_blocksize, b, err);
 }
 
+/* 将文件的逻辑块读入到高速缓存，同时返回高速缓存的地址 
+ */
 struct buffer_head * ext2_bread (struct inode * inode, int block, 
 				 int create, int *err)
 {

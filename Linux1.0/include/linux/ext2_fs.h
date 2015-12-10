@@ -314,6 +314,12 @@ struct ext2_super_block {
  */
 #define EXT2_NAME_LEN 255
 
+/* 注意这个结构很特殊，主要目的是减小磁盘乱费
+ * 虽说这个结构的长度用sizeof是可以确定的，但是每个
+ * 文件的长度不一定都很大，如果每个目录的名称都按照最大长度来存储
+ * 则会乱费较多空间，为此使用rec_len来特别注明目录结构实际在内存当中
+ * 使用的长度
+ */
 struct ext2_dir_entry {
 	unsigned long  inode;			/* Inode number */
 	unsigned short rec_len;			/* Directory entry length */

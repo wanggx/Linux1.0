@@ -67,18 +67,22 @@ struct inode_operations ext2_dir_inode_operations = {
 	ext2_permission		/* permission */
 };
 
+
+/* 判断目录的合法性 */
 int ext2_check_dir_entry (char * function, struct inode * dir,
 			  struct ext2_dir_entry * de, struct buffer_head * bh,
 			  unsigned long offset)
 {
 	char * error_msg = NULL;
 
+	/* 目录项的最小长度也是有限制的 ，并且长度是要和4字节对齐的*/
 	if (de->rec_len < EXT2_DIR_REC_LEN(1))
 		error_msg = "rec_len is smaller than minimal";
 	else if (de->rec_len % 4 != 0)
 		error_msg = "rec_len % 4 != 0";
 	else if (de->rec_len < EXT2_DIR_REC_LEN(de->name_len))
 		error_msg = "rec_len is too small for name_len";
+	/* 一个目录项只能放在以个物理块当中，如果出现交叉跨块则出错 */
 	else if (dir && ((char *) de - bh->b_data) + de->rec_len >
 		 dir->i_sb->s_blocksize)
 		error_msg = "directory entry across blocks";
@@ -91,6 +95,7 @@ int ext2_check_dir_entry (char * function, struct inode * dir,
 	return error_msg == NULL ? 1 : 0;
 }
 
+/* 从目录文件当中读取一个目录 */
 static int ext2_readdir (struct inode * inode, struct file * filp,
 			 struct dirent * dirent, int count)
 {
@@ -100,7 +105,8 @@ static int ext2_readdir (struct inode * inode, struct file * filp,
 	struct ext2_dir_entry * de;
 	struct super_block * sb;
 	int err;
-	
+
+	/* 首先要是目录 */
 	if (!inode || !S_ISDIR(inode->i_mode))
 		return -EBADF;
 	sb = inode->i_sb;
@@ -116,6 +122,7 @@ static int ext2_readdir (struct inode * inode, struct file * filp,
 		/*
 		 * Do the readahead
 		 */
+		/* 如果正好目录文件的读取偏移正好在块的起始处 */
 		if (!offset) {
 			for (i = 16 >> (EXT2_BLOCK_SIZE_BITS(sb) - 9), num = 0;
 			     i > 0; i--) {
@@ -125,13 +132,15 @@ static int ext2_readdir (struct inode * inode, struct file * filp,
 				else
 					brelse (tmp);
 			}
+			/* 将数据给重新读取一次 */
 			if (num) {
 				ll_rw_block (READA, num, bha);
 				for (i = 0; i < num; i++)
 					brelse (bha[i]);
 			}
 		}
-		
+
+		/* 将高速缓存块中偏移为offset的位置作为下一个目录项的其实地址 */
 		de = (struct ext2_dir_entry *) (offset + bh->b_data);
 		while (offset < sb->s_blocksize && filp->f_pos < inode->i_size) {
 			if (!ext2_check_dir_entry ("ext2_readdir", inode, de,
@@ -139,6 +148,7 @@ static int ext2_readdir (struct inode * inode, struct file * filp,
 				brelse (bh);
 				return 0;
 			}
+			/* 增加当前目录项实际占用的长度，并修改文件读取的偏移量 */
 			offset += de->rec_len;
 			filp->f_pos += de->rec_len;
 			if (de->inode) {
@@ -158,8 +168,10 @@ static int ext2_readdir (struct inode * inode, struct file * filp,
 					inode->i_atime = CURRENT_TIME;
 					inode->i_dirt = 1;
 				}
+				/* 返回目录名长度 */
 				return i;
 			}
+			/* 增加偏移量到下一个目录的有效地址处 */
 			de = (struct ext2_dir_entry *) ((char *) de +
 							de->rec_len);
 		}
