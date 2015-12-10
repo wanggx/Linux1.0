@@ -327,6 +327,8 @@ static void inc_inode_version (struct inode * inode,
  * For other inodes, search forward from the parent directory\'s block
  * group to find a free inode.
  */
+/* 在磁盘上分配一个新的inode结点
+ */
 struct inode * ext2_new_inode (const struct inode * dir, int mode)
 {
 	struct super_block * sb;

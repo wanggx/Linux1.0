@@ -72,6 +72,9 @@ static int ext2_match (int len, const char * const name,
  * itself (as a parameter - res_dir). It does NOT read the inode of the
  * entry - you'll have to do that yourself if you want to.
  */
+/* 该函数从一个父目录dir当中查找一个名称为name长度为namelen的文件或目录
+ * 然后将查找到的结果存放在res_dir当中
+ */
 static struct buffer_head * ext2_find_entry (struct inode * dir,
 					     const char * const name, int namelen,
 					     struct ext2_dir_entry ** res_dir)
@@ -97,6 +100,7 @@ static struct buffer_head * ext2_find_entry (struct inode * dir,
 
 	memset (bh_use, 0, sizeof (bh_use));
 	toread = 0;
+	/* 读取目录文件的块，然后将读取的有效高速缓存存放在bh_read当中 */
 	for (block = 0; block < NAMEI_RA_SIZE; ++block) {
 		struct buffer_head * bh;
 
@@ -104,6 +108,7 @@ static struct buffer_head * ext2_find_entry (struct inode * dir,
 		if ((block << EXT2_BLOCK_SIZE_BITS (sb)) >= dir->i_size)
 			break;
 		bh = ext2_getblk (dir, block, 0, &err);
+		/* bh_use中存放的指针不一定有效 */
 		bh_use[block] = bh;
 		if (bh && !bh->b_uptodate)
 			bh_read[toread++] = bh;
@@ -111,6 +116,9 @@ static struct buffer_head * ext2_find_entry (struct inode * dir,
 
 	block = 0;
 	offset = 0;
+	/* 从目录文件的第0块，0处偏移开始，一块一块的开始查找，
+	 * 如果找到了，则直接返回 
+	 */
 	while (offset < dir->i_size) {
 		struct buffer_head * bh;
 		struct ext2_dir_entry * de;
@@ -125,6 +133,7 @@ static struct buffer_head * ext2_find_entry (struct inode * dir,
 			ext2_panic (sb, "ext2_find_entry",
 				    "buffer head pointer is NULL");
 		wait_on_buffer (bh);
+		/* 高速缓存首先要是最新的 */
 		if (!bh->b_uptodate) {
 			/*
 			 * read error: all bets are off
@@ -132,12 +141,15 @@ static struct buffer_head * ext2_find_entry (struct inode * dir,
 			break;
 		}
 
+		/* 循环处理目录文件的一块，如果找到了，则返回  */
 		de = (struct ext2_dir_entry *) bh->b_data;
 		dlimit = bh->b_data + sb->s_blocksize;
 		while ((char *) de < dlimit) {
+			/* 检查ext2_dir_entry的有效性 */
 			if (!ext2_check_dir_entry ("ext2_find_entry", dir,
 						   de, bh, offset))
 				goto failure;
+			/* 如果inode号不为0，且名称和长度匹配，则说明找到了，并返回 */
 			if (de->inode != 0 && ext2_match (namelen, name, de)) {
 				for (i = 0; i < NAMEI_RA_SIZE; ++i) {
 					if (bh_use[i] != bh)
@@ -146,11 +158,12 @@ static struct buffer_head * ext2_find_entry (struct inode * dir,
 				*res_dir = de;
 				return bh;
 			}
+			/* 没找到则继续处理下一个ext2_dir_entry */
 			offset += de->rec_len;
 			de = (struct ext2_dir_entry *)
 				((char *) de + de->rec_len);
 		}
-
+		/* 如果这一块还没有找到，则继续找下一块 */
 		brelse (bh);
 		if (((block + NAMEI_RA_SIZE) << EXT2_BLOCK_SIZE_BITS (sb)) >=
 		    dir->i_size)
@@ -184,13 +197,16 @@ int ext2_lookup (struct inode * dir, const char * name, int len,
 		iput (dir);
 		return -ENOENT;
 	}
+	/* 这个宏已被定义 */
 #ifndef DONT_USE_DCACHE
 	if (!(ino = ext2_dcache_lookup (dir->i_dev, dir->i_ino, name, len))) {
 #endif
+		/* 找到符合条件的ext2_dir_entry */
 		if (!(bh = ext2_find_entry (dir, name, len, &de))) {
 			iput (dir);
 			return -ENOENT;
 		}
+		/* 获取找到的文件或目录的inode号 */
 		ino = de->inode;
 #ifndef DONT_USE_DCACHE
 		ext2_dcache_add (dir->i_dev, dir->i_ino, de->name,
@@ -220,6 +236,10 @@ int ext2_lookup (struct inode * dir, const char * name, int len,
  * NOTE!! The inode part of 'de' is left at 0 - which means you
  * may not sleep between calling this and putting something into
  * the entry, as someone else might have used it while you slept.
+ */
+/* 给目录文件中添加一个项，然后将添加的这项所在的高速缓存指针返回，
+ * 以便其他函数来设置数据，在添加项的过程当中，首先会判断该目录文件下是否
+ * 已经存在name，namelen的项
  */
 static struct buffer_head * ext2_add_entry (struct inode * dir,
 					    const char * name, int namelen,
@@ -254,6 +274,11 @@ static struct buffer_head * ext2_add_entry (struct inode * dir,
 		*err = -ENOENT;
 		return NULL;
 	}
+	/* 将目录文件的第0块读入到高速缓存，并返回高速缓存指针，
+	 * 按照正常道理来说，一个空文件夹是没有数据块的，但是在新建一个
+	 * 文件夹时，系统会默认带上两个特殊的文件.代表自己..代表上一级目录
+	 * 所以此处在读取的时候参数0,0会读取到高速缓存
+	 */
 	bh = ext2_bread (dir, 0, 0, err);
 	if (!bh)
 		return NULL;
@@ -262,12 +287,16 @@ static struct buffer_head * ext2_add_entry (struct inode * dir,
 	de = (struct ext2_dir_entry *) bh->b_data;
 	*err = -ENOSPC;
 	while (1) {
+		/* 当前高速缓存块已经存满了，所以需要在读取另一个高速缓存块，
+		 * 也就相当于用1的方式为目录文件新分配了一个数据块
+		 */
 		if ((char *)de >= sb->s_blocksize + bh->b_data) {
 			brelse (bh);
 			bh = NULL;
 			bh = ext2_bread (dir, offset >> EXT2_BLOCK_SIZE_BITS(sb), 1, err);
 			if (!bh)
 				return NULL;
+			/* 如果偏移量超过文件大小 */
 			if (dir->i_size <= offset) {
 				if (dir->i_size == 0) {
 					*err = -ENOENT;
@@ -275,7 +304,10 @@ static struct buffer_head * ext2_add_entry (struct inode * dir,
 				}
 
 				ext2_debug ("creating next block\n");
-
+				/* 在新的一块中，设置目录项的数据，此处很重要的一点就是inode号为0，
+				 * 这里只是找到了一个存放ext2_dir_entry的位置，后面才会将参数中的name，namelen
+				 * 写入高速缓存
+				 */
 				de = (struct ext2_dir_entry *) bh->b_data;
 				de->inode = 0;
 				de->rec_len = sb->s_blocksize;
@@ -297,6 +329,7 @@ static struct buffer_head * ext2_add_entry (struct inode * dir,
 			brelse (bh);
 			return NULL;
 		}
+		/* 如果已经存在了，则返回出错 */
 		if (de->inode != 0 && ext2_match (namelen, name, de)) {
 				*err = -EEXIST;
 				brelse (bh);
@@ -313,6 +346,9 @@ static struct buffer_head * ext2_add_entry (struct inode * dir,
 				de->rec_len = EXT2_DIR_REC_LEN(de->name_len);
 				de = de1;
 			}
+			/* 这里的inode依然是0，因为这个函数仅仅是在目录的数据块中添加了一个
+			 * ext2_inode_entry结构，inode号在ext2_create函数中设置
+			 */
 			de->inode = 0;
 			de->name_len = namelen;
 			memcpy (de->name, name, namelen);
@@ -334,6 +370,7 @@ static struct buffer_head * ext2_add_entry (struct inode * dir,
 			*err = 0;
 			return bh;
 		}
+		/* 处理下一个项 */
 		offset += de->rec_len;
 		de = (struct ext2_dir_entry *) ((char *) de + de->rec_len);
 	}
@@ -344,6 +381,9 @@ static struct buffer_head * ext2_add_entry (struct inode * dir,
 /*
  * ext2_delete_entry deletes a directory entry by merging it with the
  * previous entry
+ */
+/* 删除则是仅仅改变了ext2_dir_entry中的rec_len，
+ * 也就是直接把删除的那个dir给跳过了。
  */
 static int ext2_delete_entry (struct ext2_dir_entry * dir,
 			      struct buffer_head * bh)
@@ -371,6 +411,10 @@ static int ext2_delete_entry (struct ext2_dir_entry * dir,
 	return -ENOENT;
 }
 
+/* 该函数首先在磁盘上为文件分配一个inode，然后调用ext2_add_entry函数
+ * 为目录添加一个项，同时设置项的inode号，然后将新建文件的inode放在result中返回
+ * 创建的只能是普通文件
+ */
 int ext2_create (struct inode * dir,const char * name, int len, int mode,
 		 struct inode ** result)
 {
@@ -398,6 +442,8 @@ int ext2_create (struct inode * dir,const char * name, int len, int mode,
 		iput (dir);
 		return err;
 	}
+	/* 设置文件的inode号
+	 */
 	de->inode = inode->i_ino;
 #ifndef DONT_USE_DCACHE
 	ext2_dcache_add (dir->i_dev, dir->i_ino, de->name, de->name_len,
@@ -414,6 +460,7 @@ int ext2_create (struct inode * dir,const char * name, int len, int mode,
 	return 0;
 }
 
+/* 和ext2_create区别，可以创建字符设备文件，块文件结点等等 */
 int ext2_mknod (struct inode * dir, const char * name, int len, int mode,
 		int rdev)
 {
@@ -488,6 +535,7 @@ int ext2_mknod (struct inode * dir, const char * name, int len, int mode,
 	return 0;
 }
 
+/* 创建一个目录 */
 int ext2_mkdir (struct inode * dir, const char * name, int len, int mode)
 {
 	struct inode * inode;
@@ -512,11 +560,13 @@ int ext2_mkdir (struct inode * dir, const char * name, int len, int mode)
 		iput (dir);
 		return -ENOSPC;
 	}
+	/* 设置目录文件的i_op */
 	inode->i_op = &ext2_dir_inode_operations;
 	inode->i_size = inode->i_sb->s_blocksize;
 #if 0 /* XXX as above */
 	inode->i_mtime = inode->i_atime = CURRENT_TIME;
 #endif
+	/* 目录文件的第0块数据块缓冲 */
 	dir_block = ext2_bread (inode, 0, 1, &err);
 	if (!dir_block) {
 		iput (dir);
@@ -525,6 +575,7 @@ int ext2_mkdir (struct inode * dir, const char * name, int len, int mode)
 		iput (inode);
 		return err;
 	}
+	/* 会自动创建两个文件 .和..*/
 	inode->i_blocks = inode->i_sb->s_blocksize / 512;
 	de = (struct ext2_dir_entry *) dir_block->b_data;
 	de->inode = inode->i_ino;
@@ -551,6 +602,7 @@ int ext2_mkdir (struct inode * dir, const char * name, int len, int mode)
 		iput (inode);
 		return err;
 	}
+	/* 设置目录文件的inode号 */
 	de->inode = inode->i_ino;
 #ifndef DONT_USE_DCACHE
 	ext2_dcache_add (dir->i_dev, dir->i_ino, de->name, de->name_len,
