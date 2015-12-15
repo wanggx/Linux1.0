@@ -169,7 +169,10 @@ struct task_struct {
 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
 	long counter;
 	long priority;
-	unsigned long signal;
+	/* 注意很多地方的这种写法 if (current->signal & ~current->blocked)
+	 * signal表示发送给进程的信号位图，blocked表示进程阻塞的信号位图
+	 */
+	unsigned long signal;   
 	unsigned long blocked;	/* bitmap of masked signals */
 	unsigned long flags;	/* per process flags, defined below */
 	int errno;

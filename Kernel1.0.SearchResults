@@ -1,3 +1,66 @@
----- ->readdir Matches (2 in 1 files) ----
-Read_write.c (fs):	if (file->f_op && file->f_op->readdir) {
-Read_write.c (fs):			error = file->f_op->readdir(inode,file,dirent,count);
+---- current->signal Matches (65 in 29 files) ----
+Cdu31a.c (drivers\block):      if (current->signal & ~current->blocked)
+Cdu31a.c (drivers\block):         if (current->signal & ~current->blocked)
+Datagram.c (net\inet):			if (current->signal & ~current->blocked)
+Exec.c (fs):	current->signal = 0;
+Exit.c (kernel):		current->signal &= ~(1<<(SIGCHLD-1));
+Exit.c (kernel):		if (current->signal & ~current->blocked)
+Fifo.c (fs):				if (current->signal & ~current->blocked) {
+Fifo.c (fs):				if (current->signal & ~current->blocked) {
+Locks.c (fs):				if (current->signal & ~current->blocked)
+Locks.c (fs):				if (current->signal & ~current->blocked)
+Lp.c (drivers\char):				if (current->signal & ~current->blocked) {
+Lp.c (drivers\char):			if (current->signal & ~current->blocked) {
+Mem.c (fs\proc):		if (current->signal & ~current->blocked)
+Mem.c (fs\proc):		if (current->signal & ~current->blocked)
+Mem.c (fs\proc):	if (current->signal & ~current->blocked)
+Msg.c (ipc):		if (current->signal & ~current->blocked)
+Msg.c (ipc):			if (current->signal & ~current->blocked)
+Os.h (drivers\sound):#define PROCESS_ABORTING(q, f) (f.aborting | (current->signal & ~current->blocked))
+Os.h (drivers\sound):	     if (current->signal & ~current->blocked) \
+Pipe.c (fs):		if (current->signal & ~current->blocked)
+Pipe.c (fs):			if (current->signal & ~current->blocked)
+Pipe.c (fs):		if (current->signal & ~current->blocked)
+Printk.c (kernel):				if (current->signal & ~current->blocked) {
+Psaux.c (drivers\char):		if (queue_empty() && !(current->signal & ~current->blocked)) {
+Psaux.c (drivers\char):	if (current->signal & ~current->blocked)
+Ptrace.c (kernel):		current->signal |= (1 << (current->exit_code - 1));
+Pty.c (drivers\char):	while (!tty->link->count && !(current->signal & ~current->blocked))
+Raw.c (net\inet):			if (current->signal & ~current->blocked) {
+Sched.h (include\linux):	/* 注意很多地方的这种写法 if (current->signal & ~current->blocked) */
+Select.c (fs):	if (!count && current->timeout && !(current->signal & ~current->blocked)) {
+Select.c (fs):	if (!i && (current->signal & ~current->blocked))
+Sem.c (ipc):			if (current->signal & ~current->blocked) 
+Sem.c (ipc):			if (current->signal & ~current->blocked)
+Sem.c (ipc):			if (current->signal & ~current->blocked)
+Serial.c (drivers\char):		if (current->signal & ~current->blocked) {
+Sg.c (drivers\scsi):      if (current->signal & ~current->blocked)
+Sg.c (drivers\scsi):     if (current->signal & ~current->blocked)
+Sg.c (drivers\scsi):      if (current->signal & ~current->blocked)
+Sg.c (drivers\scsi):    if (current->signal & ~current->blocked)
+Sg.c (drivers\scsi):    if (current->signal & ~current->blocked)
+Signal.c (kernel):		put_fs_long(current->blocked & current->signal, (unsigned long *)set);
+Signal.c (kernel):		current->signal &= ~_S(signum);
+Signal.c (kernel):		current->signal &= ~_S(signum);
+Signal.c (kernel):	while ((signr = current->signal & mask)) {
+Signal.c (kernel):			:"=m" (current->signal),"=r" (signr)
+Signal.c (kernel):				current->signal |= _S(signr);
+Signal.c (kernel):				current->signal |= _S(signr & 0x7f);
+Sock.c (fs\nfs):			if (current->signal & ~current->blocked) {
+Sock.c (net\inet):		if (current->signal & ~current->blocked) {
+Sock.c (net\inet):	if (current->signal & ~current->blocked) {
+Sock.c (net\inet):	if (current->signal & ~current->blocked) {
+Sock.c (net\unix):	if (current->signal & ~current->blocked) {
+Sock.c (net\unix):	if (current->signal & ~current->blocked) {
+Sock.c (net\unix):	if (current->signal & ~current->blocked) {
+Socket.c (net):	if (current->signal & ~current->blocked) {
+Tcp.c (net\inet):			if (current->signal & ~current->blocked) {
+Tcp.c (net\inet):			if (current->signal & ~current->blocked) {
+Tcp.c (net\inet):		if (current->signal & ~current->blocked)
+Tcp.c (net\inet):		if (current->signal & ~current->blocked) {
+Tcp.c (net\inet):	if (current->signal & ~current->blocked) {
+Tty_io.c (drivers\char):	return (current->signal & ~current->blocked) ? -1 : 0;
+Tty_io.c (drivers\char):			if (current->signal & ~current->blocked) {
+Tty_io.c (drivers\char):		if (current->signal & ~current->blocked) {
+Tty_io.c (drivers\char):		if (current->signal & ~current->blocked)
+Tty_ioctl.c (drivers\char):		if (current->signal & ~current->blocked)

@@ -182,13 +182,13 @@ struct inode {
 	struct semaphore i_sem;    /* 操作inode的信号量 */
 	struct inode_operations * i_op;
 	struct super_block * i_sb;      /*对应的超级块*/
-	struct wait_queue * i_wait;
-	struct file_lock * i_flock;
+	struct wait_queue * i_wait;		/* 操作inode的等待队列 */
+	struct file_lock * i_flock;	   /* 文件锁结构，用于同步或控制 */
 	struct vm_area_struct * i_mmap; /* 该文件映射到的虚拟地址段的地址 */
 	struct inode * i_next, * i_prev;     /*空闲双向链表*/
 	struct inode * i_hash_next, * i_hash_prev; /*hash双向链表*/
 	struct inode * i_bound_to, * i_bound_by;
-	struct inode * i_mount;
+	struct inode * i_mount;		/* inode所在文件系统的挂载点 */
 	struct socket * i_socket;  /*如果是网络inode，则指向网络数据*/
 	unsigned short i_count;
 	unsigned short i_flags;
@@ -226,13 +226,14 @@ struct file {
 	struct file_operations * f_op;
 };
 
+/* 文件锁结构，该结构可以用来锁定文件字节中的某一段 */
 struct file_lock {
 	struct file_lock *fl_next;	/* singly linked list */
 	struct task_struct *fl_owner;	/* NULL if on free list, for sanity checks */
         unsigned int fl_fd;             /* File descriptor for this lock */
 	struct wait_queue *fl_wait;
-	char fl_type;
-	char fl_whence;
+	char fl_type;			/* 锁的类型 */
+	char fl_whence;			/* 指定起始位置的特点，从头开始，还是当前开始，还是文件末尾 */
 	off_t fl_start;
 	off_t fl_end;
 };
