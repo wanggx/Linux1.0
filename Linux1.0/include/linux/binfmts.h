@@ -16,7 +16,7 @@
 /* linux可执行二进制文件的参数结构 
  */
 struct linux_binprm{
-  char buf[128];
+  char buf[128];    /* 文件的头格式 */
   unsigned long page[MAX_ARG_PAGES];
   unsigned long p;
   int sh_bang;

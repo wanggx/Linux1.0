@@ -277,7 +277,8 @@ int load_elf_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 	status = 0;
 	load_addr = 0;
 	elf_ex = *((struct elfhdr *) bprm->buf);	  /* exec-header */
-	
+
+	/* elf文件头进行判断 */
 	if (elf_ex.e_ident[0] != 0x7f ||
 	    strncmp(&elf_ex.e_ident[1], "ELF",3) != 0)
 		return  -ENOEXEC;

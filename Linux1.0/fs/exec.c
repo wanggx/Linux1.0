@@ -698,6 +698,7 @@ restart_interp:
 		if (!fn)
 			break;
 		retval = fn(&bprm, regs);
+		/* 如果加载失败则继续使用其他的加载方式 */
 		if (retval == 0) {
 			iput(bprm.inode);
 			current->did_exec = 1;
