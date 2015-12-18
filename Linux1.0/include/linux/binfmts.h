@@ -13,6 +13,8 @@
 /*
  * This structure is used to hold the arguments that are used when loading binaries.
  */
+/* linux可执行二进制文件的参数结构 
+ */
 struct linux_binprm{
   char buf[128];
   unsigned long page[MAX_ARG_PAGES];
@@ -20,7 +22,7 @@ struct linux_binprm{
   int sh_bang;
   struct inode * inode;
   int e_uid, e_gid;
-  int argc, envc;
+  int argc, envc; /* 参数和环境变量个数 */
   char * filename;	   /* Name of binary */
 };
 

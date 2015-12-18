@@ -313,6 +313,8 @@ unsigned long * create_tables(char * p,int argc,int envc,int ibcs)
 /*
  * count() counts the number of arguments/envelopes
  */
+/* 获取参数或环境变量的个数
+ */
 static int count(char ** argv)
 {
 	int i=0;
@@ -416,6 +418,9 @@ unsigned long change_ldt(unsigned long text_size,unsigned long * page)
  * Read in the complete executable. This is used for "-N" files
  * that aren't on a block boundary, and for files on filesystems
  * without bmap support.
+ */
+
+/* 从可执行文件的offset处开始读取count个字节到地址addr处
  */
 int read_exec(struct inode *inode, unsigned long offset,
 	char * addr, unsigned long count)
@@ -536,6 +541,8 @@ void flush_old_exec(struct linux_binprm * bprm)
 /*
  * sys_execve() executes a new program.
  */
+/* execve函数的实际执行函数
+ */
 static int do_execve(char * filename, char ** argv, char ** envp, struct pt_regs * regs)
 {
 	struct linux_binprm bprm;
@@ -550,6 +557,7 @@ static int do_execve(char * filename, char ** argv, char ** envp, struct pt_regs
 	bprm.p = PAGE_SIZE*MAX_ARG_PAGES-4;
 	for (i=0 ; i<MAX_ARG_PAGES ; i++)	/* clear page-table */
 		bprm.page[i] = 0;
+	/*　获取路径对应的文件的ｉｎｏｄｅ　*/
 	retval = open_namei(filename, 0, 0, &bprm.inode, NULL);
 	if (retval)
 		return retval;
@@ -707,6 +715,8 @@ exec_error1:
 
 /*
  * sys_execve() executes a new program.
+ */
+/* execve函数族系统调用
  */
 asmlinkage int sys_execve(struct pt_regs regs)
 {

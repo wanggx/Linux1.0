@@ -1,3 +1,4 @@
----- ->readdir Matches (2 in 1 files) ----
-Read_write.c (fs):	if (file->f_op && file->f_op->readdir) {
-Read_write.c (fs):			error = file->f_op->readdir(inode,file,dirent,count);
+---- sys_execve Matches (3 in 3 files) ----
+Exec.c (fs):asmlinkage int sys_execve(struct pt_regs regs)
+Sched.c (kernel):sys_unlink, sys_execve, sys_chdir, sys_time, sys_mknod, sys_chmod,
+Sys.h (include\linux):extern int sys_execve();

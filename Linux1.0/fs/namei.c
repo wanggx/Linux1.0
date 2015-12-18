@@ -297,6 +297,11 @@ int namei(const char * pathname, struct inode ** res_inode)
  * which is a lot more logical, and also allows the "no perm" needed
  * for symlinks (where the permissions are checked later).
  */
+
+/* 获取路径所对应文件的inode，将查找到的结果inode存放在res_inode当中，
+ * base表示从哪个目录下面查找，一般会设置为NULL,具体从哪个目录下面查找会
+ * 根据pathname来决定
+ */
 int open_namei(const char * pathname, int flag, int mode,
 	struct inode ** res_inode, struct inode * base)
 {
