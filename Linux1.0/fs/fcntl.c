@@ -45,6 +45,7 @@ static int dupfd(unsigned int fd, unsigned int arg)
 	return arg;
 }
 
+/* 指定复制后的文件描述符，如果该文件描述符已经打开，则将其关闭 */
 asmlinkage int sys_dup2(unsigned int oldfd, unsigned int newfd)
 {
 	if (oldfd >= NR_OPEN || !current->filp[oldfd])
@@ -80,9 +81,9 @@ asmlinkage int sys_fcntl(unsigned int fd, unsigned int cmd, unsigned long arg)
 	if (fd >= NR_OPEN || !(filp = current->filp[fd]))
 		return -EBADF;
 	switch (cmd) {
-		case F_DUPFD:
+		case F_DUPFD:   /* 复制一个文件描述符 */
 			return dupfd(fd,arg);
-		case F_GETFD:
+		case F_GETFD:   /* 判断文件描述符是不是在进程的close_on_exec当中 */
 			return FD_ISSET(fd, &current->close_on_exec);
 		case F_SETFD:
 			if (arg&1)
@@ -90,9 +91,9 @@ asmlinkage int sys_fcntl(unsigned int fd, unsigned int cmd, unsigned long arg)
 			else
 				FD_CLR(fd, &current->close_on_exec);
 			return 0;
-		case F_GETFL:
+		case F_GETFL:   /* 返回文件的标记 */
 			return filp->f_flags;
-		case F_SETFL:
+		case F_SETFL:   /* 设置文件标记 */
 			filp->f_flags &= ~(O_APPEND | O_NONBLOCK);
 			filp->f_flags |= arg & (O_APPEND | O_NONBLOCK);
 			return 0;

@@ -30,6 +30,7 @@
 /* for F_[GET|SET]FL */
 #define FD_CLOEXEC	1	/* actually anything with low bit set goes */
 
+/* 定义锁的类型 */
 #define F_RDLCK		0
 #define F_WRLCK		1
 #define F_UNLCK		2

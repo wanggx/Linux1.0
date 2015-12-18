@@ -151,6 +151,10 @@ int follow_link(struct inode * dir, struct inode * inode,
 		*res_inode = NULL;
 		return -ENOENT;
 	}
+	/* 如果follow_link为空，则释放dir，
+	 * 同时将res_inode指向inode,有一种情况可能就是目录的符号连接
+	 * 当读取到目录符号连接时，则回继续转到真正的目录下面
+	 */
 	if (!inode->i_op || !inode->i_op->follow_link) {
 		iput(dir);
 		*res_inode = inode;
@@ -210,6 +214,10 @@ static int dir_namei(const char * pathname, int * namelen, const char ** name,
 			iput(base);
 			return error;
 		}
+		/* 注意这句非常重要，更改base和inode之间的关键
+		 * 将找到的inode设置为base，然后下一轮循环继续
+		 * 在base的目录下面寻找
+		 */
 		error = follow_link(base,inode,0,0,&base);
 		if (error)
 			return error;
@@ -218,6 +226,7 @@ static int dir_namei(const char * pathname, int * namelen, const char ** name,
 		iput(base);
 		return -ENOTDIR;
 	}
+	/*记录最后的文件名称、长度和文件所在的目录的inode*/
 	*name = thisname;
 	*namelen = len;
 	*res_inode = base;
@@ -312,6 +321,7 @@ int open_namei(const char * pathname, int flag, int mode,
 
 	mode &= S_IALLUGO & ~current->umask;
 	mode |= S_IFREG;
+	/* 获取文件所在的目录的inode和文件名称、长度 */
 	error = dir_namei(pathname,&namelen,&basename,base,&dir);
 	if (error)
 		return error;
