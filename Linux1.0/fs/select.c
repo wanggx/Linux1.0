@@ -60,6 +60,8 @@ static void free_wait(select_table * p)
  * and we aren't going to sleep on the select_table.  -- jrs
  */
 
+/* 检查文件标记 
+ */
 static int check(int flag, select_table * wait, struct file * file)
 {
 	struct inode * inode;
@@ -70,11 +72,13 @@ static int check(int flag, select_table * wait, struct file * file)
 	if ((fops = file->f_op) && (select = fops->select))
 		return select(inode, file, flag, wait)
 		    || (wait && select(inode, file, flag, NULL));
+	/* 普通文件肯定是可以被读写的 */
 	if (S_ISREG(inode->i_mode))
 		return 1;
 	return 0;
 }
 
+/* 所有文件描述符的范围，一般是最大的文件描述符加1 */
 int do_select(int n, fd_set *in, fd_set *out, fd_set *ex,
 	fd_set *res_in, fd_set *res_out, fd_set *res_ex)
 {
@@ -85,24 +89,31 @@ int do_select(int n, fd_set *in, fd_set *out, fd_set *ex,
 	int i,j;
 	int max = -1;
 
+	/* 循环检查每个文件集合的位 */
 	for (j = 0 ; j < __FDSET_LONGS ; j++) {
+		/* 一个unsigned long能够表示32个文件描述符，32=2的5次方*/
 		i = j << 5;
+		/* 超过最大文件描述符，则停止 */
 		if (i >= n)
 			break;
 		set = in->fds_bits[j] | out->fds_bits[j] | ex->fds_bits[j];
+		/* set移动8次就等于0了 */
 		for ( ; set ; i++,set >>= 1) {
 			if (i >= n)
 				goto end_check;
+			/* 测试集合中的最后一位 */
 			if (!(set & 1))
 				continue;
 			if (!current->filp[i])
 				return -EBADF;
 			if (!current->filp[i]->f_inode)
 				return -EBADF;
+			/* 记录最大的文件描述符 */
 			max = i;
 		}
 	}
 end_check:
+	/* 记录实际监视的文件描述符的最大值+1 */
 	n = max + 1;
 	if(!(entry = (struct select_table_entry*) __get_free_page(GFP_KERNEL)))
 		return -ENOMEM;
@@ -110,11 +121,13 @@ end_check:
 	FD_ZERO(res_out);
 	FD_ZERO(res_ex);
 	count = 0;
+	/* 初始化等待列表 */
 	wait_table.nr = 0;
 	wait_table.entry = entry;
 	wait = &wait_table;
 repeat:
 	current->state = TASK_INTERRUPTIBLE;
+	/* 循环扫描所有监视的文件描述符 */
 	for (i = 0 ; i < n ; i++) {
 		if (FD_ISSET(i,in) && check(SEL_IN,wait,current->filp[i])) {
 			FD_SET(i, res_in);
@@ -133,6 +146,7 @@ repeat:
 		}
 	}
 	wait = NULL;
+	/* 注意这里的阻塞道理，一旦监视到文件有变动，就立即返回 */
 	if (!count && current->timeout && !(current->signal & ~current->blocked)) {
 		schedule();
 		goto repeat;
@@ -147,6 +161,9 @@ repeat:
  * We do a VERIFY_WRITE here even though we are only reading this time:
  * we'll write to it eventually..
  */
+
+/* 将fs_pointer数据拷贝到fdset为地址的内存当中
+ */
 static int __get_fd_set(int nr, unsigned long * fs_pointer, unsigned long * fdset)
 {
 	int error;
@@ -157,15 +174,21 @@ static int __get_fd_set(int nr, unsigned long * fs_pointer, unsigned long * fdse
 	error = verify_area(VERIFY_WRITE,fs_pointer,sizeof(fd_set));
 	if (error)
 		return error;
+	/* 注意一个fdset占用32字节，每个字节8位，通过位来表示，
+	 * 则可以表示32*8个文件描述符，这个数足够表示当前系统的文件描述符的范围
+	 */
 	while (nr > 0) {
 		*fdset = get_fs_long(fs_pointer);
 		fdset++;
 		fs_pointer++;
+		/* 因为一个unsigned long有32位，可以表示32个文件描述符 */
 		nr -= 32;
 	}
 	return 0;
 }
 
+/* 将fdset中的数据复制到fs_pointer地址的起始处
+ */
 static void __set_fd_set(int nr, unsigned long * fs_pointer, unsigned long * fdset)
 {
 	if (!fs_pointer)
@@ -211,7 +234,9 @@ asmlinkage int sys_select( unsigned long *buffer )
 		return -EINVAL;
 	if (n > NR_OPEN)
 		n = NR_OPEN;
+	/* 监视这个文件描述符集合是否可读 */
 	inp = (fd_set *) get_fs_long(buffer++);
+	/* 监视这个文件描述符集合是否可写 */
 	outp = (fd_set *) get_fs_long(buffer++);
 	exp = (fd_set *) get_fs_long(buffer++);
 	tvp = (struct timeval *) get_fs_long(buffer);
@@ -228,8 +253,10 @@ asmlinkage int sys_select( unsigned long *buffer )
 		if (timeout)
 			timeout += jiffies + 1;
 	}
+	/* 设置当前进程的等待时间 */
 	current->timeout = timeout;
 	i = do_select(n, &in, &out, &ex, &res_in, &res_out, &res_ex);
+	/* 记录实际等待时间 */
 	if (current->timeout > jiffies)
 		timeout = current->timeout - jiffies;
 	else
@@ -245,6 +272,7 @@ asmlinkage int sys_select( unsigned long *buffer )
 		return i;
 	if (!i && (current->signal & ~current->blocked))
 		return -ERESTARTNOHAND;
+	/* 将监测到的结果回写到参数对应的内存当中 */
 	set_fd_set(n, inp, &res_in);
 	set_fd_set(n, outp, &res_out);
 	set_fd_set(n, exp, &res_ex);

@@ -1,4 +1,3 @@
----- sys_execve Matches (3 in 3 files) ----
-Exec.c (fs):asmlinkage int sys_execve(struct pt_regs regs)
-Sched.c (kernel):sys_unlink, sys_execve, sys_chdir, sys_time, sys_mknod, sys_chmod,
-Sys.h (include\linux):extern int sys_execve();
+---- socket_file_ops Matches (2 in 1 files) ----
+Socket.c (net):static struct file_operations socket_file_ops = {
+Socket.c (net):  file->f_op = &socket_file_ops;

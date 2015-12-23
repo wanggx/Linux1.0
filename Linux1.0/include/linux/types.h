@@ -81,6 +81,10 @@ typedef unsigned long tcflag_t;
 #undef __FDSET_LONGS
 #define __FDSET_LONGS 8
 
+/* 一个fd_set占用8个unsigned long，共32字节，
+ * 用一位来表示一个文件描述符，则一个文件描述符集合可以表示
+ * 32*8个文件描述符，这个数字足够表示系统中的所有文件描述符了
+ */
 typedef struct fd_set {
 	unsigned long fds_bits [__FDSET_LONGS];
 } fd_set;
@@ -93,6 +97,7 @@ typedef struct fd_set {
 
 #undef	__FD_SET
 #define __FD_SET(fd,fdsetp) \
+		/* btsl就是测试fd_set中的第fd位，将该位设置为1 */
 		__asm__ __volatile__("btsl %1,%0": \
 			"=m" (*(fd_set *) (fdsetp)):"r" ((int) (fd)))
 
