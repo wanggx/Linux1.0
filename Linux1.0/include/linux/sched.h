@@ -185,7 +185,8 @@ struct task_struct {
 	int exit_code, exit_signal;
 	int elf_executable:1;
 	int dumpable:1;
-	int swappable:1;
+	/* 表示内存吃紧时，该进程是否可以被交换 */
+	int swappable:1;		
 	int did_exec:1;
 	unsigned long start_code,end_code,end_data,start_brk,brk,start_stack,start_mmap;
 	unsigned long arg_start, arg_end, env_start, env_end;
@@ -251,9 +252,9 @@ struct task_struct {
 #ifdef NEW_SWAP
 	unsigned long old_maj_flt;	/* old value of maj_flt */
 	unsigned long dec_flt;		/* page fault count of the last time */
-	unsigned long swap_cnt;		/* number of pages to swap on next pass */
-	short swap_table;		/* current page table */
-	short swap_page;		/* current page */
+	unsigned long swap_cnt;		/* number of pages to swap on next pass */ /*当前需要交换的页的数量*/
+	short swap_table;		/* current page table */  /*当前需要交换进程一级页表的索引*/
+	short swap_page;		/* current page */ /* 当前需要交换进程二级页的索引 */
 #endif NEW_SWAP
 	struct vm_area_struct *stk_vma;
 };

@@ -54,7 +54,8 @@ extern int shm_swap (int);
  */
 
 /* 记录被分配出去的空闲内存
- **/
+ *
+ */
 #define NR_LAST_FREE_PAGES 32
 static unsigned long last_free_pages[NR_LAST_FREE_PAGES] = {0,};
 
@@ -106,6 +107,7 @@ void rw_swap_page(int rw, unsigned long entry, char * buf)
 	wake_up(&lock_queue);
 }
 
+/* 获取一个合适的交换页 */
 unsigned int get_swap_page(void)
 {
 	struct swap_info_struct * p;
@@ -228,6 +230,8 @@ void swap_in(unsigned long *table_ptr)
 	swap_free(entry);
 }
 
+
+/* 将table_ptr指向的物理页交换出去 */
 static inline int try_to_swap_out(unsigned long * table_ptr)
 {
 	int i;
@@ -248,6 +252,11 @@ static inline int try_to_swap_out(unsigned long * table_ptr)
 	for (i = 0; i < NR_LAST_FREE_PAGES; i++)
 		if (last_free_pages[i] == (page & PAGE_MASK))
 			return 0;
+
+	/* 如果也是脏的，则将物理页中的数据写到磁盘中的交换区,
+	 * 如果物理页不是脏的，则直接将物理页给释放掉，如果拥有
+	 * 该物理页的进程访问该页时，会不会产生缺页中断?
+	 */
 	if (PAGE_DIRTY & page) {
 		page &= PAGE_MASK;
 		if (mem_map[MAP_NR(page)] != 1)
@@ -261,6 +270,10 @@ static inline int try_to_swap_out(unsigned long * table_ptr)
 		return 1;
 	}
 	page &= PAGE_MASK;
+	/* 注意这一句非常重要，当把进程的对应对应内存释放后，
+	 * 也相应的将页的索引值页给设置为0，当进程再次访问时
+	 * 就会重新映射内存 
+	 */
 	*table_ptr = 0;
 	invalidate();
 	free_page(page);
@@ -291,7 +304,7 @@ asmlinkage int sys_idle(void)
  *
  * (C) 1993 Kai Petzke, wpp@marie.physik.tu-berlin.de
  */
-#ifdef NEW_SWAP
+#ifdef NEW_SWAP    /*这个宏被定义*/
 /*
  * These are the miminum and maximum number of pages to swap from one process,
  * before proceeding to the next:
@@ -316,92 +329,101 @@ static int swap_out(unsigned int priority)
     struct task_struct *p;
 
     counter = NR_TASKS * 2 >> priority;
+	/* 优先级越高，循环尝试的次数越少 */
     for(; counter >= 0; counter--, swap_task++) {
 	/*
 	 * Check that swap_task is suitable for swapping.  If not, look for
 	 * the next suitable process.
 	 */
-	loop = 0;
-	while(1) {
-	    if(swap_task >= NR_TASKS) {
-		swap_task = 1;
-		if(loop)
-		    /* all processes are unswappable or already swapped out */
-		    return 0;
-		loop = 1;
-	    }
+		loop = 0;
+		while(1) {
+	    	if(swap_task >= NR_TASKS) {
+				swap_task = 1;
+				if(loop)
+		    		/* all processes are unswappable or already swapped out */
+		    		return 0;
+				loop = 1;
+	    	}
 
-	    p = task[swap_task];
-	    if(p && p->swappable && p->rss)
-		break;
+	    	p = task[swap_task];
+			/* 如果进程是可交换的，并且在主存中有内存，则该进程是可以被交换到交换区的 */
+	    	if(p && p->swappable && p->rss)
+				break;
 
-	    swap_task++;
-	}
-
-	/*
-	 * Determine the number of pages to swap from this process.
-	 */
-	if(! p -> swap_cnt) {
-	    p->dec_flt = (p->dec_flt * 3) / 4 + p->maj_flt - p->old_maj_flt;
-	    p->old_maj_flt = p->maj_flt;
-
-	    if(p->dec_flt >= SWAP_RATIO / SWAP_MIN) {
-		p->dec_flt = SWAP_RATIO / SWAP_MIN;
-		p->swap_cnt = SWAP_MIN;
-	    } else if(p->dec_flt <= SWAP_RATIO / SWAP_MAX)
-		p->swap_cnt = SWAP_MAX;
-	    else
-		p->swap_cnt = SWAP_RATIO / p->dec_flt;
-	}
-
-	/*
-	 * Go through process' page directory.
-	 */
-	for(table = p->swap_table; table < 1024; table++) {
-	    pg_table = ((unsigned long *) p->tss.cr3)[table];
-	    if(pg_table >= high_memory)
-		    continue;
-	    if(mem_map[MAP_NR(pg_table)] & MAP_PAGE_RESERVED)
-		    continue;
-	    if(!(PAGE_PRESENT & pg_table)) {
-		    printk("swap_out: bad page-table at pg_dir[%d]: %08lx\n",
-			    table, pg_table);
-		    ((unsigned long *) p->tss.cr3)[table] = 0;
-		    continue;
-	    }
-	    pg_table &= 0xfffff000;
-
-	    /*
-	     * Go through this page table.
-	     */
-	    for(page = p->swap_page; page < 1024; page++) {
-		switch(try_to_swap_out(page + (unsigned long *) pg_table)) {
-		    case 0:
-			break;
-
-		    case 1:
-			p->rss--;
-			/* continue with the following page the next time */
-			p->swap_table = table;
-			p->swap_page  = page + 1;
-			if((--p->swap_cnt) == 0)
-			    swap_task++;
-			return 1;
-
-		    default:
-			p->rss--;
-			break;
+			/* 查找下一个进程 */
+	    	swap_task++;
 		}
-	    }
 
-	    p->swap_page = 0;
-	}
+		/*
+		 * Determine the number of pages to swap from this process.
+		 */
+		/* 计算进程有多少页需要被交换出去
+		 */
+		if(! p->swap_cnt) {
+		    p->dec_flt = (p->dec_flt * 3) / 4 + p->maj_flt - p->old_maj_flt;
+		    p->old_maj_flt = p->maj_flt;
 
-	/*
-	 * Finish work with this process, if we reached the end of the page
-	 * directory.  Mark restart from the beginning the next time.
-	 */
-	p->swap_table = 0;
+		    if(p->dec_flt >= SWAP_RATIO / SWAP_MIN) {
+				p->dec_flt = SWAP_RATIO / SWAP_MIN;
+				p->swap_cnt = SWAP_MIN;
+		    } else if(p->dec_flt <= SWAP_RATIO / SWAP_MAX)
+				p->swap_cnt = SWAP_MAX;
+		    else
+				p->swap_cnt = SWAP_RATIO / p->dec_flt;
+		}
+
+		/*
+		 * Go through process' page directory.
+		 */
+		for(table = p->swap_table; table < 1024; table++) {
+			/* 获取页表的首地址 */
+		    pg_table = ((unsigned long *) p->tss.cr3)[table];
+		    if(pg_table >= high_memory)
+			    continue;
+		    if(mem_map[MAP_NR(pg_table)] & MAP_PAGE_RESERVED)
+			    continue;
+		    if(!(PAGE_PRESENT & pg_table)) {
+			    printk("swap_out: bad page-table at pg_dir[%d]: %08lx\n",
+				    table, pg_table);
+			    ((unsigned long *) p->tss.cr3)[table] = 0;
+			    continue;
+		    }
+		    pg_table &= 0xfffff000;
+
+		    /*
+		      * Go through this page table.
+		      */
+		    /* 循环处理页表中的每一页 */
+		    for(page = p->swap_page; page < 1024; page++) {
+				switch(try_to_swap_out(page + (unsigned long *) pg_table)) {
+				    case 0:
+						break;
+
+				    case 1:
+						p->rss--;
+						/* continue with the following page the next time */
+						/* 下次收缩就是在进程的下一个页表的下一个页，
+						 * 当进程一直在等待的时候，收缩内存的操作可能已经被执行了好多次
+						 */
+						p->swap_table = table;
+						p->swap_page  = page + 1;
+						if((--p->swap_cnt) == 0)
+						    swap_task++;
+						return 1;
+
+				    default:
+						p->rss--;
+						break;
+				}
+		    }
+		    p->swap_page = 0;
+		}
+
+		/*
+		 * Finish work with this process, if we reached the end of the page
+		 * directory.  Mark restart from the beginning the next time.
+		 */
+		p->swap_table = 0;
     }
     return 0;
 }
@@ -474,6 +496,11 @@ check_table:
 
 #endif
 
+
+/* 该函数在内核通过__get_free_page函数申请内存时，
+ * 如果内存不够，则将部分内存交换到交换区当中，
+ * 注意交换内存的顺序
+ */
 static int try_to_free_page(void)
 {
 	int i=6;

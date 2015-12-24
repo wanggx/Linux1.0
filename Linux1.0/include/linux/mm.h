@@ -163,11 +163,11 @@ __asm__ __volatile__("movl %%cr3,%%eax\n\tmovl %%eax,%%cr3": : :"ax")
 extern unsigned long high_memory;
 
 #define MAP_NR(addr) ((addr) >> PAGE_SHIFT)
-#define MAP_PAGE_RESERVED (1<<15)
+#define MAP_PAGE_RESERVED (1<<15)			/* 为内核保留的页 */
 
 extern unsigned short * mem_map;
 
-#define PAGE_PRESENT	0x001                //内存在主存中
+#define PAGE_PRESENT	0x001                /* 内存在主存中 */
 #define PAGE_RW		0x002
 #define PAGE_USER	0x004
 #define PAGE_PWT	0x008	/* 486 only - not used currently */

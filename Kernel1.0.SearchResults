@@ -1,3 +1,13 @@
----- socket_file_ops Matches (2 in 1 files) ----
-Socket.c (net):static struct file_operations socket_file_ops = {
-Socket.c (net):  file->f_op = &socket_file_ops;
+---- nr_swapfiles Matches (12 in 1 files) ----
+Swap.c (mm):static int nr_swapfiles = 0;
+Swap.c (mm):	if (type >= nr_swapfiles) {
+Swap.c (mm):	for (type = 0 ; type < nr_swapfiles ; type++,p++) {
+Swap.c (mm):	if (type >= nr_swapfiles) {
+Swap.c (mm):	if (type >= nr_swapfiles) {
+Swap.c (mm):	for (type = 0 ; type < nr_swapfiles ; type++,p++) {
+Swap.c (mm):	if (type >= nr_swapfiles)
+Swap.c (mm):	for (type = 0 ; type < nr_swapfiles ; type++,p++)
+Swap.c (mm):	if (type >= nr_swapfiles)
+Swap.c (mm):		nr_swapfiles = type+1;
+Swap.c (mm):		for (i = 0 ; i < nr_swapfiles ; i++) {
+Swap.c (mm):	for (i = 0; i < nr_swapfiles; i++) {
