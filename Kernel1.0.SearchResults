@@ -1,13 +1,6 @@
----- nr_swapfiles Matches (12 in 1 files) ----
-Swap.c (mm):static int nr_swapfiles = 0;
-Swap.c (mm):	if (type >= nr_swapfiles) {
-Swap.c (mm):	for (type = 0 ; type < nr_swapfiles ; type++,p++) {
-Swap.c (mm):	if (type >= nr_swapfiles) {
-Swap.c (mm):	if (type >= nr_swapfiles) {
-Swap.c (mm):	for (type = 0 ; type < nr_swapfiles ; type++,p++) {
-Swap.c (mm):	if (type >= nr_swapfiles)
-Swap.c (mm):	for (type = 0 ; type < nr_swapfiles ; type++,p++)
-Swap.c (mm):	if (type >= nr_swapfiles)
-Swap.c (mm):		nr_swapfiles = type+1;
-Swap.c (mm):		for (i = 0 ; i < nr_swapfiles ; i++) {
-Swap.c (mm):	for (i = 0; i < nr_swapfiles; i++) {
+---- swapon Matches (5 in 4 files) ----
+Sched.c (kernel):sys_swapon, sys_reboot, sys_readdir, sys_mmap, sys_munmap, sys_truncate,
+Swap.c (mm): * The swapon system call
+Swap.c (mm):asmlinkage int sys_swapon(const char * specialfile)
+Sys.h (include\linux):extern int sys_swapon();
+Unistd.h (include\linux):#define __NR_swapon		 87
