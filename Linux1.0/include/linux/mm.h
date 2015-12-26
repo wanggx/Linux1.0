@@ -182,7 +182,14 @@ extern unsigned short * mem_map;
 #define PAGE_READONLY	(PAGE_PRESENT | PAGE_USER | PAGE_ACCESSED)
 #define PAGE_TABLE	(PAGE_PRESENT | PAGE_RW | PAGE_USER | PAGE_ACCESSED)
 
+/* 获取内存的优先级 */
+/* 如果在free_page_list当中没有空闲物理页，则返回失败
+ */
 #define GFP_BUFFER	0x00
+/* 表示一定要得到内存，如果常规空闲列表free_page_list已用完，
+ * 则向内核保留内存池secondary_page_list中申请，
+ * 如果仍然没有申请到，则返回空，特别是内核中还有中断需要处理的时候
+ */
 #define GFP_ATOMIC	0x01
 #define GFP_USER	0x02
 #define GFP_KERNEL	0x03

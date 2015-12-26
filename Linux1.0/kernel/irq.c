@@ -38,7 +38,7 @@
 static unsigned char cache_21 = 0xff;
 static unsigned char cache_A1 = 0xff;
 
-/*内核中中断数量*/
+/* 内核中中断数量 */
 unsigned long intr_count = 0;
 unsigned long bh_active = 0;
 unsigned long bh_mask = 0xFFFFFFFF;

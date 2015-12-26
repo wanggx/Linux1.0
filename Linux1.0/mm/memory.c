@@ -61,6 +61,7 @@ unsigned long free_page_list = 0;
  * accessed when all other mm tricks have failed.
  */
 int nr_secondary_pages = 0;
+/* 内核为原子内存分配预留的空闲页 */
 unsigned long secondary_page_list = 0;
 
 #define copy_page(from,to) \

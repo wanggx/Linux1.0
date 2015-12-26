@@ -57,6 +57,8 @@ extern int shm_swap (int);
  *
  */
 #define NR_LAST_FREE_PAGES 32
+
+/* 记录系统中最后被分配出去的32块物理内存，在交换出内存时会做判断 */
 static unsigned long last_free_pages[NR_LAST_FREE_PAGES] = {0,};
 
 void rw_swap_page(int rw, unsigned long entry, char * buf)
@@ -199,6 +201,9 @@ void swap_free(unsigned long entry)
 	wake_up(&lock_queue);
 }
 
+/* 和swap_out正好相反，从交换区中把数据交换到内存当中 
+ * table_ptr代表物理页的地址
+ */
 void swap_in(unsigned long *table_ptr)
 {
 	unsigned long entry;
@@ -249,6 +254,8 @@ static inline int try_to_swap_out(unsigned long * table_ptr)
 		*table_ptr &= ~PAGE_ACCESSED;
 		return 0;
 	}
+
+	/* 如果该页内存时最近被分配的32块内存，则不交换*/
 	for (i = 0; i < NR_LAST_FREE_PAGES; i++)
 		if (last_free_pages[i] == (page & PAGE_MASK))
 			return 0;
@@ -263,6 +270,10 @@ static inline int try_to_swap_out(unsigned long * table_ptr)
 			return 0;
 		if (!(entry = get_swap_page()))
 			return 0;
+		/* 注意在do_no_page函数当中会判断二级页表
+		 * 中的值是否为0，如果不等于0，也就是下面这句话，
+		 * 则表示该页内存已被交换到交换区
+		 */
 		*table_ptr = entry;
 		invalidate();
 		write_swap_page(entry, (char *) page);
@@ -521,6 +532,9 @@ static int try_to_free_page(void)
  * pages are requested in interrupts (as malloc can do). Thus the
  * cli/sti's.
  */
+
+/* 将地址addr添加到空闲物理页链表的链首
+ */
 static inline void add_mem_queue(unsigned long addr, unsigned long * queue)
 {
 	addr &= PAGE_MASK;
@@ -561,6 +575,10 @@ void free_page(unsigned long addr)
 				 * 物理内存页的引用计数
 				 */
 				if (!--*map) {
+					/* 系统中要留有一定的内存，当在释放内存的时候，
+					 * 如果nr_secondary_pages小于MAX_SECONDARY_PAGES，
+					 * 则将空闲物理页添加到secondary_page_list当中
+					 */
 					if (nr_secondary_pages < MAX_SECONDARY_PAGES) {
 						add_mem_queue(addr,&secondary_page_list);
 						nr_secondary_pages++;
@@ -591,15 +609,29 @@ void free_page(unsigned long addr)
  * will make *no* jumps for the normal code. Don't touch unless you
  * know what you are doing.
  */
+
+/* queue空闲链表的链首，nr空闲块的数量
+ */
 #define REMOVE_FROM_MEM_QUEUE(queue,nr) \
 	cli(); \
+	/* 如果空闲链首不为NULL，则将第一个空闲页给返回 */
 	if ((result = queue) != 0) { \
+		/* 页的地址一定要是页对齐的，并且不能超过系统当前的最大内存 */
 		if (!(result & ~PAGE_MASK) && result < high_memory) { \
+			/* 移动空闲链表的首部 */
 			queue = *(unsigned long *) result; \
+			/* 首先要判断该页没有被用到 */
 			if (!mem_map[MAP_NR(result)]) { \
+				/* 设置空闲页的引用计数，同时减小空闲页的数量 */
 				mem_map[MAP_NR(result)] = 1; \
 				nr--; \
-last_free_pages[index = (index + 1) & (NR_LAST_FREE_PAGES - 1)] = result; \
+				/* 此处记录最后被分配到出去的内存，总共记录了32块，
+				 * 记录的原因就是当系统内存吃紧时会将一部分内存给交换出去
+				 * 如果需要交换出去的内存在最后被分配出去的32块当中，则不会被
+				 * 交换出去，这个取决于内存的调度策略，因为刚被分配出去就又
+				 * 要交换出去，显然是很不合理的，详见详见try_to_swap_out函数
+				 */
+				last_free_pages[index = (index + 1) & (NR_LAST_FREE_PAGES - 1)] = result; \
 				restore_flags(flag); \
 				return result; \
 			} \
@@ -645,6 +677,9 @@ repeat:
 	REMOVE_FROM_MEM_QUEUE(free_page_list,nr_free_pages);
 	if (priority == GFP_BUFFER)
 		return 0;
+	/* 原子请求是不能被阻塞的，如处理中断和临界区时,
+	 * 如果没有足够的空闲页，则直接返回失败
+	 */
 	if (priority != GFP_ATOMIC)
 		/*看能不能释放一些缓存，如果释放成功，则继续尝试*/
 		if (try_to_free_page())
