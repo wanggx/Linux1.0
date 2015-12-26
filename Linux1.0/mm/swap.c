@@ -31,14 +31,16 @@
 #define SWP_ENTRY(type,offset) (((type) << 1) | ((offset) << PAGE_SHIFT))
 
 static int nr_swapfiles = 0;
+
+/* 等待操作swap_info的队列 */
 static struct wait_queue * lock_queue = NULL;
 
 static struct swap_info_struct {
-	unsigned long flags;
-	struct inode * swap_file;
+	unsigned long flags;		/* 交换分区的标记，表示是否可已用 */
+	struct inode * swap_file;	/* 交换文件对应的inode */
 	unsigned int swap_device;
 	unsigned char * swap_map;
-	unsigned char * swap_lockmap;
+	unsigned char * swap_lockmap;  /* 一页的内存 */
 	int pages;
 	int lowest_bit;
 	int highest_bit;
@@ -66,13 +68,16 @@ void rw_swap_page(int rw, unsigned long entry, char * buf)
 	unsigned long type, offset;
 	struct swap_info_struct * p;
 
+	/* 从entry中获取swap_info数组的索引 */
 	type = SWP_TYPE(entry);
 	if (type >= nr_swapfiles) {
 		printk("Internal error: bad swap-device\n");
 		return;
 	}
 	p = &swap_info[type];
+	/* 获取相应的偏移量 */
 	offset = SWP_OFFSET(entry);
+	/* 如果超过最大值则失败返回 */
 	if (offset >= p->max) {
 		printk("rw_swap_page: weirdness\n");
 		return;
@@ -800,6 +805,9 @@ asmlinkage int sys_swapoff(const char * specialfile)
  *
  * The swapon system call
  */
+
+/* 参数是一个特殊的文件路径
+ */
 asmlinkage int sys_swapon(const char * specialfile)
 {
 	struct swap_info_struct * p;
@@ -811,6 +819,7 @@ asmlinkage int sys_swapon(const char * specialfile)
 	if (!suser())
 		return -EPERM;
 	p = swap_info;
+	/* 从swap_info中找到一个合适的type，起始也就是一个索引 */
 	for (type = 0 ; type < nr_swapfiles ; type++,p++)
 		if (!(p->flags & SWP_USED))
 			break;
@@ -826,13 +835,16 @@ asmlinkage int sys_swapon(const char * specialfile)
 	p->lowest_bit = 0;
 	p->highest_bit = 0;
 	p->max = 1;
+	/* 获取该路径对应的文件的inode */
 	error = namei(specialfile,&swap_inode);
 	if (error)
 		goto bad_swap;
 	error = -EBUSY;
+	/* 打开的交换文件的引用计数必须是1 */
 	if (swap_inode->i_count != 1)
 		goto bad_swap;
 	error = -EINVAL;
+	/* 如果是块文件 */
 	if (S_ISBLK(swap_inode->i_mode)) {
 		p->swap_device = swap_inode->i_rdev;
 		iput(swap_inode);
@@ -857,6 +869,7 @@ asmlinkage int sys_swapon(const char * specialfile)
 		goto bad_swap;
 	}
 	read_swap_page(SWP_ENTRY(type,0), (char *) p->swap_lockmap);
+	/* 页的最后10个字节有签名 */
 	if (memcmp("SWAP-SPACE",p->swap_lockmap+4086,10)) {
 		printk("Unable to find swap-space signature\n");
 		error = -EINVAL;
