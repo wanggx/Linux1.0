@@ -19,6 +19,7 @@
 struct __dummy { unsigned long a[100]; };
 #define ADDR (*(struct __dummy *) addr)
 
+/* 将对应的位设置为1，同时将之前的位给返回*/
 extern __inline__ int set_bit(int nr, void * addr)
 {
 	int oldbit;
@@ -29,6 +30,7 @@ extern __inline__ int set_bit(int nr, void * addr)
 	return oldbit;
 }
 
+/* 将对应的位设置为0，同时返回之前的位的值*/
 extern __inline__ int clear_bit(int nr, void * addr)
 {
 	int oldbit;
@@ -43,6 +45,9 @@ extern __inline__ int clear_bit(int nr, void * addr)
  * This routine doesn't need to be atomic, but it's faster to code it
  * this way.
  */
+
+/* 返回之前的位
+  */
 extern __inline__ int test_bit(int nr, void * addr)
 {
 	int oldbit;

@@ -21,15 +21,21 @@
 #include <asm/system.h> /* for cli()/sti() */
 #include <asm/bitops.h>
 
+/* 最大交换文件数量*/
 #define MAX_SWAPFILES 8
 
 #define SWP_USED	1
 #define SWP_WRITEOK	3
 
+/* 前12位表示偏移量，后面的位数用来表示type，
+ * 也就是swap_info数组中的索引
+ */
 #define SWP_TYPE(entry) (((entry) & 0xfe) >> 1)
 #define SWP_OFFSET(entry) ((entry) >> PAGE_SHIFT)
 #define SWP_ENTRY(type,offset) (((type) << 1) | ((offset) << PAGE_SHIFT))
 
+
+/* 只有sys_swapon函数才会增加该变量*/
 static int nr_swapfiles = 0;
 
 /* 等待操作swap_info的队列 */
@@ -38,12 +44,15 @@ static struct wait_queue * lock_queue = NULL;
 static struct swap_info_struct {
 	unsigned long flags;		/* 交换分区的标记，表示是否可已用 */
 	struct inode * swap_file;	/* 交换文件对应的inode */
-	unsigned int swap_device;
+	unsigned int swap_device;   /* 交换文件所在的设备号*/
 	unsigned char * swap_map;
 	unsigned char * swap_lockmap;  /* 一页的内存 */
-	int pages;
-	int lowest_bit;
+	int pages;				/*  交换文件中页的数量 */
+	/*记录swap_lockmap中第一个位图不为0的位索引*/
+	int lowest_bit;		
+	/*记录swap_lockmap中最后一个位图不为0的位索引*/
 	int highest_bit;
+	/*记录swap_lockmap中最后一个位图不为0的位下一个位置的索引*/
 	unsigned long max;
 } swap_info[MAX_SWAPFILES];
 
@@ -86,6 +95,7 @@ void rw_swap_page(int rw, unsigned long entry, char * buf)
 		printk("Trying to swap to unused swap-device\n");
 		return;
 	}
+	/* 如果原来就是1，则表示已被占用，需要等待*/
 	while (set_bit(offset,p->swap_lockmap))
 		sleep_on(&lock_queue);
 	if (rw == READ)
@@ -95,10 +105,14 @@ void rw_swap_page(int rw, unsigned long entry, char * buf)
 	if (p->swap_device) {
 		ll_rw_page(rw,p->swap_device,offset,buf);
 	} else if (p->swap_file) {
+		/* 磁盘设备的逻辑块号，
+		  * 使用交换文件的逻辑块号来映射的
+		  */
 		unsigned int zones[8];
 		unsigned int block;
 		int i, j;
 
+		/* 获取交换文件读取位置的逻辑块号*/
 		block = offset << (12 - p->swap_file->i_sb->s_blocksize_bits);
 
 		for (i=0, j=0; j< PAGE_SIZE ; i++, j +=p->swap_file->i_sb->s_blocksize)
@@ -227,6 +241,7 @@ void swap_in(unsigned long *table_ptr)
 		shm_no_page ((unsigned long *) table_ptr);
 		return;
 	}
+	/* 为什么要先去内核申请物理页?*/
 	if (!(page = get_free_page(GFP_KERNEL))) {
 		oom(current);
 		page = BAD_PAGE;
@@ -236,6 +251,7 @@ void swap_in(unsigned long *table_ptr)
 		free_page(page);
 		return;
 	}
+	/* 设置表项和内存页的映射关系*/
 	*table_ptr = page | (PAGE_DIRTY | PAGE_PRIVATE);
 	swap_free(entry);
 }
@@ -661,6 +677,9 @@ void free_page(unsigned long addr)
  * in it). See the above macro which does most of the work, and which is
  * optimized for a fast normal path of execution.
  */
+/* 注意该函数返回的物理页中的数据并没有清0
+  * 注意和get_free_page函数区别
+  */
 unsigned long __get_free_page(int priority)
 {
 	extern unsigned long intr_count;
@@ -827,6 +846,7 @@ asmlinkage int sys_swapon(const char * specialfile)
 		return -EPERM;
 	if (type >= nr_swapfiles)
 		nr_swapfiles = type+1;
+	/* 设置SWP_USED标记 */
 	p->flags = SWP_USED;
 	p->swap_file = NULL;
 	p->swap_device = 0;
@@ -834,6 +854,7 @@ asmlinkage int sys_swapon(const char * specialfile)
 	p->swap_lockmap = NULL;
 	p->lowest_bit = 0;
 	p->highest_bit = 0;
+	/* 此处是1，在读取的时候读取的索引就是0*/
 	p->max = 1;
 	/* 获取该路径对应的文件的inode */
 	error = namei(specialfile,&swap_inode);
@@ -879,6 +900,7 @@ asmlinkage int sys_swapon(const char * specialfile)
 	j = 0;
 	p->lowest_bit = 0;
 	p->highest_bit = 0;
+	/* 循环扫描锁位图*/
 	for (i = 1 ; i < 8*PAGE_SIZE ; i++) {
 		if (test_bit(i,p->swap_lockmap)) {
 			if (!p->lowest_bit)
@@ -893,11 +915,14 @@ asmlinkage int sys_swapon(const char * specialfile)
 		error = -EINVAL;
 		goto bad_swap;
 	}
+	/* 分配一段大小为p->max的线性地址*/
 	p->swap_map = (unsigned char *) vmalloc(p->max);
 	if (!p->swap_map) {
 		error = -ENOMEM;
 		goto bad_swap;
 	}
+	/* 再次扫描swap_lockmap中的值
+	  * 同时设置swap_map的值*/
 	for (i = 1 ; i < p->max ; i++) {
 		if (test_bit(i,p->swap_lockmap))
 			p->swap_map[i] = 0;

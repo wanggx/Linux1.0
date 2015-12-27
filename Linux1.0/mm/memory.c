@@ -51,7 +51,10 @@ extern unsigned long pg0[1024];		/* page table for 0-4MB for everybody */
 extern void sound_mem_init(void);
 extern void die_if_kernel(char *,struct pt_regs *,long);
 
+/* 交换分区中的页的数量 */
 int nr_swap_pages = 0;
+
+/* 内核空闲链表的链首和空闲块的数量*/
 int nr_free_pages = 0;
 unsigned long free_page_list = 0;
 /*

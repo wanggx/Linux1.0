@@ -89,11 +89,14 @@ extern unsigned long secondary_page_list;
  * overhead, just use __get_free_page() directly..
  */
 extern unsigned long __get_free_page(int priority);
+
+/* 该函数拿到的页被清0 */
 extern inline unsigned long get_free_page(int priority)
 {
 	unsigned long page;
 
 	page = __get_free_page(priority);
+	/* 将page对应的页中的数据清0*/
 	if (page)
 		__asm__ __volatile__("rep ; stosl"
 			: /* no outputs */ \
