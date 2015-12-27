@@ -290,6 +290,10 @@ int copy_page_tables(struct task_struct * tsk)
 		for (j = 0 ; j < PTRS_PER_PAGE ; j++,old_page_table++,new_page_table++) {
 			unsigned long pg;
 			pg = *old_page_table;
+			/* 如果是等于0，则说明该页内存还没有被映射，也就不存在拷贝了
+			 * 在下一个if当中如果内存有映射了，但是不在内存当中，则说明在
+			 * 交换区当中，那么就需要在交换区当中拷贝
+			 */
 			if (!pg)
 				continue;
 			if (!(pg & PAGE_PRESENT)) {

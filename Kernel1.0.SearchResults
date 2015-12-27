@@ -1,31 +1,6 @@
----- swap_in Matches (30 in 3 files) ----
-Memory.c (mm):		swap_in((unsigned long *) page);
-Mm.h (include\linux):extern void swap_in(unsigned long *table_ptr);
-Swap.c (mm):static struct swap_info_struct {
-Swap.c (mm):} swap_info[MAX_SWAPFILES];
-Swap.c (mm):	struct swap_info_struct * p;
-Swap.c (mm):	p = &swap_info[type];
-Swap.c (mm):	struct swap_info_struct * p;
-Swap.c (mm):	p = swap_info;
-Swap.c (mm):	struct swap_info_struct * p;
-Swap.c (mm):	p = type + swap_info;
-Swap.c (mm):	struct swap_info_struct * p;
-Swap.c (mm):	p = & swap_info[type];
-Swap.c (mm):void swap_in(unsigned long *table_ptr)
-Swap.c (mm):		printk("No swap page in swap_in\n");
-Swap.c (mm):	struct swap_info_struct * p;
-Swap.c (mm):	p = swap_info;
-Swap.c (mm):	struct swap_info_struct * p;
-Swap.c (mm):	struct inode * swap_inode;
-Swap.c (mm):	p = swap_info;
-Swap.c (mm):	error = namei(specialfile,&swap_inode);
-Swap.c (mm):	if (swap_inode->i_count != 1)
-Swap.c (mm):	if (S_ISBLK(swap_inode->i_mode)) {
-Swap.c (mm):		p->swap_device = swap_inode->i_rdev;
-Swap.c (mm):		iput(swap_inode);
-Swap.c (mm):			if (p->swap_device == swap_info[i].swap_device)
-Swap.c (mm):	} else if (S_ISREG(swap_inode->i_mode))
-Swap.c (mm):		p->swap_file = swap_inode;
-Swap.c (mm):		if (!(swap_info[i].flags & SWP_USED))
-Swap.c (mm):		for (j = 0; j < swap_info[i].max; ++j)
-Swap.c (mm):			switch (swap_info[i].swap_map[j]) {
+---- SHM_SWP_TYPE Matches (5 in 3 files) ----
+Mm.h (include\linux):#define SHM_SWP_TYPE 0x41        
+Shm.c (ipc):	shmd->shm_sgn = (SHM_SWP_TYPE << 1) | (id << SHM_ID_SHIFT) |
+Swap.c (mm):	if (type == SHM_SWP_TYPE)
+Swap.c (mm):	if (type == SHM_SWP_TYPE)
+Swap.c (mm):	if (SWP_TYPE(entry) == SHM_SWP_TYPE) {

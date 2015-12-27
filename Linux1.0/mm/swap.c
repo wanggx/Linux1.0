@@ -35,7 +35,7 @@
 #define SWP_ENTRY(type,offset) (((type) << 1) | ((offset) << PAGE_SHIFT))
 
 
-/* 只有sys_swapon函数才会增加该变量*/
+/* 只有sys_swapon函数才会增加该变量，表示系统中交换文件的数量 */
 static int nr_swapfiles = 0;
 
 /* 等待操作swap_info的队列 */
@@ -115,6 +115,7 @@ void rw_swap_page(int rw, unsigned long entry, char * buf)
 		/* 获取交换文件读取位置的逻辑块号*/
 		block = offset << (12 - p->swap_file->i_sb->s_blocksize_bits);
 
+		/* 因为PAGE_SIZE是内存的一页大小，而s_blocksize是磁盘块一块的大小 */
 		for (i=0, j=0; j< PAGE_SIZE ; i++, j +=p->swap_file->i_sb->s_blocksize)
 			if (!(zones[i] = bmap(p->swap_file,block++))) {
 				printk("rw_swap_page: bad swap file\n");
@@ -136,11 +137,13 @@ unsigned int get_swap_page(void)
 
 	p = swap_info;
 	for (type = 0 ; type < nr_swapfiles ; type++,p++) {
+		/* 需要是可以写的交换文件，如果是SWP_USED标记，则表示还没有准备好 */
 		if ((p->flags & SWP_WRITEOK) != SWP_WRITEOK)
 			continue;
 		for (offset = p->lowest_bit; offset <= p->highest_bit ; offset++) {
 			if (p->swap_map[offset])
 				continue;
+			/* 设置页的标记，同时减小总共交换页的数量 */
 			p->swap_map[offset] = 1;
 			nr_swap_pages--;
 			if (offset == p->highest_bit)
@@ -152,6 +155,10 @@ unsigned int get_swap_page(void)
 	return 0;
 }
 
+/* 在拷贝进程内存页表的时候，如果判断内存的页在交换区当中，
+ * 则在交换区中拷贝一页，此处的拷贝就是将原来地址对应的
+ * 交换区的引用计数加1，
+ */
 unsigned long swap_duplicate(unsigned long entry)
 {
 	struct swap_info_struct * p;
@@ -176,10 +183,14 @@ unsigned long swap_duplicate(unsigned long entry)
 		printk("swap_duplicate: trying to duplicate unused page\n");
 		return 0;
 	}
+	/* 增加了映射的引用计数，之后仍然将原来的entry返回*/
 	p->swap_map[offset]++;
 	return entry;
 }
 
+/* 释放swap_info中的信息，同时增加交换页的数量
+ * 该函数和get_swap_page正好相反
+ */
 void swap_free(unsigned long entry)
 {
 	struct swap_info_struct * p;
