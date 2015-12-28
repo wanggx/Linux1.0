@@ -233,6 +233,12 @@ static int dir_namei(const char * pathname, int * namelen, const char ** name,
 	return 0;
 }
 
+
+/* pathname代表文件路径
+ * base代表是从哪个inode下面开始检查路径
+ * follow_links代表如果是链接，是否继续读取链接真正指向的文件
+ * res_inode表示最终路径查找成功后的inode
+ */
 static int _namei(const char * pathname, struct inode * base,
 	int follow_links, struct inode ** res_inode)
 {

@@ -169,21 +169,23 @@ struct inode {
 	dev_t		i_dev;			/* 设备号 */
 	unsigned long	i_ino;		/* i节点号 */
 	umode_t		i_mode;			/* 文件类型以及文件权限 */
-	nlink_t		i_nlink;
-	uid_t		i_uid;           /*创建文件的用户ID*/
-	gid_t		i_gid;			 /*创建文件的用户组ID*/
-	dev_t		i_rdev;
+	nlink_t		i_nlink;		/* 硬链接计数 */
+	uid_t		i_uid;          /* 创建文件的用户ID */
+	gid_t		i_gid;			/* 创建文件的用户组ID */
+	dev_t		i_rdev;			/* 是设备标识符，也存储了主次设备号，
+								 * 表示设备的实际设备号，不是逻辑设备号 
+								 */
 	off_t		i_size;			/* 文件大小单位为字节 */
 	time_t		i_atime;
 	time_t		i_mtime;
 	time_t		i_ctime;		/* inode的修改时间 */
 	unsigned long	i_blksize;	/* 数据块大小 */
 	unsigned long	i_blocks;	/* 文件数据块数 */
-	struct semaphore i_sem;    /* 操作inode的信号量 */
+	struct semaphore i_sem;     /* 操作inode的信号量 */
 	struct inode_operations * i_op;
 	struct super_block * i_sb;      /*对应的超级块*/
 	struct wait_queue * i_wait;		/* 操作inode的等待队列 */
-	struct file_lock * i_flock;	   /* 文件锁结构，用于同步或控制 */
+	struct file_lock * i_flock;	    /* 文件锁结构，用于同步或控制 */
 	struct vm_area_struct * i_mmap; /* 该文件映射到的虚拟地址段的地址 */
 	struct inode * i_next, * i_prev;     /*空闲双向链表*/
 	struct inode * i_hash_next, * i_hash_prev; /*hash双向链表*/
