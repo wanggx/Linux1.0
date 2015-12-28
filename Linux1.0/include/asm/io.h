@@ -96,6 +96,11 @@ __OUTS(l)
  *  - can't use it inside a inline function (it will never be true)
  *  - you don't have to worry about side effects within the __builtin..
  */
+
+/* 向端口port中写入值val，val的长度为一个字节
+ * inb表示读取一个字节，b表示一个字节，w表示一个字，2个字节
+ * l表示4个字节
+ */
 #define outb(val,port) \
 ((__builtin_constant_p((port)) && (port) < 256) ? \
 	__outbc((val),(port)) : \
@@ -106,6 +111,7 @@ __OUTS(l)
 	__inbc(port) : \
 	__inb(port))
 
+/* 向端口写入一个字节，同时让CPU暂停 */
 #define outb_p(val,port) \
 ((__builtin_constant_p((port)) && (port) < 256) ? \
 	__outbc_p((val),(port)) : \
