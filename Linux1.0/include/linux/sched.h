@@ -182,6 +182,8 @@ struct task_struct {
 	struct sigaction sigaction[32];
 	unsigned long saved_kernel_stack;
 	unsigned long kernel_stack_page;
+	/* exit_signal表示退出时给父进程发送的信号
+	 */
 	int exit_code, exit_signal;
 	int elf_executable:1;
 	int dumpable:1;
@@ -190,6 +192,8 @@ struct task_struct {
 	int did_exec:1;
 	unsigned long start_code,end_code,end_data,start_brk,brk,start_stack,start_mmap;
 	unsigned long arg_start, arg_end, env_start, env_end;
+	/* pgrp表示进程组号，pid表示进程号
+	 */
 	int pid,pgrp,session,leader;
 	int	groups[NGROUPS];
 	/* 
@@ -202,6 +206,8 @@ struct task_struct {
 	 * p_ysptr记录年轻的兄弟进程，p_osptr为老的兄弟进程
 	 */
 	struct task_struct *p_opptr,*p_pptr, *p_cptr, *p_ysptr, *p_osptr;
+	/* 等待孩子进程的队列，是将自己添加到该队列当中
+	 */
 	struct wait_queue *wait_chldexit;	/* for wait4() */
 	/*
 	 * For ease of programming... Normal sleeps don't need to

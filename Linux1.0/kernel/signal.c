@@ -147,6 +147,7 @@ static void check_pending(int signum)
 	if (p->sa_handler == SIG_IGN) {
 		if (signum == SIGCHLD)
 			return;
+		/* 设置进程收到的信号 */
 		current->signal &= ~_S(signum);
 		return;
 	}

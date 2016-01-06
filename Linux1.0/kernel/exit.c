@@ -487,6 +487,7 @@ asmlinkage int sys_exit(int error_code)
 	do_exit((error_code&0xff)<<8);
 }
 
+/* 如果成功则返回0 */
 asmlinkage int sys_wait4(pid_t pid,unsigned long * stat_addr, int options, struct rusage * ru)
 {
 	int flag, retval;
@@ -501,13 +502,18 @@ asmlinkage int sys_wait4(pid_t pid,unsigned long * stat_addr, int options, struc
 	add_wait_queue(&current->wait_chldexit,&wait);
 repeat:
 	flag=0;
+	/* p_cptr表示最小的孩子进程，p_opptr表示老的兄弟进程
+	 * 通过该循环可以知道从当前进程的最小进程开始一次向年长的进程开始扫描
+	 */
  	for (p = current->p_cptr ; p ; p = p->p_osptr) {
+		/* 如果pid>0表示等待某个具体的进程，等于0则表示进程组，小于0则表示所有子进程 */
 		if (pid>0) {
 			if (p->pid != pid)
 				continue;
 		} else if (!pid) {
 			if (p->pgrp != current->pgrp)
 				continue;
+		/* 如果是负数的话，则等待进程组号为-pid的所有子进程*/
 		} else if (pid != -1) {
 			if (p->pgrp != -pid)
 				continue;
@@ -558,12 +564,22 @@ repeat:
 	}
 	if (flag) {
 		retval = 0;
+		/* 如果子进程还在运行，并且选项标记为WNOHANG，
+		 * 则表示不等待，函数直接返回
+		 */
 		if (options & WNOHANG)
 			goto end_wait4;
+		/* 设置进程为可中断状态，同时调用进程调度函数
+		 */
 		current->state=TASK_INTERRUPTIBLE;
 		schedule();
+		/* 设置进程收到SIGCHLD信号
+		 */
 		current->signal &= ~(1<<(SIGCHLD-1));
 		retval = -ERESTARTSYS;
+		/* 如果当前进程的所有信号都被阻塞了，也就是子进程退出时
+		 * 给父进程发送的SIGCHLD信号也被阻塞了，则函数直接返回
+		 */
 		if (current->signal & ~current->blocked)
 			goto end_wait4;
 		goto repeat;
