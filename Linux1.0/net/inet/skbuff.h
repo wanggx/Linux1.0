@@ -49,8 +49,10 @@ struct sk_buff {
   volatile unsigned long	when;	/* used to compute rtt's	*/
   struct device			*dev;
   void				*mem_addr; /* 记录自己在内存中地址 */
+  /* 不同协议的头部
+    */
   union {
-	struct tcphdr	*th;
+	struct tcphdr	*th;	/* tcp协议头部 */
 	struct ethhdr	*eth;
 	struct iphdr	*iph;
 	struct udphdr	*uh;

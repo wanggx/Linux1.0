@@ -85,6 +85,8 @@ static inline int before(unsigned long seq1, unsigned long seq2)
         return (long)(seq1-seq2) < 0;
 }
 
+/* 表示seq2是否在seq1后面，大于0表示在后面，小于0则不是
+ */
 static inline int after(unsigned long seq1, unsigned long seq2)
 {
 	return (long)(seq1-seq2) > 0;

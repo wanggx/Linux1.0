@@ -3714,7 +3714,10 @@ int tcp_getsockopt(struct sock *sk, int level, int optname, char *optval, int *o
   	return(0);
 }	
 
-/* 注意和struct inet_protocol结构区别 */
+/* 注意和struct inet_protocol结构区别 
+ * 该变量在inet_create的时候赋给相应的struct sock结构
+ */
+
 struct proto tcp_prot = {
   sock_wmalloc,
   sock_rmalloc,
@@ -3743,6 +3746,6 @@ struct proto tcp_prot = {
   tcp_getsockopt,
   128,
   0,
-  {NULL,},
+  {NULL,},  /* struct sock链表初始化为NULL*/
   "TCP"
 };

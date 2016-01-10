@@ -162,7 +162,8 @@ static int sk_inuse(struct proto *prot, int num)
       sk != NULL;
       sk=sk->next) {
 	  /* 如果在端口号对应的sock链中找到了该端口号的sock，
-	    * 则表示该端口已被占用
+	    * 则表示该端口已被占用，从这个函数当中就可以知道，
+	    * 对于不同协议使用相同端口号是没有问题的。
 	    */
 	if (sk->num == num) return(1);
   }
@@ -173,6 +174,9 @@ static int sk_inuse(struct proto *prot, int num)
 /* 获取一个新的空闲端口号 
  * prot表示所使用的协议，
  * base表示最小起始端口号
+ * 在对应的struct proto当中都有一个SOCK_ARRAY,该数组中具有SOCK_ARRAY_SIZE=64个元素
+ * 每个元素对应一个链表，所以在获取该协议的一个新的端口号时，总是寻找所有链表中长度最短的那个
+ * 链表，然后从该链表中获取一个端口号
  */
 unsigned short get_new_socknum(struct proto *prot, unsigned short base)
 {
@@ -232,7 +236,8 @@ unsigned short get_new_socknum(struct proto *prot, unsigned short base)
 
 /* 因为每一个struct proto结构都有一个sock_array数组，
  * 该数组是一个hash数组，根据端口号来hash出sock在数组中的
- * 索引，然后数组中的每一项都是一个单链表
+ * 索引，然后数组中的每一项都是一个单链表，将sk添加到对应的
+ * 链表的链首
  * num为端口号 
  */
 void put_sock(unsigned short num, struct sock *sk)
@@ -804,6 +809,11 @@ static int inet_create(struct socket *sock, int protocol)
 		}
 		protocol = IPPROTO_TCP;
 		sk->no_check = TCP_NO_CHECK;
+		/* 注意这里是在创建套接字的函数当中，在创建套接字的时候，
+		 * 如果需要使用tcp协议，则在具体的struct sock结构当中传输层协议的
+		 * 函数操作集都指向tcp_prot，也就是同一个变量，所以在struct proto结构
+		 * 当中存在一个SOCK_ARRAY数组，用来记录所有使用TCP协议的套接字
+		 */
 		prot = &tcp_prot;
 		break;
 

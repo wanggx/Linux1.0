@@ -57,14 +57,36 @@ struct sock {
     * 一般不应该超过限额sndbuf
     */
   volatile unsigned long	wmem_alloc;
+  /* 当前读缓冲区大小，该值不可大于系统规定的最大值
+    */
   volatile unsigned long	rmem_alloc;
+  /* 表示应用程序下一次写数据时所对应的第一个字节的序列号
+    */
   unsigned long			write_seq;
+  /* 表示本地将要发送的下一个数据包中第一个字节对应的序列号
+    */
   unsigned long			sent_seq;
+  /* 表示本地希望从远端接收的下一个数据的序列号
+    */
   unsigned long			acked_seq;
+  /* 应用程序有待读取(但尚未读取)数据的第一个序列号
+    */
   unsigned long			copied_seq;
+  /* 表示目前本地接收到的对本地发送数据的应答序列号
+    */
   unsigned long			rcv_ack_seq;
+  /* 窗口大小，是一个绝对值，表示本地将要发送数据包中所包含最后一个数据的序列号，
+    * 不可大于window_seq
+    */
   unsigned long			window_seq;
+  /* 该字段在对方发送FIN数据包时使用，在接收到远端发送的 FIN数据包后，
+    * fin_seq 被初始化为对方的 FIN 数据包最后一个字节的序列号加 1，表示本地对此 FIN 数据包进行应答的序列号
+    */
   unsigned long			fin_seq;
+
+  /*  以上两个字段用于紧急数据处理，urg_seq 表示紧急数据最大序列号。
+    * urg_data 是一个标志位，当设置为 1 时，表示接收到紧急数据。
+    */
   unsigned long			urg_seq;
   unsigned long			urg_data;
 
@@ -72,32 +94,37 @@ struct sock {
    * Not all are volatile, but some are, so we
    * might as well say they all are.
    */
+  /*inuse=1 表示其它进程正在使用该 sock 结构，本进程需等待*/
   volatile char                 inuse,
-				dead,
-				urginline,
+				dead, /* dead=1 表示该 sock 结构已处于释放状态*/
+				urginline,/* urginline=1 表示紧急数据将被当作普通数据处理。*/
 				intr,
-				blog,
+				blog,/* blog=1 表示对应套接字处于节制状态，此时接收的数据包均被丢弃*/
 				done,
 				reuse,
-				keepopen,
-				linger,
-				delay_acks,
-				destroy,
+				keepopen,/* keepopen=1 表示使用保活定时器 */
+				linger,/* linger=1 表示在关闭套接字时需要等待一段时间以确认其已关闭。*/
+				delay_acks,/* delay_acks=1表示延迟应答，可一次对多个数据包进行应答 */
+				destroy,/* destroy=1 表示该 sock 结构等待销毁*/
 				ack_timed,
 				no_check,
 				zapped,	/* In ax25 & ipx means not linked */
 				broadcast,
-				nonagle;
-  unsigned long		        lingertime;
-  int				proc;
+				nonagle;/* noagle=1 表示不使用 NAGLE 算法*/
+  unsigned long		        lingertime;/*表示等待关闭操作的时间，只有当 linger 标志位为 1 时，该字段才有意义。*/
+  int				proc;/* 该 sock 结构（即该套接字）所属的进程的进程号。*/
   struct sock			*next;   /* 形成struct sock的一个链表 */
   struct sock			*pair;
+
+  /* send_head, send_tail 用于 TCP协议重发队列。*/
   struct sk_buff		*volatile send_tail;
   struct sk_buff		*volatile send_head;
+
+  /* back_log为接收的数据包缓存队列。用于计算目前累计的应发送而未发送的应答数据包的个数*/
   struct sk_buff		*volatile back_log;
-  struct sk_buff		*partial;
-  struct timer_list		partial_timer;
-  long				retransmits;
+  struct sk_buff		*partial;  /*创建最大长度的待发送数据包。*/
+  struct timer_list		partial_timer;  /*按时发送 partial 指针指向的数据包，以免缓存（等待）时间过长。*/
+  long				retransmits; /* 重发次数*/
   struct sk_buff		*volatile wback,
 				*volatile wfront,
 				*volatile rqueue; /* socket接收包队列，读取的时候是从这个队列中读取的 */
@@ -106,42 +133,42 @@ struct sock {
   struct proto			*prot;
   /* 如果还没有收到数据，则在该等待队列中等待
    */
-  struct wait_queue		**sleep;
-  unsigned long			daddr;
+  struct wait_queue		**sleep;/*进程等待sock的地位*/
+  unsigned long			daddr;  /*套接字的远端地址*/
   /*绑定地址*/
-  unsigned long			saddr;
-  unsigned short		max_unacked;
-  unsigned short		window;
-  unsigned short		bytes_rcv;
+  unsigned long			saddr;  /*套接字的本地地址*/
+  unsigned short		max_unacked;/* 最大未处理请求连接数（应答数） */
+  unsigned short		window; /* 远端窗口大小 */
+  unsigned short		bytes_rcv;  /* 已接收字节总数*/
 /* mss is min(mtu, max_window) */
-  unsigned short		mtu;       /* mss negotiated in the syn's */
-  volatile unsigned short	mss;       /* current eff. mss - can change */
-  volatile unsigned short	user_mss;  /* mss requested by user in ioctl */
+  unsigned short		mtu;  /*最大传输单元*/     /* mss negotiated in the syn's */
+  volatile unsigned short	mss; /*最大报文长度：MSS=MTU-IP 首部长度-TCP首部长度 */      /* current eff. mss - can change */
+  volatile unsigned short	user_mss; /*用户指定的 MSS值*/ /* mss requested by user in ioctl */
   volatile unsigned short	max_window;
-  unsigned short		num;  		/*对应端口号*/
+  unsigned short		num;  		/*对应本地端口号*/
   volatile unsigned short	cong_window;
   volatile unsigned short	cong_count;
   volatile unsigned short	ssthresh;
   volatile unsigned short	packets_out;
   volatile unsigned short	shutdown;
-  volatile unsigned long	rtt;
-  volatile unsigned long	mdev;
+  volatile unsigned long	rtt;/* 往返时间估计值*/
+  volatile unsigned long	mdev;/* mean deviation, 即RTTD,  绝对偏差*/
   volatile unsigned long	rto;
 /* currently backoff isn't used, but I'm maintaining it in case
  * we want to go back to a backoff formula that needs it
  */
-  volatile unsigned short	backoff;
-  volatile short		err;
-  unsigned char			protocol;
+  volatile unsigned short	backoff;/* 退避算法度量值 */
+  volatile short		err; /* 错误标志值*/
+  unsigned char			protocol; /* 传输层协议值 表示当前域中套接字所属的协议 */
   /* 套接字状态 */
   volatile unsigned char	state;
-  volatile unsigned char	ack_backlog;
-  unsigned char			max_ack_backlog;
+  volatile unsigned char	ack_backlog;  /*表示当前的侦听队列 */
+  unsigned char			max_ack_backlog;/*表示最大侦听队列*/
   unsigned char			priority;
   unsigned char			debug;
-  unsigned short		rcvbuf;
-  unsigned short		sndbuf;
-  unsigned short		type;
+  unsigned short		rcvbuf;  /*表示接收缓冲区的字节长度*/
+  unsigned short		sndbuf;  /*表示发送缓冲区的字节长度*/
+  unsigned short		type;  /* 表示套接字的类型 */
 #ifdef CONFIG_IPX
   ipx_address			ipx_source_addr,ipx_dest_addr;
   unsigned short		ipx_type;
@@ -160,9 +187,9 @@ struct sock {
   ax25_digi			*ax25_digipeat;
 #endif  
 /* IP 'private area' or will be eventually */
-  int				ip_ttl;		/* TTL setting */
-  int				ip_tos;		/* TOS */
-  struct tcphdr			dummy_th;
+  int				ip_ttl;	 /* IP首部 TTL 字段值，实际上表示路由器跳数*/	/* TTL setting */
+  int				ip_tos;	/* IP首部 TOS字段值，服务类型值*/	/* TOS */
+  struct tcphdr			dummy_th;/* 缓存的 TCP首部，在 TCP协议中创建一个发送数据包时可以利用此字段快速创建 TCP 首部。*/
 
   /* This part is used for the timeout functions (timer.c). */
   int				timeout;	/* What are we waiting for? */
@@ -181,7 +208,9 @@ struct sock {
   
 };
 
-/* 具体网络协议的操作函数 */
+/* 具体网络协议的操作函数,表示传输层函数的操作集的一个结构
+ * 对于不同协议可以使用相同的端口号TCP，UDP可以同时使用1000端口
+ */
 struct proto {
   struct sk_buff *	(*wmalloc)(struct sock *sk,
 				    unsigned long size, int force,
