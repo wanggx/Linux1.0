@@ -51,6 +51,8 @@
  * Most of it is for TCP, and not used by any of
  * the other protocols.
  */
+/* 网络层数据结构 
+ */
 struct sock {
   struct options		*opt;
   /*wmem_alloc是一个计数器，用来累计为本插口分配的sk_buff存储空间，

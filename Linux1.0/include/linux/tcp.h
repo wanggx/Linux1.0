@@ -22,8 +22,8 @@
 
 
 struct tcphdr {
-  unsigned short	source;  /* 端口号 */
-  unsigned short	dest;
+  unsigned short	source;  /* 本地端口号 */
+  unsigned short	dest;  /* 目的端口号 */
   unsigned long		seq;
   unsigned long		ack_seq;
   unsigned short	res1:4,

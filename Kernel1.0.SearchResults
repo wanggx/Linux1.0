@@ -1,7 +1,6 @@
----- arp_timer Matches (6 in 1 files) ----
-Arp.c (net\inet):static struct timer_list arp_timer;
-Arp.c (net\inet):	arp_timer.expires = 500;	/* 5 seconds */
-Arp.c (net\inet):	arp_timer.data = 0;
-Arp.c (net\inet):	arp_timer.function = arp_queue_ticker;
-Arp.c (net\inet):	del_timer(&arp_timer);
-Arp.c (net\inet):	add_timer(&arp_timer);
+---- net_timer Matches (5 in 4 files) ----
+Sock.c (net\inet):  sk->timer.function = &net_timer;
+Sock.h (net\inet):void net_timer (unsigned long);
+Tcp.c (net\inet):  newsk->timer.function = &net_timer;
+Timer.c (net\inet):net_timer (unsigned long data)
+Timer.c (net\inet):  DPRINTF ((DBG_TMR, "net_timer: found sk=%X why = %d\n", sk, why));

@@ -49,6 +49,8 @@
 #include "sock.h"
 #include "arp.h"
 
+
+/* 将struct sock中的时钟删除，同时将sock的timerout置为0 */
 void
 delete_timer (struct sock *t)
 {
@@ -63,6 +65,10 @@ delete_timer (struct sock *t)
   restore_flags (flags);
 }
 
+/* 重置struct sock的timer，同时将sock的timerout置为timeout
+ * 具体操作过程是先删除后添加，
+ * len表示timer的触发时间
+ */
 void
 reset_timer (struct sock *t, int timeout, unsigned long len)
 {
@@ -86,6 +92,8 @@ reset_timer (struct sock *t, int timeout, unsigned long len)
  * something, but we must be sure to process all of the
  * sockets that need it.
  */
+
+/* 每个struct sock的时钟函数 */
 void
 net_timer (unsigned long data)
 {

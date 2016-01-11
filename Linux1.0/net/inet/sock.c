@@ -872,6 +872,9 @@ static int inet_create(struct socket *sock, int protocol)
 #else    
   sk->nonagle = 0;
 #endif  
+  /* 设置struct sock中的type和protocol字段，
+    * 同时还有下面很多字段的初始化信息 
+    */
   sk->type = sock->type;
   sk->protocol = protocol;
   sk->wmem_alloc = 0;
@@ -939,6 +942,7 @@ static int inet_create(struct socket *sock, int protocol)
   sk->send_head = NULL;
   sk->timeout = 0;
   sk->broadcast = 0;
+  /* 设置struct sock中timer的数据和响应函数 */
   sk->timer.data = (unsigned long)sk;
   sk->timer.function = &net_timer;
   sk->back_log = NULL;
@@ -1750,8 +1754,9 @@ void sock_rfree(struct sock *sk, void *mem, unsigned long size)
  * Everyhting is assumed to be in net order.
  */
 
-/* 获取协议上操作某个端口的sock
-  */
+/* 获取协议上操作某个端口的sock，其中限制条件是
+ * 本地地址和本地端口，远程地址和远程端口
+ */
 struct sock *get_sock(struct proto *prot, unsigned short num,
 				unsigned long raddr,
 				unsigned short rnum, unsigned long laddr)
@@ -1774,16 +1779,20 @@ struct sock *get_sock(struct proto *prot, unsigned short num,
   for(s = prot->sock_array[hnum & (SOCK_ARRAY_SIZE - 1)];
       s != NULL; s = s->next) 
   {
+    /* 判断本地端口 */
 	if (s->num != hnum) 
 		continue;
 	if(s->dead && (s->state == TCP_CLOSE))
 		continue;
 	if(prot == &udp_prot)
 		return s;
+	/* 判断远程地址 */
 	if(ip_addr_match(s->daddr,raddr)==0)
 		continue;
+	/* 判断远程端口 */
 	if (s->dummy_th.dest != rnum && s->dummy_th.dest != 0) 
 		continue;
+	/* 判断本地地址 */
 	if(ip_addr_match(s->saddr,laddr) == 0)
 		continue;
 	return(s);
