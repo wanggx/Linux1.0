@@ -22,11 +22,13 @@ enum {
 	KEYBOARD_BH
 };
 
+/* orl位或运算，将第nr位置为1 */
 extern inline void mark_bh(int nr)
 {
 	__asm__ __volatile__("orl %1,%0":"=m" (bh_active):"ir" (1<<nr));
 }
 
+/* andl位与运算，将第nr位置0 */
 extern inline void disable_bh(int nr)
 {
 	__asm__ __volatile__("andl %1,%0":"=m" (bh_mask):"ir" (~(1<<nr)));

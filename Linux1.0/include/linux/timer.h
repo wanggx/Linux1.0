@@ -74,9 +74,9 @@ extern struct timer_struct timer_table[32];
  * to distinguish between the different invocations.
  */
 struct timer_list {
-	struct timer_list *next;
+	struct timer_list *next;  /* 注意timer是一个双向链表，在实际使用的时候基本作为一个单链表来用 */
 	struct timer_list *prev;
-	unsigned long expires;
+	unsigned long expires;		/* 表示多长时间后时钟被触发 */
 	unsigned long data;
 	void (*function)(unsigned long);
 };

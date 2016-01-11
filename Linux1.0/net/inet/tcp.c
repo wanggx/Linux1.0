@@ -818,8 +818,9 @@ static int tcp_write(struct sock *sk, unsigned char *from,
 
   DPRINTF((DBG_TCP, "tcp_write(sk=%X, from=%X, len=%d, nonblock=%d, flags=%X)\n",
 					sk, from, len, nonblock, flags));
-
+  /* 表示当前进程在使用该socket */
   sk->inuse=1;
+  /* 获取socket的操作协议 */
   prot = sk->prot;
   while(len > 0) {
 	if (sk->err) {			/* Stop on an error */

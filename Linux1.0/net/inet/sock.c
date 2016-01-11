@@ -1808,12 +1808,17 @@ void release_sock(struct sock *sk)
   /* See if we have any packets built up. */
   cli();
   sk->inuse = 1;
+  /* 如果接收数据包缓存队列不为NULL */
   while(sk->back_log != NULL) {
 	struct sk_buff *skb;
-
+	/* 表示之后的数据包都要被丢弃 */
 	sk->blog = 1;
 	skb =(struct sk_buff *)sk->back_log;
 	DPRINTF((DBG_INET, "release_sock: skb = %X:\n", skb));
+	/* 如果以back_log为首的链表不止一个节点，
+	 * 则将头部节点删除,因为在while循环里面，
+	 * 最终的结果就是整个back_log被删除
+	 */
 	if (skb->next != skb) {
 		sk->back_log = skb->next;
 		skb->prev->next = skb->next;
@@ -1830,6 +1835,7 @@ void release_sock(struct sock *sk)
 	(struct inet_protocol *)sk->pair); 
 	cli();
   }
+  /* 刚开标记 */
   sk->blog = 0;
   sk->inuse = 0;
   sti();

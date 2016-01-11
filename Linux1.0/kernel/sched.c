@@ -409,8 +409,13 @@ void sleep_on(struct wait_queue **p)
 	__sleep_on(p,TASK_UNINTERRUPTIBLE);
 }
 
+/* 注意对next_timer的操作非常精巧，
+ * 例子如下，4个时钟节点，触发时间分别为1,2,4,5
+ * 则expire的实际值为 1,1,2,1，也就是触发时间等于前面的所有expire的和
+ */
 static struct timer_list * next_timer = NULL;
 
+/* 将时钟添加到列表当中 */
 void add_timer(struct timer_list * timer)
 {
 	unsigned long flags;
@@ -423,11 +428,13 @@ void add_timer(struct timer_list * timer)
 	save_flags(flags);
 	cli();
 	while (*p) {
+		/* timer是按照expires大小依次从小到大排列 */
 		if ((*p)->expires > timer->expires) {
 			(*p)->expires -= timer->expires;
 			timer->next = *p;
 			break;
 		}
+		/* 如果没有找到合适位置，则expires一直减小 */
 		timer->expires -= (*p)->expires;
 		p = &(*p)->next;
 	}
@@ -445,8 +452,11 @@ int del_timer(struct timer_list * timer)
 	p = &next_timer;
 	save_flags(flags);
 	cli();
+	/* 扫描以next_timer为首的链表 */
 	while (*p) {
+		/* 如果在netxt_timer链表中找到该节点 */
 		if (*p == timer) {
+			/* 特别注意这句话就从链表中删除了timer节点 */
 			if ((*p = timer->next) != NULL)
 				(*p)->expires += timer->expires;
 			timer->expires += expires;
@@ -571,12 +581,15 @@ static void second_overflow(void)
 /*
  * disregard lost ticks for now.. We don't care enough.
  */
+
+/* 通过bo_bottom_half调用到此处 */
 static void timer_bh(void * unused)
 {
 	unsigned long mask;
 	struct timer_struct *tp;
 
 	cli();
+	/* 循环处理时钟列表当中的timer,同时将expires为0的timer触发 */
 	while (next_timer && next_timer->expires == 0) {
 		void (*fn)(unsigned long) = next_timer->function;
 		unsigned long data = next_timer->data;
@@ -586,7 +599,8 @@ static void timer_bh(void * unused)
 		cli();
 	}
 	sti();
-	
+
+	/* 注意timer_table和next_timer的区别 */
 	for (mask = 1, tp = timer_table+0 ; mask ; tp++,mask += mask) {
 		if (mask > timer_active)
 			break;
@@ -709,8 +723,10 @@ static void do_timer(struct pt_regs * regs)
 	itimer_ticks++;
 	if (itimer_ticks > itimer_next)
 		need_resched = 1;
+	/* 此时开始处理next_timer列表 */
 	if (next_timer) {
 		if (next_timer->expires) {
+			/* next_timer的expires减小，但为什么只有第一个减小呢? */
 			next_timer->expires--;
 			if (!next_timer->expires)
 				mark_bh(TIMER_BH);
@@ -822,11 +838,13 @@ void show_state(void)
 			show_task(i,task[i]);
 }
 
+/* 调度的初始化 */
 void sched_init(void)
 {
 	int i;
 	struct desc_struct * p;
 
+	/* 初始化时钟的下半部分 */
 	bh_base[TIMER_BH].routine = timer_bh;
 	if (sizeof(struct sigaction) != 16)
 		panic("Struct sigaction MUST be 16 bytes");
