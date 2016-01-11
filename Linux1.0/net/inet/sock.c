@@ -296,7 +296,7 @@ void put_sock(unsigned short num, struct sock *sk)
   sti();
 }
 
-/* 移除一个指定sock结构 */
+/* 移除一个指定sock结构,将struct sock从sock的队列中删除  */
 static void remove_sock(struct sock *sk1)
 {
   struct sock *sk2;
@@ -340,7 +340,8 @@ static void remove_sock(struct sock *sk1)
   if (sk1->num != 0) DPRINTF((DBG_INET, "remove_sock: sock not found.\n"));
 }
 
-/* 这里是真正意义上的销毁套接字了
+/* 这里是真正意义上的销毁套接字了，
+ * 在销毁之前需要消费sock的数据包，避免内存泄露
  */
 void destroy_sock(struct sock *sk)
 {
@@ -350,15 +351,17 @@ void destroy_sock(struct sock *sk)
   	sk->inuse = 1;			/* just to be safe. */
 
   	/* Incase it's sleeping somewhere. */
+	/* 对于消费的sock结构，其dead字段必须首先设置为1 */
   	if (!sk->dead) 
   		sk->write_space(sk);
 
   	remove_sock(sk);
   
   	/* Now we can no longer get new packets. */
+	/* 将sock的timer从next_timer中删除 */
   	delete_timer(sk);
 
-
+	/* 以便减少数据包的数量，此处的操作是释放数据包 */
 	while ((skb = tcp_dequeue_partial(sk)) != NULL) 
   	{
   		IS_SKB(skb);
@@ -366,6 +369,7 @@ void destroy_sock(struct sock *sk)
   	}
 
   /* Cleanup up the write buffer. */
+  /* 将写缓存清空释放内存 */
   	for(skb = sk->wfront; skb != NULL; ) 
   	{
 		struct sk_buff *skb2;
@@ -384,6 +388,7 @@ void destroy_sock(struct sock *sk)
   	sk->wfront = NULL;
   	sk->wback = NULL;
 
+	/* 释放读sk_buff队列 */
   	if (sk->rqueue != NULL) 
   	{
 	  	while((skb=skb_dequeue(&sk->rqueue))!=NULL)

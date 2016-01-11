@@ -124,7 +124,9 @@ struct sock {
 
   /* back_log为接收的数据包缓存队列。用于计算目前累计的应发送而未发送的应答数据包的个数*/
   struct sk_buff		*volatile back_log;
-  struct sk_buff		*partial;  /*创建最大长度的待发送数据包。*/
+  struct sk_buff		*partial;  /* 创建最大长度的待发送数据包。
+  								     * 即使用最大MTU值创建的数据包
+  								     */
   struct timer_list		partial_timer;  /*按时发送 partial 指针指向的数据包，以免缓存（等待）时间过长。*/
   long				retransmits; /* 重发次数*/
   struct sk_buff		*volatile wback,

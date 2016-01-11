@@ -251,6 +251,7 @@ void skb_append(struct sk_buff *old, struct sk_buff *newsk)
  *	_FIRST_.
  */
 
+/* 将skb从skb链表中删除 */
 void skb_unlink(struct sk_buff *skb)
 {
 	unsigned long flags;

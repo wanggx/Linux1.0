@@ -645,6 +645,10 @@ static void tcp_send_skb(struct sock *sk, struct sk_buff *skb)
 	}
 }
 
+
+/* 获取sock的最大长度数据发送包，然后将partial变量置为NULL
+ * 最大数据发送包只有一个
+ */
 struct sk_buff * tcp_dequeue_partial(struct sock * sk)
 {
 	struct sk_buff * skb;
