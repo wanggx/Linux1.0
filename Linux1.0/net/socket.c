@@ -183,6 +183,7 @@ static struct socket *sock_alloc(int wait)
 	cli();
 	for (sock = sockets; sock <= last_socket; ++sock) {
 		if (sock->state == SS_FREE) {
+			/* 注意在socket系统调用完成后struct socket的状态为SS_UNCONNECTED */
 			sock->state = SS_UNCONNECTED;
 			sti();
 			sock->flags = 0;

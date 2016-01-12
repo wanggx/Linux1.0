@@ -336,7 +336,7 @@ static void remove_sock(struct sock *sk1)
 	return;
   }
   sti();
-
+  /* 没找到则不做任何处理 */
   if (sk1->num != 0) DPRINTF((DBG_INET, "remove_sock: sock not found.\n"));
 }
 
@@ -799,7 +799,9 @@ static int inet_create(struct socket *sock, int protocol)
   sk = (struct sock *) kmalloc(sizeof(*sk), GFP_KERNEL);
   if (sk == NULL) 
   	return(-ENOMEM);
+  /* 新创建的struct sock端口号都为0 */
   sk->num = 0;
+  /* 0表示该sock已被使用 */
   sk->reuse = 0;
   /* 注意在此处会根据socket的类型来确定协议的类型，
     * 如下面如果是SOCK_STREAM类型的，则协议只能是IPPROTO_TCP
@@ -917,7 +919,8 @@ static int inet_create(struct socket *sock, int protocol)
   sk->ack_backlog = 0;
   sk->window = 0;
   sk->bytes_rcv = 0;
-  sk->state = TCP_CLOSE;
+  /* socket系统调用完成后，socket的状态为TCP_CLOSE */
+  sk->state = TCP_CLOSE;  
   sk->dead = 0;
   sk->ack_timed = 0;
   sk->partial = NULL;
@@ -974,7 +977,8 @@ static int inet_create(struct socket *sock, int protocol)
   sk->write_space = def_callback1;
   sk->error_report = def_callback1;
 
-  /* 在创建套接字的时候，就把套接字对应的sock加入到协议的
+  /* 在创建套接字的时候，如果是RAW类型的，sock的num初始化为protocol
+    * 就把套接字对应的sock加入到协议的,其他类型的则没有改操作
     * hash结构当中
     */
   if (sk->num) {
@@ -1081,6 +1085,8 @@ static int inet_bind(struct socket *sock, struct sockaddr *uaddr,
 
   /* check this error. */
   if (sk->state != TCP_CLOSE) return(-EIO);
+
+  /* 在绑定之前sock的端口号必须为0 */
   if (sk->num != 0) return(-EINVAL);
 
   err=verify_area(VERIFY_READ, uaddr, addr_len);
@@ -1136,6 +1142,7 @@ outside_loop:
 	}
 	if (sk2->num != snum) continue;		/* more than one */
 	if (sk2->saddr != sk->saddr) continue;	/* socket per slot ! -FB */
+	/* 如果绑定的本地地址和本地端口已被使用，则绑定失败 */
 	if (!sk2->reuse) {
 		sti();
 		return(-EADDRINUSE);
@@ -1144,7 +1151,9 @@ outside_loop:
   sti();
 
   remove_sock(sk);
+  /* 将sock和端口绑定，并添加到协议的数组链表当中 */
   put_sock(snum, sk);
+  /* 设置本地端口号和远端端口号 */
   sk->dummy_th.source = ntohs(sk->num);
   sk->daddr = 0;
   sk->dummy_th.dest = 0;
@@ -1176,7 +1185,10 @@ inet_connect(struct socket *sock, struct sockaddr * uaddr,
   if (sock->state == SS_CONNECTING && sk->protocol == IPPROTO_TCP &&
   	(flags & O_NONBLOCK))
   	return -EALREADY;	/* Connecting is currently in progress */
-  	
+
+  /* 刚调用socket系统调用时struct sock的state为TCP_CLOSE,
+    * struct socket的状态为SS_UNCONNECTED
+    */
   if (sock->state != SS_CONNECTING) {
 	/* We may need to bind the socket. */
 	if (sk->num == 0) {
@@ -1192,7 +1204,8 @@ inet_connect(struct socket *sock, struct sockaddr * uaddr,
   
 	err = sk->prot->connect(sk, (struct sockaddr_in *)uaddr, addr_len);
 	if (err < 0) return(err);
-  
+
+    /* 设置状态为正在连接 */
 	sock->state = SS_CONNECTING;
   }
 

@@ -103,7 +103,7 @@ struct sock {
 				intr,
 				blog,/* blog=1 表示对应套接字处于节制状态，此时接收的数据包均被丢弃*/
 				done,
-				reuse,
+				reuse,  /* 注意和inuse的区别 */
 				keepopen,/* keepopen=1 表示使用保活定时器 */
 				linger,/* linger=1 表示在关闭套接字时需要等待一段时间以确认其已关闭。*/
 				delay_acks,/* delay_acks=1表示延迟应答，可一次对多个数据包进行应答 */
