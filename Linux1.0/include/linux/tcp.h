@@ -41,21 +41,23 @@ struct tcphdr {
 };
 
 
+/* http://www.2cto.com/net/201209/157585.html */
+
 enum {
-  TCP_ESTABLISHED = 1,
-  TCP_SYN_SENT,
-  TCP_SYN_RECV,
+  TCP_ESTABLISHED = 1, /* 代表一个打开的连接 */
+  TCP_SYN_SENT, /* 再发送连接请求后等待匹配的连接请求 */
+  TCP_SYN_RECV, /* 再收到和发送一个连接请求后等待对方对连接请求的确认 */
 #if 0
   TCP_CLOSING, /* not a valid state, just a seperator so we can use
 		  < tcp_closing or > tcp_closing for checks. */
 #endif
-  TCP_FIN_WAIT1,
-  TCP_FIN_WAIT2,
-  TCP_TIME_WAIT,
-  TCP_CLOSE,
-  TCP_CLOSE_WAIT,
-  TCP_LAST_ACK,
-  TCP_LISTEN
+  TCP_FIN_WAIT1, /* 等待远程TCP连接中断请求，或先前的连接中断请求的确认 */
+  TCP_FIN_WAIT2, /* 从远程TCP等待连接中断请求 */
+  TCP_TIME_WAIT, /* 等待足够的时间以确保远程TCP接收到连接中断请求的确认 */
+  TCP_CLOSE,	 /* 没有任何连接状态 */
+  TCP_CLOSE_WAIT, /* 等待从本地用户发来的连接中断请求 */
+  TCP_LAST_ACK,	 /* 等待原来的发向远程TCP的连接中断请求的确认 */
+  TCP_LISTEN  /* 侦听来自远方的TCP端口的连接请求 */
 };
 
 #endif	/* _LINUX_TCP_H */

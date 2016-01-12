@@ -1,13 +1,4 @@
----- tcp_rcv Matches (12 in 3 files) ----
-Protocol.c (net\inet):  tcp_rcv,		/* TCP handler		*/
-Tcp.c (net\inet):tcp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp.c: tcp_rcv skb = NULL\n"));
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp.c: tcp_rcv protocol = NULL\n"));
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp.c: tcp_rcv opt = NULL\n"));
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp.c: tcp_rcv dev = NULL\n"));
-Tcp.c (net\inet):if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
-Tcp.c (net\inet):		DPRINTF((DBG_TCP, "tcp.c: tcp_rcv bug sk=NULL redo = 1\n"));
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp.c: tcp_rcv sk->prot = NULL \n"));
-Tcp.c (net\inet):if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
-Tcp.c (net\inet):  tcp_rcv,
-Tcp.h (net\inet):extern int	tcp_rcv(struct sk_buff *skb, struct device *dev,
+---- sys_socketcall Matches (3 in 3 files) ----
+Sched.c (kernel):sys_profil, sys_statfs, sys_fstatfs, sys_ioperm, sys_socketcall,
+Socket.c (net):sys_socketcall(int call, unsigned long *args)
+Sys.h (include\linux):extern int sys_socketcall();

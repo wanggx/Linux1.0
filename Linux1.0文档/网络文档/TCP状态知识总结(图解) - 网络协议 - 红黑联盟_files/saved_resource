@@ -1,0 +1,135 @@
+@CHARSET "UTF-8";
+
+/* id */
+#cyHotnews {
+    background-color: transparent;
+    border: 0;
+    color: #333;
+    display: block;
+    font-size: 13px;
+    font-weight: normal;
+    height: auto;
+    line-height: 1.4;
+    margin: 0 auto;
+    overflow: visible;
+    padding: 0;
+    position: relative;
+    text-align: left;
+    width: auto;
+}
+
+/* 重置#cyHotnews下的元素，防止与原页面样式冲突 start */
+#cyHotnews div,#cyHotnews ul {
+    margin: 0;
+    padding: 0;
+}
+
+#cyHotnews a {
+    background: transparent;
+    text-decoration: none;
+}
+
+#cyHotnews a:active,#cyHotnews a:hover {
+    outline: 0;
+}
+/* end */
+
+#cyHotnews .cy-wrapper {
+}
+
+#cyHotnews .hotnews-header {
+    background-color: #23618a;
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 6px 16px;
+}
+
+/* 新闻列表 */
+#cyHotnews .hotnews-list {
+    list-style: none;
+}
+
+/* 单条新闻 */
+#cyHotnews .hotnews-list .list-item {
+    border-bottom: 1px dotted silver;
+    margin: 6px 10px 0px 10px;
+    padding-bottom: 6px;
+}
+
+/* 单独处理最后一条新闻，不加下划线，低版本IE不支持该选择器 */
+#cyHotnews .hotnews-list .list-item:last-child {
+    border-bottom: none;
+}
+
+/* 新闻排名 */
+#cyHotnews .hotnews-list .rank {
+    color: #BD0000;
+    float: left;
+    font-family: Georgia;
+    width: 20px;
+}
+
+/* 新闻评论数 */
+#cyHotnews .hotnews-list .num {
+    color: #BD0000;
+    float: left;
+    width: 44px;
+}
+
+/* 新闻标题 */
+#cyHotnews .hotnews-list .content {
+    color: #333;
+}
+
+/* 隐藏 */
+#cyHotnews .hide {
+    display: none;
+}
+
+/* 正在显示的tab页*/
+#cyHotnews .current-on {
+    display:inline-block;
+    margin-top:3px; 
+    overflow:hidden; 
+    width: 35px;
+    text-align: center;
+    line-height: 20px;
+    background:white;
+    height:25px;
+    color:#333;
+}
+
+#cyHotnews .gb-final-comm-tab1{ 
+    overflow:hidden; 
+    *zoom:1;
+    float:right
+}
+
+#cyHotnews .gb-final-comm-tab1 .gb-final-tab-item{ 
+    float:left; 
+    height:25px; 
+    width:auto; 
+    margin-left:2px;
+    padding-left:0px; 
+    _display:inline;
+    background: none;
+}
+
+#cyHotnews .gb-final-comm-tab1 .gb-final-tab-c{ 
+    display:inline-block; 
+    margin-top:3px; 
+    overflow:hidden; 
+    width: 35px; 
+    height:20px;
+    text-align: center; 
+    line-height: 20px;
+    font-size:14px; 
+    color:#ffffff;
+}
+
+#cyHotnews .gb-final-comm-tab1 .gb-final-current{ 
+    color:#fff;  
+    font-weight: bold; 
+    background: #0066cc
+}

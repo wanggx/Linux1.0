@@ -207,6 +207,7 @@ ip_send(struct sk_buff *skb, unsigned long daddr, int len, struct device *dev,
  * protocol knows what it's doing, otherwise it uses the
  * routing/ARP tables to select a device struct.
  */
+/* 构造ip协议的首部 */
 int ip_build_header(struct sk_buff *skb, unsigned long saddr, unsigned long daddr,
 		struct device **dev, int type, struct options *opt, int len, int tos, int ttl)
 {

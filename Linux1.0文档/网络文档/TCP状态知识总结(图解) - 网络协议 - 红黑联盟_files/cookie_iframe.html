@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!-- saved from url=(0085)http://imageplus.baidu.com/cookie_iframe.html?CPROID=6759086A72C0BEAA0B290DD40605D702 -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <title>百度图+，cookie同步|回种</title>
+</head>
+<body>
+
+<script type="text/javascript">
+(function (win) {
+    var href = win.location.href;
+
+    var idx = href.lastIndexOf('?');
+    if (idx < 1) {
+        return;
+    }
+
+    var query = href.substr(idx + 1);
+    var params = query.split('&');
+    var len = params.length;
+    var result = {};
+
+    var isValidKey = function (key) {
+        return (new RegExp('^[^\\x00-\\x20\\x7f\\(\\)<>@,;:\\\\\\\'\\[\\]\\?=\\{\\}\\/\\u0080-\\uffff]+\x24')).test(key);
+    };
+
+    var growCookie = function (key, value, options) {
+        if (!isValidKey(key)) {
+            return;
+        }
+        options = options || {};
+
+        options.expires = options.expires || 31536000000;   //365 * 24 * 3600 * 1000
+        options.domain = options.domain || '.imageplus.baidu.com';   //365 * 24 * 3600 * 1000
+
+        var expires = new Date();
+        expires.setTime(expires.getTime() + options.expires);
+
+        document.cookie = key + '=' + value
+                    + (options.path ? '; path=' + options.path : '')
+                    + (expires ? '; expires=' + expires.toGMTString() : '')
+                    + (options.domain ? '; domain=' + options.domain : '')
+                    + (options.secure ? '; secure' : '');
+    };
+
+    for (var i = 0; i < len; i++) {
+        if (!params[i]) {
+            continue;
+        }
+        var param = params[i].split('=');
+        var key = param[0];
+        var value = param[1];
+
+        // grow cookie
+        growCookie(key, value);
+    }
+
+})(window);
+</script></body></html>
