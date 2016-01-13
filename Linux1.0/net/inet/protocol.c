@@ -45,7 +45,7 @@ static struct inet_protocol tcp_protocol = {
   NULL,			/* No fragment handler (and won't be for a long time) */
   tcp_err,		/* TCP error control	*/
   NULL,			/* next			*/
-  IPPROTO_TCP,		/* protocol ID		*/
+  IPPROTO_TCP,		/* protocol ID		*/  /* 从ip层往上层时，通过该值可以判断是tcp协议 */
   0,			/* copy			*/
   NULL,			/* data			*/
   "TCP"			/* name			*/

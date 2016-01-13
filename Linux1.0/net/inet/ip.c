@@ -1207,6 +1207,7 @@ ip_forward(struct sk_buff *skb, struct device *dev, int is_frag)
 #endif
 
 /* This function receives all incoming IP datagrams. */
+/* 该函数通过 */
 int
 ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 {
@@ -1299,6 +1300,8 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
   skb->ip_hdr = iph;
   skb->h.raw += iph->ihl*4;
   hash = iph->protocol & (MAX_INET_PROTOS -1);
+
+  /* 通过这个循环调用到上层的tcp_rcv函数 */
   for (ipprot = (struct inet_protocol *)inet_protos[hash];
        ipprot != NULL;
        ipprot=(struct inet_protocol *)ipprot->next)
@@ -1339,6 +1342,8 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 	* based on the datagram protocol.  We should really
 	* check the protocol handler's return values here...
 	*/
+
+	/* 此处开始调用到tcp_rcv函数 */
 	ipprot->handler(skb2, dev, opts_p ? &opt : 0, iph->daddr,
 			(ntohs(iph->tot_len) - (iph->ihl * 4)),
 			iph->saddr, 0, ipprot);
@@ -1368,6 +1373,24 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
  * transmit, otherwise we don't.
  * This routine also needs to put in the total length, and
  * compute the checksum.
+ */
+
+/* ip_queue_xmit函数作为数据包发送函数，被网络层和传输层协议共同调用。如果说ip_rcv
+ * 是数据包上行通道函数，那么ip_queue_xmit就是数据包下行通道函数。在完成一个数据桢
+ * 的创建后，ip_queue_xmit函数即被调用将数据包发往下层（链路层，通过调用
+ * dev_queue_xmit函数）进行处理。所以ip_queue_xmit是通往链路层的功能接口函数，所处
+ * 的位置和工作十分重要。在分析ip_fragment函数时，每当完成一个分片的创建，
+ * ip_queue_xmit就被调用，将这个被创建分片发送出去。而在TCP协议，UDP协议中，
+ * ip_queue_xmit函数则被调用的相当频繁，在这些协议实现文件中，调用时通过函数指针完
+ * 成的，tcp_prot->queue_xmit, udp_prot->queue_xmit都指向ip_queue_xmit函数，而ICMP
+ * 协议实现中， 数据包的发送则是直接调用ip_queue_xmit函数。 下面我们就对ip_queue_xmit
+ * 函数进行分析。
+ * 参数说明：
+ * sk：被发送数据包对应的套接字。
+ * dev：发送数据包的网络设备。
+ * skb：被发送的数据包。
+ * free：是否对数据包进行缓存以便于此后的超时重发，该字段主要配合TCP协议工作。UDP
+ * 协议，ICMP协议等在调用ip_queue_xmit时将该参数设置为1。
  */
 void
 ip_queue_xmit(struct sock *sk, struct device *dev, 

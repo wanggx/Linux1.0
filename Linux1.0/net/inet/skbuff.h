@@ -65,7 +65,7 @@ struct sk_buff {
   } h;
   struct iphdr		*ip_hdr;		/* For IPPROTO_RAW */
   unsigned long			mem_len;    /* sk_buff的内存长度 */
-  unsigned long 		len;
+  unsigned long 		len;		/* 实际数据长度 */
   unsigned long			fraglen;
   struct sk_buff		*fraglist;	/* Fragment list */
   unsigned long			truesize;

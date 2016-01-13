@@ -85,6 +85,7 @@ void skb_check(struct sk_buff *skb, int line, char *file)
  *	Insert an sk_buff at the start of a list.
  */
 
+/* 将newsk添加到list当中 */
 void skb_queue_head(struct sk_buff *volatile* list,struct sk_buff *newsk)
 {
 	unsigned long flags;

@@ -141,6 +141,7 @@ struct device {
 
 
 struct packet_type {
+  /* 链路层包类型 */
   unsigned short	type;	/* This is really NET16(ether_type) other
 				 * devices will have to translate
 				 * appropriately.
@@ -149,7 +150,7 @@ struct packet_type {
   int			(*func) (struct sk_buff *, struct device *,
 				 struct packet_type *);
   void			*data;
-  struct packet_type	*next;
+  struct packet_type	*next;  /* 包链表 */
 };
 
 

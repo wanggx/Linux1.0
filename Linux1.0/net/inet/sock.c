@@ -777,8 +777,10 @@ static int inet_listen(struct socket *sock, int backlog)
  *	the user owning the socket.
  */
 
+/* 有数据可以读了，则唤醒操作该struct sock的进程 */
 static void def_callback1(struct sock *sk)
 {
+	/* 如果struct sock没有被释放 */
 	if(!sk->dead)
 		wake_up_interruptible(sk->sleep);
 }
@@ -1988,6 +1990,7 @@ void inet_proto_init(struct ddi_proto *pro)
 	raw_prot.sock_array[i] = NULL;
   }
   printk("IP Protocols: ");
+  
   /*将静态变量组成的一个链进行初始化，全部添加到inet_protocol协议数组当中*/
   for(p = inet_protocol_base; p != NULL;) {
 	struct inet_protocol *tmp;

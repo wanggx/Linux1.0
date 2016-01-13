@@ -2580,6 +2580,7 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 	sk->shutdown = SHUTDOWN_MASK;
 	DPRINTF((DBG_TCP, "tcp_data: closing socket - %X\n", sk));
 	kfree_skb(skb, FREE_READ);
+	
 	if (!sk->dead) sk->state_change(sk);
 	return(0);
   }
@@ -2593,6 +2594,7 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
    */
 
   /* This should start at the last one, and then go around forwards. */
+  /* 如果接收队列为NULL */
   if (sk->rqueue == NULL) {
 	DPRINTF((DBG_TCP, "tcp_data: skb = %X:\n", skb));
 #ifdef OLDWAY
@@ -2658,6 +2660,7 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 	DPRINTF((DBG_TCP, "skb = %X:\n", skb));
   }
 
+  /* 告诉远端已经接收到的字节长度 */
   th->ack_seq = th->seq + skb->len;
   if (th->syn) th->ack_seq++;
   if (th->fin) th->ack_seq++;
@@ -2795,6 +2798,8 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 /*	tcp_send_ack(sk->sent_seq, sk->acked_seq, sk, th, saddr); */
 	sk->shutdown = SHUTDOWN_MASK;
 	sk->state = TCP_LAST_ACK;
+
+	/* 调用在inet_create函数中设置的state_change回调 */
 	if (!sk->dead) sk->state_change(sk);
   }
 
@@ -3079,6 +3084,7 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
   reset_timer(sk, TIME_WRITE, TCP_CONNECT_TIME);	/* Timer for repeating the SYN until an answer */
   sk->retransmits = TCP_RETR2 - TCP_SYN_RETRIES;
 
+  /* 调用ip_queue_xmit函数，将数据包发往网络层进行处理 */
   sk->prot->queue_xmit(sk, dev, buff, 0);  
   
   release_sock(sk);
@@ -3142,6 +3148,7 @@ ignore_it:
 }
 
 
+/* 该函数是ip_rcv的上层(传输层)函数 */
 int
 tcp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 	unsigned long daddr, unsigned short len,
@@ -3351,6 +3358,9 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
 			return(0);
 		}
 
+		/* tcp_data 函数（被 tcp_rcv 函数调用，而 tcp_rcv 函数又被 release_sock 函数调用）
+		 * 完成数据包向 rqueue 队列的加入 
+		 */
 		if (tcp_data(skb, sk, saddr, len)) {
 			kfree_skb(skb, FREE_READ);
 			release_sock(sk);

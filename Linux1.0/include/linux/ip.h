@@ -70,7 +70,7 @@ struct iphdr {
   unsigned short	id;
   unsigned short	frag_off;
   unsigned char		ttl;
-  unsigned char		protocol;
+  unsigned char		protocol;  /* 表明上层使用的协议 */
   unsigned short	check;
   unsigned long		saddr;
   unsigned long		daddr;

@@ -590,6 +590,8 @@ int in_inet_bh()	/* Used by timer.c */
  * process any data that came in from some interface.
  *
  */
+
+/* 网络设备的下半部分，通过网络设备的中断运行到这个地方 */
 void
 inet_bh(void *tmp)
 {
