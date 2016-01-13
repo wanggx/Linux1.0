@@ -1835,7 +1835,14 @@ void release_sock(struct sock *sk)
   /* See if we have any packets built up. */
   cli();
   sk->inuse = 1;
-  /* 如果接收数据包缓存队列不为NULL */
+  /* 如果接收数据包缓存队列不为NULL,网络层模块在将一个数据包传递给传输层
+    * 模块处理时(调用tcp_rcv),如果当前对应的套接字正忙，则将数据包插入到sock结构的
+    * back_log队列当中，但是插入到该队列中的数据包并不算是被接收，该队列中的数据包
+    * 需要进行一系列处理后插入rqueue接收队列中时，方才算是完成接收。release_sock
+    * 函数就是从back_log中取数据包重新调用tcp_rcv函数对数据包进行接收，所谓的
+    * back_log队列只是数据包暂居之所，不可久留，所以也就必须对这个队列中数据包尽快进行
+    * 处理
+    */
   while(sk->back_log != NULL) {
 	struct sk_buff *skb;
 	/* 表示之后的数据包都要被丢弃 */

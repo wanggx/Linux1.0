@@ -520,6 +520,7 @@ tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 
 
 /* This routine computes a TCP checksum. */
+/* tcp_check 函数用于计算 TCP 校验和。TCP 校验和包含 TCP 数据及其负载 */
 unsigned short
 tcp_check(struct tcphdr *th, int len,
 	  unsigned long saddr, unsigned long daddr)
@@ -581,7 +582,9 @@ tcp_check(struct tcphdr *th, int len,
   return((~sum) & 0xffff);
 }
 
-
+/* tcp_send_check 函数用于计算 TCP 首部中校验和字段，
+ * 注意在计算之前需要首先将该字段值清零。 
+ */
 void tcp_send_check(struct tcphdr *th, unsigned long saddr, 
 		unsigned long daddr, int len, struct sock *sk)
 {
@@ -3168,6 +3171,7 @@ tcp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
   th = skb->h.th;
 
   /* Find the socket. */
+  /* 注意此处的skb是从远端接收到的，skb中的本地地址就是远端地址，然后获取与之对应的struct sock结构 */
   sk = get_sock(&tcp_prot, th->dest, saddr, th->source, daddr);
   DPRINTF((DBG_TCP, "<<\n"));
   DPRINTF((DBG_TCP, "len = %d, redo = %d, skb=%X\n", len, redo, skb));
@@ -3210,11 +3214,13 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
 	skb->acked = 0;
 	skb->used = 0;
 	skb->free = 0;
+	/* 变更远端地址和本地地址的关系 */
 	skb->saddr = daddr;
 	skb->daddr = saddr;
 
 	/* We may need to add it to the backlog here. */
 	cli();
+	/* 如果套接字忙，则将skb插入到back_log队列中 */
 	if (sk->inuse) {
 		if (sk->back_log == NULL) {
 			sk->back_log = skb;

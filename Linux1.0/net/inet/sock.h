@@ -118,12 +118,27 @@ struct sock {
   struct sock			*next;   /* 形成struct sock的一个链表 */
   struct sock			*pair;
 
-  /* send_head, send_tail 用于 TCP协议重发队列。*/
+  /* send_head, send_tail 用于 TCP协议重发队列。
+    * send_head 指向的队列 （send_tail 指向该队列的尾部）， 
+    * 该队列缓存已发送出去但尚未得到对方应答的数据包。
+    */
   struct sk_buff		*volatile send_tail;
   struct sk_buff		*volatile send_head;
 
   /* back_log为接收的数据包缓存队列。用于计算目前累计的应发送而未发送的应答数据包的个数*/
   struct sk_buff		*volatile back_log;
+
+  /* partial 队列中缓存的单个数据包源于 TCP 协议的流式传输，对于 TCP 协议，为了避免在网络中
+    * 传输小数据包，充分利用网络效率，底层网络栈实现对于用户应用程序发送的少量数据进行收
+    * 集缓存，当积累到一定数量后（MSS） ，方才作为整个包发送出去。partial 队列中数据包的意义
+    * 即在于此，对于少量数据，如果数据并非是 OOB 数据（即无需立刻发送给远端） ，则暂时分配
+    * 一个大容量的数据包，将数据拷贝到该大数据包中，之后将该数据包缓存到 partial 队列中，当
+    * 下次用户继续发送数据时，内核首先检查 partial 队列中是否有之前未填充满的数据包，则这些
+    * 数据可以继续填充到该数据包，直到填满才将其发送出去。当然为了尽量减少对应用程序效率
+    * 的影响，这个等待填满的时间是一定的，在实现上，内核设置一个定时器，当定时器超时时，
+    * 如果 partial 队列中缓存有未填满的数据包， 仍然将其发送出去， 超时发送函数为 tcp_send_partial.
+    * 此外在其它条件下，当需要发送 partial 中数据包时，内核也直接调用 tcp_send_partial 函数进行
+    * 发送。*/
   struct sk_buff		*partial;  /* 创建最大长度的待发送数据包。
   								     * 即使用最大MTU值创建的数据包
   								     */
