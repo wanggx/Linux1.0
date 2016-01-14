@@ -147,6 +147,7 @@ struct packet_type {
 				 * appropriately.
 				 */
   unsigned short	copy:1;
+  /* 交给上层处理的函数，如ip包(通过type字段来判断)则处理函数是ip_rcv */
   int			(*func) (struct sk_buff *, struct device *,
 				 struct packet_type *);
   void			*data;

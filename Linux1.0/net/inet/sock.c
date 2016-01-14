@@ -1978,6 +1978,9 @@ void inet_proto_init(struct ddi_proto *pro)
   }
 
   /* Tell SOCKET that we are alive... */
+  /* 注册的变量都存放在p_ops数组当中，当创建socket的时候
+    * 会根据传递的family来确定使用哪个struct proto_ops
+    */
   (void) sock_register(inet_proto_ops.family, &inet_proto_ops);
 
   seq_offset = CURRENT_TIME*250;
@@ -1991,11 +1994,14 @@ void inet_proto_init(struct ddi_proto *pro)
   }
   printk("IP Protocols: ");
   
-  /*将静态变量组成的一个链进行初始化，全部添加到inet_protocol协议数组当中*/
+  /* 将静态变量组成的一个链进行初始化，全部添加到inet_protocol协议数组当中 
+    * 该inet_protocol链表是网络层向上层传递数据时调用的协议结构 
+    */
   for(p = inet_protocol_base; p != NULL;) {
 	struct inet_protocol *tmp;
 
 	tmp = (struct inet_protocol *) p->next;
+	/* 添加的变量最终都存放在inet_protos数组当中 */
 	inet_add_protocol(p);
 	printk("%s%s",p->name,tmp?", ":"\n");
 	p = tmp;
@@ -2005,5 +2011,6 @@ void inet_proto_init(struct ddi_proto *pro)
   dev_init();
 
   /* Initialize the "Buffer Head" pointers. */
+  /* 初始化inet协议族的网络中断下半部分处理 */
   bh_base[INET_BH].routine = inet_bh;
 }

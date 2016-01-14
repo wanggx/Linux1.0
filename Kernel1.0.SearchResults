@@ -1,7 +1,5 @@
----- inet_bh Matches (6 in 4 files) ----
-Dev.c (net\inet):int in_inet_bh()	/* Used by timer.c */
-Dev.c (net\inet):inet_bh(void *tmp)
-Dev.h (net\inet):extern int		in_inet_bh(void);
-Dev.h (net\inet):extern void		inet_bh(void *tmp);
-Sock.c (net\inet):  bh_base[INET_BH].routine = inet_bh;
-Timer.c (net\inet):  if (sk->inuse || in_inet_bh()) {
+---- tcp_conn_request Matches (4 in 1 files) ----
+Tcp.c (net\inet):tcp_conn_request(struct sock *sk, struct sk_buff *skb,
+Tcp.c (net\inet):  DPRINTF((DBG_TCP, "tcp_conn_request(sk = %X, skb = %X, daddr = %X, sadd4= %X, \n"
+Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_conn_request on dead socket\n"));
+Tcp.c (net\inet):			tcp_conn_request(sk, skb, daddr, saddr, opt, dev);

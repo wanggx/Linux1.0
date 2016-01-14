@@ -85,7 +85,7 @@ struct inet_protocol *inet_protos[MAX_INET_PROTOS] = {
   NULL
 };
 
-/* 通过协议id获取协议 */
+/* 通过传输层协议id获取协议 */
 struct inet_protocol *inet_get_protocol(unsigned char prot)
 {
   unsigned char hash;

@@ -603,7 +603,10 @@ sock_listen(int fd, int backlog)
  * with the client, wake up the client, then return the new
  * connected fd.
  */
-/* fd是监听的套接字
+/* fd是监听的套接字,该函数的执行过程为，首先在sockets数组当中申请一个
+ * struct socket，在申请struct socket的过程中就给socket分配了inode节点，
+ * 然后在分配一个struct file结构，最后就返回一个新的文件描述符，该过程是一个
+ * 反向的过程
  */
 static int sock_accept(int fd, struct sockaddr *upeer_sockaddr, int *upeer_addrlen)
 {

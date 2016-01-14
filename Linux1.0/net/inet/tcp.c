@@ -1733,6 +1733,24 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
 		 unsigned long daddr, unsigned long saddr,
 		 struct options *opt, struct device *dev)
 {
+/* 当 tcp_rcv 函数接收一个 SYN 连接请求数据包后，其调用 tcp_conn_request 函数进行具体处理。
+ * tcp_conn_request 函数实现的功能如同函数名，专门用于处理连接请求。该函数虽然较长，但逻
+ * 辑上非常简单：其首先创建一个新的 sock 结构（这就是我们通常所说的，侦听套接字在接收到
+ * 一个连接请求时，会创建一个新的套接字用于通信，其本身继续侦听其他客户端的请求）并对
+ * 该 sock 结构进行初始化（该函数较长即源于初始化 sock 结构字段的代码较长） ；此后发送一个
+ * 应答数据包，并将新创建的 sock 结构状态设置为 TCP_SYN_RECV（实际上在初始化 sock 结构
+ * 时已经进行了设置，注意侦听套接字状态仍然为 TCP_LISTEN),函数最后将该新创建的 sock 结
+ * 构与请求连接数据包绑定并挂接到侦听套接字的receive_queue队列中。 本书在前文中一再强调，
+ * 侦听套接字接收队列 receive_queue 中缓存的均是请求连接数据包，不包含普通数据包。accept
+ * 系统调用即从侦听套接字 receive_queue 中取数据包， 获得该数据包对应的 sock 结构， 检查其状
+ * 态，如果状态为 TCP_ESTABLISHED,则 accept 系统调用成功返回，否则等待该 sock 结构状态
+ * 进入 TCP_ESTABLISHED.注意 tcp_conn_request 函数发送应答时，相应 sock 结构状态设置为
+ * TCP_SYN_RECV,该 sock 结构状态转为 TCP_ESTABLISHED 是由 tcp_ack 函数完成的，tcp_ack
+ * 函数专门负责对方发送的 ACK 数据包，当监测到某个 ACK 数据包是三路握手连接过程中的完
+ * 成连接建立的应答数据包时，tcp_ack 函数会将对应该连接的本地 sock 结构状态设置为
+ * TCP_ESTABLISHED.具体请参考下文中对于 tcp_ack 函数的相关分析。
+ * 对于 tcp_conn_request 函数中的大部分代码，读者可对照 sock 结构（net/inet/sock.h）定义理解。
+ */
   struct sk_buff *buff;
   struct tcphdr *t1;
   unsigned char *ptr;
@@ -1772,6 +1790,10 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
    * and if the listening socket is destroyed before this is taken
    * off of the queue, this will take care of it.
    */
+
+  /* 如果是连接请求，则分配一个新的struct sock，
+    * 然后accept函数返回的就是该新创建的socket的文件描述符 
+    */
   newsk = (struct sock *) kmalloc(sizeof(struct sock), GFP_ATOMIC);
   if (newsk == NULL) {
 	/* just ignore the syn.  It will get retransmitted. */
@@ -1780,6 +1802,7 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
   }
 
   DPRINTF((DBG_TCP, "newsk = %X\n", newsk));
+  /* 将远端的套接字进行拷贝 */
   memcpy((void *)newsk,(void *)sk, sizeof(*newsk));
   newsk->wback = NULL;
   newsk->wfront = NULL;
@@ -1826,6 +1849,8 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
   newsk->dummy_th.dest = skb->h.th->source;
 
   /* Swap these two, they are from our point of view. */
+
+  /* 交换远端和本地地址 */
   newsk->daddr = saddr;
   newsk->saddr = daddr;
 
@@ -2908,7 +2933,7 @@ tcp_fin(struct sock *sk, struct tcphdr *th,
 
 
 /* This will accept the next outstanding connection. */
-/* sk是监听的sock
+/* sk是监听的sock,返回的是发送连接请求的struct sock
  */
 static struct sock *tcp_accept(struct sock *sk, int flags)
 {
@@ -3269,6 +3294,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
   DPRINTF((DBG_TCP, "About to do switch.\n"));
 
   /* Now deal with it. */
+  /* 判断套接字状态 */
   switch(sk->state) {
 	/*
 	 * This should close the system down if it's waiting
@@ -3288,7 +3314,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
 			return(0);
 		}
 
-	case TCP_ESTABLISHED:
+	case TCP_ESTABLISHED: /* 如果是已经建立的TCP连接，则调用tcp_data函数将sk_buf插入到rqueue队列当中 */
 	case TCP_CLOSE_WAIT:
 	case TCP_FIN_WAIT1:
 	case TCP_FIN_WAIT2:
@@ -3394,7 +3420,10 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
 		release_sock(sk);
 		return(0);
 
-	case TCP_LISTEN:
+	/* 如果是监听套接字，则此时应该处理的就是客户端的连接请求，
+	 * tcp_conn_request函数是专门用来处理连接请求的
+	 */
+	case TCP_LISTEN:   
 		if (th->rst) {
 			kfree_skb(skb, FREE_READ);
 			release_sock(sk);
