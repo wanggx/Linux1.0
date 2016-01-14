@@ -133,6 +133,8 @@ static struct packet_type ip_packet_type = {
    
 
 struct packet_type *ptype_base = &ip_packet_type;
+
+/* 全局数据包缓存队列，还有一个队列就是struct sock中的back_log队列  */
 static struct sk_buff *volatile backlog = NULL;
 static unsigned long ip_bcast = 0;
 
@@ -481,6 +483,9 @@ dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
  * Receive a packet from a device driver and queue it for the upper
  * (protocol) levels.  It always succeeds.
  */
+
+/* 驱动程序调用 netif_rx 将接收到的数据包缓存于该队列中
+ */
 void
 netif_rx(struct sk_buff *skb)
 {
@@ -632,6 +637,7 @@ inet_bh(void *tmp)
 	* SLIP and PLIP have no alternative but to force the type to be
 	* IP or something like that.  Sigh- FvK
 	*/
+	/* 获取包的类型，是ip包，arp包 */
        type = skb->dev->type_trans(skb, skb->dev);
 
 	/*

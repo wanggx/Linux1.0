@@ -1802,7 +1802,7 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
   }
 
   DPRINTF((DBG_TCP, "newsk = %X\n", newsk));
-  /* 将远端的套接字进行拷贝 */
+  /* 将监听的套接字进行拷贝 */
   memcpy((void *)newsk,(void *)sk, sizeof(*newsk));
   newsk->wback = NULL;
   newsk->wfront = NULL;
@@ -1854,6 +1854,11 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
   newsk->daddr = saddr;
   newsk->saddr = daddr;
 
+  /* 注意新建套接字端口和监听套接字端口此时是一样的，
+    * 所以在accept系统调用后返回的文件描述符最终对应的
+    * struct sock和监听的struct sock是两个不同的sock，
+    * 但是所指向的端口号是一样的。
+    */
   put_sock(newsk->num,newsk);
   newsk->dummy_th.res1 = 0;
   newsk->dummy_th.doff = 6;
@@ -3241,6 +3246,10 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
 		return(0);
 	}
 
+	/* 注意此处的skb->sk=sk非常重要，设置收到的
+	 * skb是属于哪个struct sock的。如果是监听套接字的话
+	 * 则会调用tcp_conn_request函数
+	 */
 	skb->len = len;
 	skb->sk = sk;
 	skb->acked = 0;

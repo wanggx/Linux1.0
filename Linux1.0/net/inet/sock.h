@@ -125,7 +125,7 @@ struct sock {
   struct sk_buff		*volatile send_tail;
   struct sk_buff		*volatile send_head;
 
-  /* back_log为接收的数据包缓存队列。用于计算目前累计的应发送而未发送的应答数据包的个数*/
+  /* back_log为接收的数据包缓存队列。用于计算目前累计的应发送而未发送的应答数据包的个数 */
   struct sk_buff		*volatile back_log;
 
   /* partial 队列中缓存的单个数据包源于 TCP 协议的流式传输，对于 TCP 协议，为了避免在网络中

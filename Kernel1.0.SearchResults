@@ -1,5 +1,20 @@
----- tcp_conn_request Matches (4 in 1 files) ----
-Tcp.c (net\inet):tcp_conn_request(struct sock *sk, struct sk_buff *skb,
-Tcp.c (net\inet):  DPRINTF((DBG_TCP, "tcp_conn_request(sk = %X, skb = %X, daddr = %X, sadd4= %X, \n"
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_conn_request on dead socket\n"));
-Tcp.c (net\inet):			tcp_conn_request(sk, skb, daddr, saddr, opt, dev);
+---- dev_rint Matches (19 in 15 files) ----
+3c501.c (drivers\net):	    if (dev_rint((unsigned char*)skb, pkt_len, IN_SKBUFF, dev) != 0) {
+3c507.c (drivers\net):			if (dev_rint((unsigned char*)skb, pkt_len, IN_SKBUFF, dev) != 0) {
+3c509.c (drivers\net):				if (dev_rint((unsigned char *)skb, pkt_len,
+3c509.c (drivers\net):						printk("	 dev_rint() happy, status %4.4x.\n",
+At1700.c (drivers\net):			if (dev_rint((unsigned char*)skb, pkt_len, IN_SKBUFF, dev) != 0) {
+Atp.c (drivers\net):		if (dev_rint((unsigned char*)skb, pkt_len, IN_SKBUFF, dev) != 0) {
+Depca.c (drivers\net):	    if (dev_rint((unsigned char*)skb, pkt_len, IN_SKBUFF, dev) != 0) {
+Dev.c (net\inet):dev_rint(unsigned char *buff, long len, int flags, struct device *dev)
+Dev.c (net\inet):	  printk("INET: dev_rint: no longer dropping packets.\n");
+Dev.c (net\inet):		printk("dev_rint: packet dropped on %s (no memory) !\n",
+Dev.h (net\inet):extern int		dev_rint(unsigned char *buff, long len, int flags,
+D_link.c (drivers\net):	if (dev_rint((unsigned char *)skb, size, IN_SKBUFF, dev))
+Eexpress.c (drivers\net):			if (dev_rint((unsigned char*)skb, pkt_len, IN_SKBUFF, dev) != 0) {
+Lance.c (drivers\net):	    if (dev_rint((unsigned char*)skb, pkt_len, IN_SKBUFF, dev) != 0) {
+Loopback.c (net\inet):  done = dev_rint(skb->data, skb->len, 0, dev);
+Loopback.c (net\inet):	done = dev_rint(NULL, 0, 0, dev);
+Plip.c (drivers\net):	} else if(dev_rint((unsigned char *)skb, length, IN_SKBUFF, dev)) {
+Skeleton.c (drivers\net):			if (dev_rint((unsigned char*)skb, pkt_len, IN_SKBUFF, dev) != 0) {
+Slip.c (drivers\net):	done = dev_rint(sl->rbuff, count, 0, sl->dev);

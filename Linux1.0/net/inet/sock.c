@@ -261,7 +261,7 @@ void put_sock(unsigned short num, struct sock *sk)
 	return;
   }
   sti();
-  /* 最多循环三次 */
+  /* 最多循环三次,这个 for 语句用于估计本地地址子网反掩码 */
   for(mask = 0xff000000; mask != 0xffffffff; mask = (mask >> 8) | mask) {
 	if ((mask & sk->saddr) &&
 	    (mask & sk->saddr) != (mask & 0xffffffff)) {
@@ -269,12 +269,19 @@ void put_sock(unsigned short num, struct sock *sk)
 		break;
 	}
   }
+
+  /* 此时mask的值可能是 0.0.0.0/255.0.0.0/255.255.0.0/255.255.255.0/255.255.255.255
+    * 则对应的saddr为    (0-255).x.x.x/(0.0-255.255).x.x/(0.0.0-255.255.255).x/(0.0.0.0-255.255.255.255)
+    */
   DPRINTF((DBG_INET, "mask = %X\n", mask));
 
   cli();
-  /* 使用本地地址掩码进行地址排列 */
+  /* 使用本地地址掩码进行地址排列
+    * 
+    */
   sk1 = sk->prot->sock_array[num];
   for(sk2 = sk1; sk2 != NULL; sk2=sk2->next) {
+  	/* 如果if满足，则saddr为0.x.x.x/0.0.x.x/0.0.0.x */
 	if (!(sk2->saddr & mask)) {
 		if (sk2 == sk1) {
 			sk->next = sk->prot->sock_array[num];
@@ -287,10 +294,12 @@ void put_sock(unsigned short num, struct sock *sk)
 		sti();
 		return;
 	}
+	/* 让sk1指针跟着sk2指针移动 */
 	sk1 = sk2;
   }
 
   /* Goes at the end. */
+  /* 将sk添加到链表的最后，并设置next字段为NULL*/
   sk->next = NULL;
   sk1->next = sk;
   sti();
@@ -1157,6 +1166,11 @@ outside_loop:
   put_sock(snum, sk);
   /* 设置本地端口号和远端端口号 */
   sk->dummy_th.source = ntohs(sk->num);
+  /* 注意绑定套接字的远端地址为0，在accept时从绑定套接字里面新建的struct sock
+    * 虽然端口和绑定套接字的端口相同，但是套接字的远端地址不同，注意函数put_sock
+    * 和get_sock的参数的区别，get_sock是根据本地套接字和远端套接字来获取的。put_sock
+    * 仅仅是本地套接字
+    */
   sk->daddr = 0;
   sk->dummy_th.dest = 0;
   return(0);
@@ -1776,6 +1790,7 @@ void sock_rfree(struct sock *sk, void *mem, unsigned long size)
 
 /* 获取协议上操作某个端口的sock，其中限制条件是
  * 本地地址和本地端口，远程地址和远程端口
+ * 该函数和put_sock功能相反
  */
 struct sock *get_sock(struct proto *prot, unsigned short num,
 				unsigned long raddr,
