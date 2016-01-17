@@ -371,6 +371,7 @@ tcp_readable(struct sock *sk)
  *	listening socket has a receive queue of sockets to accept.
  */
 
+/* tcp协议的select系统调用的真正实现 */
 static int
 tcp_select(struct sock *sk, int sel_type, select_table *wait)
 {

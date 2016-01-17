@@ -76,6 +76,7 @@ unsigned long net_dev_init (unsigned long mem_start, unsigned long mem_end)
 #endif
 
 #if defined(CONFIG_LANCE)			/* Note this is _not_ CONFIG_AT1500. */
+	/* 为网卡分配的地址空间 */
 	mem_start = lance_init(mem_start, mem_end);
 #endif
 
@@ -92,6 +93,9 @@ unsigned long net_dev_init (unsigned long mem_start, unsigned long mem_end)
    long.
  */
 
+/* 这个函数执行完毕之后，Linux就可以正确操作网卡，
+ * 而网卡已经作为一个dev对象嵌入到Linux内核  
+ */
 struct device *init_etherdev(struct device *dev, int sizeof_private,
 							 unsigned long *mem_startp)
 {
@@ -140,7 +144,8 @@ struct device *init_etherdev(struct device *dev, int sizeof_private,
 	dev->pa_brdaddr		= 0;
 	dev->pa_mask		= 0;
 	dev->pa_alen		= sizeof(unsigned long);
-	
+
+	/* 将网卡设备嵌入到Linux内核设备列表当中 */
 	if (new_device) {
 		/* Append the device to the device queue. */
 		struct device **old_devp = &dev_base;

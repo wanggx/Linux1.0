@@ -40,9 +40,14 @@
 /* 套接字缓冲区结构 */
 struct sk_buff {
   unsigned long			magic_debug_cookie;
-  /* sk_buff是一个双向循环链表 */
+  /* sk_buff是一个双向循环链表，但是同时这个双向链表也有一个头部，
+    * 该头部就是用list来指向 
+    */
   struct sk_buff		*volatile next;
   struct sk_buff		*volatile prev;
+  /* 这个指针也是用于构成sk_buff的链表，只不过该链表是重发的链表
+   * send_head执行链表的链首，send_tail指向尾部，该链表通过link3来连接
+   */
   struct sk_buff		*volatile link3;
   struct sk_buff		*volatile* list;
   struct sock			*sk;     /* 指定这个sk_buff是那个sock的 */
@@ -66,19 +71,30 @@ struct sk_buff {
   struct iphdr		*ip_hdr;		/* For IPPROTO_RAW */
   unsigned long			mem_len;    /* sk_buff的内存长度 */
   unsigned long 		len;		/* 实际数据长度 */
+  /* 分片数据包的个数 */
   unsigned long			fraglen;
+  /* 分片数据包的链表 */
   struct sk_buff		*fraglist;	/* Fragment list */
   unsigned long			truesize;
   unsigned long 		saddr;
   unsigned long 		daddr;
   int				magic;
-  volatile char 		acked,
-				used,
-				free,
-				arp;
+  volatile char 		acked, /* =1,表示该数据包已得到确认，可以从重发队列中删除 */
+				used, /* =1,表示该数据包的数据已被程序读完，可以进行释放 */
+				free, /* =1,用于数据包发送，当某个待发送数据包的free标记等于1，
+				         * 则表示无论数据包是否发送成功，在进行发送操作后立即释放，无需缓存
+				         */
+				arp;  /* 用于待发送数据包，此字段等于1表示此待发送数据包已完成MAC首部
+				         * 建立，arp=0表示mac首部中目的端硬件地址尚不知晓，故需使用arp协议询问对方，
+				         * 在mac首部尚未完成建立之前，该数据包一直处于发送缓冲队列中
+                              */
   unsigned char			tries,lock;	/* Lock is now unused */
+						 /* 使用该数据包的模块数 */
   unsigned short		users;		/* User count - see datagram.c (and soon seqpacket.c/stream.c) */
-  unsigned long			padding[0];
+  unsigned long			padding[0];  /* 填充字节，目前定义为0字节，无需填充 */
+  /* 之后的内存是需要发送到网络的数据，data即是sk_buff的末尾
+    * 也是数据的首部 
+    */
   unsigned char			data[0];
 };
 

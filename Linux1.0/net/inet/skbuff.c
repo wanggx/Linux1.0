@@ -57,6 +57,9 @@ volatile unsigned long net_skbcount=0;
  */
 
 
+/* 对struct sk_buff进行检查的一个函数，其中的line代表文件中的行，
+ * file代表文件名称 
+ */
 void skb_check(struct sk_buff *skb, int line, char *file)
 {
 	if(skb->magic_debug_cookie==SK_FREED_SKB)
@@ -85,7 +88,7 @@ void skb_check(struct sk_buff *skb, int line, char *file)
  *	Insert an sk_buff at the start of a list.
  */
 
-/* 将newsk添加到list首部当中 */
+/* 将newsk添加到list首部当中，并且让newsk作为链表首部 */
 void skb_queue_head(struct sk_buff *volatile* list,struct sk_buff *newsk)
 {
 	unsigned long flags;
@@ -95,6 +98,7 @@ void skb_queue_head(struct sk_buff *volatile* list,struct sk_buff *newsk)
 		printk("Suspicious queue head: sk_buff on list!\n");
 	save_flags(flags);
 	cli();
+	/* 设置新sk_buff的头部，所有的sk_buff中的list都指向同一个头部 */
 	newsk->list=list;
 
 	newsk->next=*list;
@@ -126,6 +130,7 @@ void skb_queue_tail(struct sk_buff *volatile* list, struct sk_buff *newsk)
 	save_flags(flags);
 	cli();
 
+	/*设置newsk首部 */
 	newsk->list=list;
 	if(*list)
 	{
@@ -195,6 +200,7 @@ struct sk_buff *skb_dequeue(struct sk_buff *volatile* list)
  *	Insert a packet before another one in a list.
  */
 
+/* 将newsk插入到old的前面 */
 void skb_insert(struct sk_buff *old, struct sk_buff *newsk)
 {
 	unsigned long flags;
@@ -222,6 +228,7 @@ void skb_insert(struct sk_buff *old, struct sk_buff *newsk)
  *	Place a packet after a given packet in a list.
  */
 
+/* 将newsk添加到old的后面 */
 void skb_append(struct sk_buff *old, struct sk_buff *newsk)
 {
 	unsigned long flags;
@@ -261,12 +268,17 @@ void skb_unlink(struct sk_buff *skb)
 
 	IS_SKB(skb);
 
+	/* 判断队列的首部是否为NULL */
 	if(skb->list)
 	{
 		skb->next->prev=skb->prev;
 		skb->prev->next=skb->next;
+		/* 如果自己是首部 */
 		if(*skb->list==skb)
 		{
+			/* 如果队列中只有skb一个，则skb的list要设置为NULL,
+			 * 否则就将skb的下一个作为队首 
+			 */
 			if(skb->next==skb)
 				*skb->list=NULL;
 			else
@@ -288,8 +300,10 @@ void skb_unlink(struct sk_buff *skb)
 void skb_new_list_head(struct sk_buff *volatile* list)
 {
 	struct sk_buff *skb=skb_peek(list);
+	/* 如果队首为空，则不做任何处理 */
 	if(skb!=NULL)
 	{
+	    /* 将队中所有节点给检查一遍，并设置队首为list */
 		do
 		{
 			IS_SKB(skb);
@@ -307,6 +321,7 @@ void skb_new_list_head(struct sk_buff *volatile* list)
  *	type system cli() peek the buffer copy the data and sti();
  */
 
+/* 函数作用很简单，就是去除一个指向sk_buff的指针 */
 struct sk_buff *skb_peek(struct sk_buff *volatile* list)
 {
 	return *list;

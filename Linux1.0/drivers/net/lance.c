@@ -258,6 +258,7 @@ unsigned long lance_probe1(short ioaddr, unsigned long mem_start)
     if (inw(ioaddr+LANCE_DATA) != 0x0004)
 	return mem_start;
 
+	/* 真正的注册网卡 */
     dev = init_etherdev(0, sizeof(struct lance_private)
 			+ PKT_BUF_SZ*(RX_RING_SIZE + TX_RING_SIZE),
 			&mem_start);
@@ -651,6 +652,7 @@ lance_interrupt(int reg_ptr)
 	    if (databuff >= (void*)(&lp->tx_bounce_buffs[TX_RING_SIZE])
 		|| databuff < (void*)(lp->tx_bounce_buffs)) {
 		struct sk_buff *skb = ((struct sk_buff *)databuff) - 1;
+		/* 发送之后不管是否成功，则立即释放 */
 		if (skb->free)
 		    kfree_skb(skb, FREE_WRITE);
 		else
