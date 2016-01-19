@@ -106,6 +106,8 @@ static inline int between(unsigned long seq1, unsigned long seq2, unsigned long 
  * convinced that this is the solution for the 'getpeername(2)'
  * problem. Thanks to Stephen A. Wood <saw@cebaf.gov>  -FvK
  */
+
+/* 判断tcp的状态是否可以关闭 */
 static inline const int
 tcp_connected(const int state)
 {

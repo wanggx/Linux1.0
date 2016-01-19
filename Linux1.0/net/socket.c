@@ -849,6 +849,7 @@ sock_getsockopt(int fd, int level, int optname, char *optval, int *optlen)
 }
 
 
+/* ¹Ø±ÕÌ×½Ó×Ö */
 static int
 sock_shutdown(int fd, int how)
 {

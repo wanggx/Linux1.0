@@ -1,2 +1,37 @@
----- CONFIG_LANCE Matches (1 in 1 files) ----
-Net_init.c (drivers\net):#if defined(CONFIG_LANCE)			/* Note this is _not_ CONFIG_AT1500. */
+---- doff Matches (39 in 5 files) ----
+Slhc.c (drivers\net):	hlen = ip->ihl*4 + th->doff*4;
+Slhc.c (drivers\net):	 || th->doff != cs->cs_tcp.doff
+Slhc.c (drivers\net):	 || (th->doff > 5 && memcmp(th+1,cs->cs_tcpopt,((th->doff)-5)*4 != 0))){
+Slhc.c (drivers\net):	if (th->doff > 5)
+Slhc.c (drivers\net):	  memcpy(cs->cs_tcpopt, th+1, ((th->doff) - 5) * 4);
+Slhc.c (drivers\net):	hdrlen = ip->ihl * 4 + thp->doff * 4;
+Slhc.c (drivers\net):	if (thp->doff > 5) {
+Slhc.c (drivers\net):	  memcpy(cp, cs->cs_tcpopt, ((thp->doff) - 5) * 4);
+Slhc.c (drivers\net):	  cp += ((thp->doff) - 5) * 4;
+Slhc.c (drivers\net):	if (thp->doff > 5)
+Slhc.c (drivers\net):	  memcpy(cs->cs_tcpopt, thp+1, ((thp->doff) - 5) * 4);
+Slhc.c (drivers\net):	cs->cs_hsize = ip->ihl*2 + thp->doff*2;
+Slip.c (drivers\net):  int dlen, doff;
+Slip.c (drivers\net):  doff = ((ntohs(ip->frag_off) & IPF_F_OFFSET) << 3);
+Slip.c (drivers\net):  if (doff != 0 || (ntohs(ip->frag_off) & IPF_MF))
+Slip.c (drivers\net):	printk(" id %u offs %u", ntohs(ip->id), doff);
+Sock.c (net\inet):  sk->dummy_th.doff = sizeof(sk->dummy_th)/4;
+Tcp.c (net\inet):	printk("    doff = %d\n", th->doff);
+Tcp.c (net\inet):	skb->h.seq = ntohl(th->seq) + size - 4*th->doff;
+Tcp.c (net\inet):  t1->doff = sizeof(*t1)/4;
+Tcp.c (net\inet):  th->doff = sizeof(*th)/4;
+Tcp.c (net\inet):  t1->doff = sizeof(*t1)/4;
+Tcp.c (net\inet):			skb->h.th->doff*4 + offset, used);
+Tcp.c (net\inet):  t1->doff = sizeof(*t1)/4;
+Tcp.c (net\inet):  t1->doff = sizeof(*t1)/4;
+Tcp.c (net\inet):  int length=(th->doff*4)-sizeof(struct tcphdr);
+Tcp.c (net\inet):  newsk->dummy_th.doff = 6;
+Tcp.c (net\inet):  t1->doff = sizeof(*t1)/4+1;
+Tcp.c (net\inet):		t1->doff = sizeof(*t1)/4;
+Tcp.c (net\inet):  if (len != th->doff*4) flag |= 1;
+Tcp.c (net\inet):  skb->len = len -(th->doff*4);
+Tcp.c (net\inet):	ptr = sk->urg_seq - th->seq + th->doff*4;
+Tcp.c (net\inet):  t1->doff = 6;
+Tcp.c (net\inet):	next_seq = len - 4*th->doff;
+Tcp.c (net\inet):  t1->doff = sizeof(*t1)/4;
+Tcp.h (include\linux):			doff:4,     /* 数据偏移，它指出tcp报文段的数据起始处到tcp报文段的起始处有多远，

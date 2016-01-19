@@ -24,10 +24,12 @@
 struct tcphdr {
   unsigned short	source;  /* 本地端口号 */
   unsigned short	dest;  /* 目的端口号 */
-  unsigned long		seq; 	/* tcp字节的序列号 */
+  unsigned long		seq; 	/* tcp字节的序列号，本报文段的第一个字节的序号 */
   unsigned long		ack_seq; /* 对远端确认的序列号 */
   unsigned short	res1:4,
-			doff:4,
+			doff:4,     /* 数据偏移，它指出tcp报文段的数据起始处到tcp报文段的起始处有多远，
+						 * 因为tcp首部长度是不固定的，单位为4字节 
+						 */
 			fin:1,
 			syn:1,
 			rst:1,
@@ -35,7 +37,9 @@ struct tcphdr {
 			ack:1,
 			urg:1,
 			res2:2;
-  unsigned short	window;
+  unsigned short	window;     /* 它指出了现在允许对方发送的数据量，接收方的缓冲空间是有限的
+   								 * 故用窗口值作为接收方让发送方设置其发送窗口的依据，单位为字节
+   								 */
   unsigned short	check;		/* 校验和 */
   unsigned short	urg_ptr;
 };

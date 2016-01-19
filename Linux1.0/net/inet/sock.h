@@ -144,7 +144,7 @@ struct sock {
   								     */
   struct timer_list		partial_timer;  /*按时发送 partial 指针指向的数据包，以免缓存（等待）时间过长。*/
   long				retransmits; /* 重发次数*/
-  struct sk_buff		*volatile wback,
+  struct sk_buff		*volatile wback,  /* wback,wfront表示写队列的前和后 */
 				*volatile wfront,
 				*volatile rqueue; /* socket接收包队列，读取的时候是从这个队列中读取的 */
   /* 不同协议的协议操作函数，注意和struct proto_ops结构区分
@@ -291,19 +291,19 @@ struct proto {
   char			name[80];   /* 协议名称如TCP,UDP等等 */
 };
 
-#define TIME_WRITE	1
+#define TIME_WRITE	1  /* 超时重传 */
 #define TIME_CLOSE	2
-#define TIME_KEEPOPEN	3
-#define TIME_DESTROY	4
+#define TIME_KEEPOPEN	3  /* 包活 */
+#define TIME_DESTROY	4  /* 套接字释放 */
 #define TIME_DONE	5	/* used to absorb those last few packets */
-#define TIME_PROBE0	6
+#define TIME_PROBE0	6   /* 非0窗口探测 */
 #define SOCK_DESTROY_TIME 1000	/* about 10 seconds			*/
 
 #define PROT_SOCK	1024	/* Sockets 0-1023 can't be bound too unless you are superuser */
 
-#define SHUTDOWN_MASK	3
-#define RCV_SHUTDOWN	1
-#define SEND_SHUTDOWN	2
+#define SHUTDOWN_MASK	3  /* 完全关闭 */
+#define RCV_SHUTDOWN	1  /* 接收通道关闭 */
+#define SEND_SHUTDOWN	2  /* 发送通道关闭 */
 
 
 extern void			destroy_sock(struct sock *sk);

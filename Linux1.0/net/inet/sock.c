@@ -1546,6 +1546,7 @@ inet_recvfrom(struct socket *sock, void *ubuf, int size, int noblock,
 }
 
 
+/* ¹Ø±ÕÌ×½Ó×Ö */
 static int inet_shutdown(struct socket *sock, int how)
 {
   struct sock *sk;

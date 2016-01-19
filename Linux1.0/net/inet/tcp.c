@@ -179,9 +179,16 @@ diff(unsigned long seq1, unsigned long seq2)
 
    Better heuristics welcome
 */
-   
+
+/* tcp_select_window 窗口选择函数。所谓窗口即对所接收数据包数量的一种限制。在本地发送的
+ * 每个数据包中 TCP 首部都会包含一个本地声明的窗口大小，远端应节制其数据包发送不可超过
+ * 本地通报的窗口大小。窗口大小以字节数为单位。窗口大小的设置需要考虑到以下两个因素：
+ * 1> RFC793 文档（TCP 协议文档）强烈推荐不可降低窗口大小值。
+ * 2> 窗口大小的设置应考虑到本地接收缓冲区的大小。
+ */
 static int tcp_select_window(struct sock *sk)
 {
+	/* 获取接收缓冲区的空闲大小 */
 	int new_window = sk->prot->rspace(sk);
 
 /*
@@ -594,12 +601,15 @@ void tcp_send_check(struct tcphdr *th, unsigned long saddr,
 	return;
 }
 
+/* tcp_write函数时会调用到这个函数 */
 static void tcp_send_skb(struct sock *sk, struct sk_buff *skb)
 {
 	int size;
 	struct tcphdr * th = skb->h.th;
 
 	/* length of packet (not counting length of pre-tcp headers) */
+
+	/* 获取实际数据长度，不包括tcp头部长度 */
 	size = skb->len - ((unsigned char *) th - skb->data);
 
 	/* sanity check it.. */
@@ -624,6 +634,12 @@ static void tcp_send_skb(struct sock *sk, struct sk_buff *skb)
 	tcp_send_check(th, sk->saddr, sk->daddr, size, sk);
 
 	skb->h.seq = ntohl(th->seq) + size - 4*th->doff;
+	/* 如果数据包长度超过远端界限，
+	 * 进行其他数据包的重传
+	 * 带应答数据包的个数超出系统规定值
+	 * 如果以上三个条件有一个不满足，则数据不能立即发送，需要将
+	 * 数据缓存到wfront当中，否则就把数据直接传递到下一层进行发送
+	 */
 	if (after(skb->h.seq, sk->window_seq) ||
 	    (sk->retransmits && sk->timeout == TIME_WRITE) ||
 	     sk->packets_out >= sk->cong_window) {
@@ -633,6 +649,9 @@ static void tcp_send_skb(struct sock *sk, struct sk_buff *skb)
 					sk->write_seq, sk->window_seq));
 		skb->next = NULL;
 		skb->magic = TCP_WRITE_QUEUE_MAGIC;
+		/* 如果写队列的最后一个为空，则该队列为空，
+		 * 那么设置该skb为写队列的头，否则就直接添加到wback尾部
+		 */
 		if (sk->wback == NULL) {
 			sk->wfront = skb;
 		} else {
@@ -642,8 +661,10 @@ static void tcp_send_skb(struct sock *sk, struct sk_buff *skb)
 		if (before(sk->window_seq, sk->wfront->h.seq) &&
 		    sk->send_head == NULL &&
 		    sk->ack_backlog == 0)
+		    /* 启动窗口探测 */
 		  reset_timer(sk, TIME_PROBE0, sk->rto);
 	} else {
+		/* 将sk数据包的第一个字节设置为发送数据包的第一个字节 */
 		sk->sent_seq = sk->write_seq;
 		sk->prot->queue_xmit(sk, skb->dev, skb, 0);
 	}
@@ -801,6 +822,7 @@ tcp_build_header(struct tcphdr *th, struct sock *sk, int push)
   sk->ack_timed = 0;
   th->ack_seq = htonl(sk->acked_seq);
   sk->window = tcp_select_window(sk)/*sk->prot->rspace(sk)*/;
+  /* 设置接收缓冲区的空闲大小 */
   th->window = htons(sk->window);
 
   return(sizeof(*th));
@@ -1463,6 +1485,8 @@ static int tcp_read(struct sock *sk, unsigned char *to,
  * Send a FIN without closing the connection.
  * Not called at interrupt time.
  */
+
+/* 关闭tcp连接，该函数实现的是半关闭操作 */
 void
 tcp_shutdown(struct sock *sk, int how)
 {
