@@ -19,8 +19,8 @@ struct semaphore {
 #define MUTEX ((struct semaphore) { 1, NULL })
 
 struct select_table_entry {
-	struct wait_queue wait;
-	struct wait_queue ** wait_address;
+	struct wait_queue wait;			/* 实际添加到等待队列中的变量 */
+	struct wait_queue ** wait_address;  /* 指向实际等待链表的首部，方便从wait_address中删除或添加wait */
 };
 
 typedef struct select_table_struct {
@@ -28,6 +28,7 @@ typedef struct select_table_struct {
 	struct select_table_entry * entry;
 } select_table;
 
+/* 一个select_table最多只能有占用一页内存大小的select_table_entry */
 #define __MAX_SELECT_TABLE_ENTRIES (4096 / sizeof (struct select_table_entry))
 
 #endif

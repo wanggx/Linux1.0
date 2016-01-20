@@ -435,6 +435,8 @@ __asm__("movw %%dx,%0\n\t" \
  * to keep them correct. Use only these two functions to add/remove
  * entries in the queues.
  */
+
+/* 将wait添加到以p指向的队列为首部的下一个位置 */
 extern inline void add_wait_queue(struct wait_queue ** p, struct wait_queue * wait)
 {
 	unsigned long flags;
@@ -463,6 +465,7 @@ extern inline void add_wait_queue(struct wait_queue ** p, struct wait_queue * wa
 	restore_flags(flags);
 }
 
+/* 将wait从队列p指向的队列中删除 */
 extern inline void remove_wait_queue(struct wait_queue ** p, struct wait_queue * wait)
 {
 	unsigned long flags;
@@ -512,15 +515,20 @@ extern inline void select_wait(struct wait_queue ** wait_address, select_table *
 {
 	struct select_table_entry * entry;
 
+	/* 如果有任意一个指针为NULL,则返回，不做处理 */
 	if (!p || !wait_address)
 		return;
+	/* 数量不能超过 */
 	if (p->nr >= __MAX_SELECT_TABLE_ENTRIES)
 		return;
+	/* 获取当前操作的entry的地址 */
  	entry = p->entry + p->nr;
+	/* 注意这个地方很重要，也就是要记录wait变量是等待在哪个链表当中 */
 	entry->wait_address = wait_address;
 	entry->wait.task = current;
 	entry->wait.next = NULL;
 	add_wait_queue(wait_address,&entry->wait);
+	/* 增加nr的数量 */
 	p->nr++;
 }
 

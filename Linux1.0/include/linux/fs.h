@@ -56,9 +56,9 @@ extern unsigned long file_table_init(unsigned long start, unsigned long end);
 #endif
 
 #define NIL_FILP	((struct file *)0)
-#define SEL_IN		1
-#define SEL_OUT		2
-#define SEL_EX		4
+#define SEL_IN		1	/* 探测数据是否可以读取 */
+#define SEL_OUT		2 	/* 探测对应套接字发送缓冲区的空闲大小 */
+#define SEL_EX		4	/* 探测之前操作是否有错误发生 */
 
 /*
  * These are the fs-independent mount-flags: up to 16 flags are supported

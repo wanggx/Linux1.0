@@ -378,7 +378,9 @@ tcp_readable(struct sock *sk)
  *	listening socket has a receive queue of sockets to accept.
  */
 
-/* tcp协议的select系统调用的真正实现 */
+/* tcp协议的select系统调用的真正实现,
+ * 返回1表示成功 
+ */
 static int
 tcp_select(struct sock *sk, int sel_type, select_table *wait)
 {
@@ -390,9 +392,11 @@ tcp_select(struct sock *sk, int sel_type, select_table *wait)
 	case SEL_IN:
 		if(sk->debug)
 			printk("select in");
+		/* 将当前进程添加到sleep等待链表中 */
 		select_wait(sk->sleep, wait);
 		if(sk->debug)
 			printk("-select out");
+		/* 如果读取队列不为NULL */
 		if (skb_peek(&sk->rqueue) != NULL) {
 			if (sk->state == TCP_LISTEN || tcp_readable(sk)) {
 				release_sock(sk);
@@ -421,11 +425,14 @@ tcp_select(struct sock *sk, int sel_type, select_table *wait)
 		}
 	case SEL_OUT:
 		select_wait(sk->sleep, wait);
+
+		/* 如果套接字发送通道关闭，则返回失败 */
 		if (sk->shutdown & SEND_SHUTDOWN) {
 			DPRINTF((DBG_TCP,
 				"write select on shutdown socket.\n"));
 
 			/* FIXME: should this return an error? */
+			/* 发送通道关闭并不代表接收通道关闭 */
 			release_sock(sk);
 			return(0);
 		}
@@ -435,9 +442,12 @@ tcp_select(struct sock *sk, int sel_type, select_table *wait)
 		 * Hack so it will probably be able to write
 		 * something if it says it's ok to write.
 		 */
+
+		/* 如果写缓冲区空闲的大小超过一个最大报文段长度 */
 		if (sk->prot->wspace(sk) >= sk->mss) {
 			release_sock(sk);
 			/* This should cause connect to work ok. */
+			/* 如果套接字还在连接阶段则返回失败，否则返回成功  */
 			if (sk->state == TCP_SYN_RECV ||
 			    sk->state == TCP_SYN_SENT) return(0);
 			return(1);

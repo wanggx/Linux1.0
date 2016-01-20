@@ -45,6 +45,7 @@ static void free_wait(select_table * p)
 	while (p->nr > 0) {
 		p->nr--;
 		entry--;
+		/* entry中的wait从实际的等待链表中给删除 */
 		remove_wait_queue(entry->wait_address,&entry->wait);
 	}
 }
@@ -78,7 +79,10 @@ static int check(int flag, select_table * wait, struct file * file)
 	return 0;
 }
 
-/* 所有文件描述符的范围，一般是最大的文件描述符加1 */
+/* 所有文件描述符的范围，一般是最大的文件描述符加1，
+ * 在in,out，ex三个参数中返回的是检测到变动的文件句柄
+ * 函数返回值代表检测到变动的数量 
+ */
 int do_select(int n, fd_set *in, fd_set *out, fd_set *ex,
 	fd_set *res_in, fd_set *res_out, fd_set *res_ex)
 {
@@ -115,6 +119,8 @@ int do_select(int n, fd_set *in, fd_set *out, fd_set *ex,
 end_check:
 	/* 记录实际监视的文件描述符的最大值+1 */
 	n = max + 1;
+
+	/* 获取占用一页大小的select_table_entry内存 */
 	if(!(entry = (struct select_table_entry*) __get_free_page(GFP_KERNEL)))
 		return -ENOMEM;
 	FD_ZERO(res_in);
@@ -127,12 +133,17 @@ end_check:
 	wait = &wait_table;
 repeat:
 	current->state = TASK_INTERRUPTIBLE;
-	/* 循环扫描所有监视的文件描述符 */
+	/* 循环扫描所有监视的文件描述符，注意这里的wait第一次检测到有文件变动之前传入check函数不为NULL,
+	 * 之后就都为NULL,因为每一个网络文件描述符都对应一个唯一的struct sock，当前进程只需要在struct sock
+	 * 的sleep中等待一次就够了。
+	 */
 	for (i = 0 ; i < n ; i++) {
 		if (FD_ISSET(i,in) && check(SEL_IN,wait,current->filp[i])) {
 			FD_SET(i, res_in);
 			count++;
-			wait = NULL;
+			wait = NULL; /* 此处设置为NULL,就代表已经检测到了一个文件变动，所以不需要在等待在其他文件上
+			                  * 在if(!count-----)判断时就可以快速返回 
+			                  */
 		}
 		if (FD_ISSET(i,out) && check(SEL_OUT,wait,current->filp[i])) {
 			FD_SET(i, res_out);
@@ -145,17 +156,22 @@ repeat:
 			wait = NULL;
 		}
 	}
+	/* 所有的文件被扫描一次过后，就已经添加到struct sock中的sleep当中，
+	 * 如果wait不为NULL，则会继续添加一次 
+	 */
 	wait = NULL;
-	/* 注意这里的阻塞道理，一旦监视到文件有变动，就立即返回
+	/* 注意这里的阻塞道理，经过一轮扫描过后，一旦监视到文件有变动，就立即返回
 	 * 在第三个判断条件当中，如果当前进程接收到了信号，并且没有
 	 * 被阻塞，则select函数不会继续阻塞了，因为该函数是在内核态当中，
 	 * 因为信号的处理函数是在内核态返回到用户态的时候执行的，所以为了
 	 * 尽快响应信号，就让进程从该函数当中快速退出 
 	 */
 	if (!count && current->timeout && !(current->signal & ~current->blocked)) {
+		/* 此时当前进程已经添加到所有strut sock中的sleep链表当中，主动放弃cpu */
 		schedule();
 		goto repeat;
 	}
+	/* 将当前进程从所有已经添加到struct sock的sleep链表中删除 */
 	free_wait(&wait_table);
 	free_page((unsigned long) entry);
 	current->state = TASK_RUNNING;
