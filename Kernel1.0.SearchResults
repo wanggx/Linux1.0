@@ -1,1 +1,7 @@
----- ->nr Matches (0 in 0 files) ----
+---- tcp_readable Matches (6 in 1 files) ----
+Tcp.c (net\inet):tcp_readable(struct sock *sk)
+Tcp.c (net\inet):  DPRINTF((DBG_TCP, "tcp_readable(sk=%X)\n", sk));
+Tcp.c (net\inet):  	printk("tcp_readable: %p - ",sk);
+Tcp.c (net\inet):		DPRINTF((DBG_TCP, "tcp_readable, more than 20 packets without a psh\n"));
+Tcp.c (net\inet):			if (sk->state == TCP_LISTEN || tcp_readable(sk)) {
+Tcp.c (net\inet):			amount = tcp_readable(sk);

@@ -309,6 +309,7 @@ tcp_err(int err, unsigned char *header, unsigned long daddr,
  *	in the received data queue (ie a frame missing that needs sending to us)
  */
 
+/* 从数据的读取队列rqueue中获取可以读取的字节数 */
 static int
 tcp_readable(struct sock *sk)
 {
@@ -361,7 +362,7 @@ tcp_readable(struct sock *sk)
 	}
 	if (amount && skb->h.th->psh) break;
 	skb =(struct sk_buff *)skb->next;		/* Move along */
-  } while(skb != sk->rqueue);
+  } while(skb != sk->rqueue); /* 扫描rqueue整个队列 */
   if (amount && !sk->urginline && sk->urg_data &&
       (sk->urg_seq - sk->copied_seq) <= (counted - sk->copied_seq))
 	amount--;		/* don't count urg data */
