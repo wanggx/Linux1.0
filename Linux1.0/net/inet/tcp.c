@@ -1670,6 +1670,11 @@ tcp_recvfrom(struct sock *sk, unsigned char *to,
 
 
 /* This routine will send an RST to the other tcp. */
+/* tcp_reset 函数功能单一，即向对方发送一个 RST 复位数据包。复位数据包的效果是促使对方断
+ * 开与本地的连接，如果需要的话，对方可以重新发起连接请求；或者是如果对方就是在请求连
+ * 接， 则表示本地无对方请求的服务， 对方在接收到该 RST 数据包， 应该做出相应处理， 不可 “坚
+ * 持不懈”的对本地进行请求。
+ */
 static void
 tcp_reset(unsigned long saddr, unsigned long daddr, struct tcphdr *th,
 	  struct proto *prot, struct options *opt, struct device *dev, int tos, int ttl)
@@ -1710,6 +1715,7 @@ tcp_reset(unsigned long saddr, unsigned long daddr, struct tcphdr *th,
   /* Swap the send and the receive. */
   t1->dest = th->source;
   t1->source = th->dest;
+  /* 最重要的就是讲复位键设置为1 */
   t1->rst = 1;  
   t1->window = 0;
   
@@ -1860,6 +1866,9 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
    * Make sure we can accept more.  This will prevent a
    * flurry of syns from eating up all our memory.
    */
+  /* 如果在监听的套接字队列中，需要发送确认包的数量不能超过max_ack_backlog
+    * 避免请求的连接过多耗掉内存
+    */
   if (sk->ack_backlog >= sk->max_ack_backlog) {
 	kfree_skb(skb, FREE_READ);
 	return;
@@ -1978,6 +1987,7 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
 /* this will min with what arrived in the packet */
   tcp_options(newsk,skb->h.th);
 
+  /* 分配一个skb，用来应答客户端 */
   buff = newsk->prot->wmalloc(newsk, MAX_SYN_SIZE, 1, GFP_ATOMIC);
   if (buff == NULL) {
 	sk->err = -ENOMEM;
@@ -2040,6 +2050,8 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
   ptr[3] =(newsk->mtu) & 0xff;
 
   tcp_send_check(t1, daddr, saddr, sizeof(*t1)+4, newsk);
+
+  /* 向ip层发送数据 */
   newsk->prot->queue_xmit(newsk, dev, buff, 0);
 
   reset_timer(newsk, TIME_WRITE /* -1 ? FIXME ??? */, TCP_CONNECT_TIME);
@@ -2664,7 +2676,11 @@ tcp_ack(struct sock *sk, struct tcphdr *th, unsigned long saddr, int len)
  * room, then we will just have to discard the packet.
  */
 
-/* 该函数被tcp_rcv调用 */
+/* 该函数被tcp_rcv调用
+ * skb表示接收到的skb
+ * sk表示本地的套接字
+ * len表示ip数据负载的长度，包括tcp首部以及tcp数据负载
+ */
 static int
 tcp_data(struct sk_buff *skb, struct sock *sk, 
 	 unsigned long saddr, unsigned short len)
@@ -2675,11 +2691,16 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 
   th = skb->h.th;
   print_th(th);
+
+  /* 获取skb中实际的数据长度 */
   skb->len = len -(th->doff*4);
 
   DPRINTF((DBG_TCP, "tcp_data len = %d sk = %X:\n", skb->len, sk));
 
+  /* 增加已经接收到的字节数量 */
   sk->bytes_rcv += skb->len;
+
+  /* 如果数据包中没有携带数据，并且没有设置fin，urg，psh标记 */
   if (skb->len == 0 && !th->fin && !th->urg && !th->psh) {
 	/* Don't want to keep passing ack's back and forth. */
 	if (!th->ack) tcp_send_ack(sk->sent_seq, sk->acked_seq,sk, th, saddr);
@@ -2687,6 +2708,7 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 	return(0);
   }
 
+  /* 如果接收通道关闭，因为接收通道已经关闭所以不用添加到rqueue队列当中 */
   if (sk->shutdown & RCV_SHUTDOWN) {
 	sk->acked_seq = th->seq + skb->len + th->syn + th->fin;
 	tcp_reset(sk->saddr, sk->daddr, skb->h.th,
@@ -2696,7 +2718,8 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 	sk->shutdown = SHUTDOWN_MASK;
 	DPRINTF((DBG_TCP, "tcp_data: closing socket - %X\n", sk));
 	kfree_skb(skb, FREE_READ);
-	
+
+    /* 如果sk没有死，则唤醒等待struct sock的进程 */
 	if (!sk->dead) sk->state_change(sk);
 	return(0);
   }
@@ -2724,6 +2747,11 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 	skb1= NULL;
   } else {
 	DPRINTF((DBG_TCP, "tcp_data adding to chain sk = %X:\n", sk));
+    /* 将skb添加到rqueue的队列当中，注意在将接收到的skb添加到rqueue队列中时
+      * 从rqueue队列开始，跟着next方向每个skb的第一个字节的序列号是依次增加的，
+      * 所以在添加的时候，总是跟着prev的方向进行查找插入的位置，因为往后接收到的
+      * skb的第一个字节的序号应该是越来越大的
+      */
 	for(skb1=sk->rqueue->prev; ; skb1 =(struct sk_buff *)skb1->prev) {
 		if(sk->debug)
 		{
@@ -2752,20 +2780,28 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 			break;
 		}
 #else
+        /* 判断当前skb的第一个字节的序列号和已经接收到的skb中的第一个字节序号是否相同
+            * 如果相同，且后面接收到skb长度比已经在队列中的skb长，则将刚接收到的skb替换之前这个
+            */
 		if (th->seq==skb1->h.th->seq && skb->len>= skb1->len)
 		{
+		    /* 添加到原来skb后面 */
 			skb_append(skb1,skb);
+            /* 然后将原来的skb1给删除，同时释放内存 */
 			skb_unlink(skb1);
 			kfree_skb(skb1,FREE_READ);
 			dup_dumped=1;
 			skb1=NULL;
 			break;
 		}
+        /* 如果在接收的skb的第一个字节的后面，则将skb添加到skb的后面 */
 		if (after(th->seq+1, skb1->h.th->seq))
 		{
 			skb_append(skb1,skb);
 			break;
 		}
+
+        /* 循环会在这里终止 */
 		if (skb1 == sk->rqueue)
 		{
 			skb_queue_head(&sk->rqueue, skb);		
@@ -2781,6 +2817,7 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
   if (th->syn) th->ack_seq++;
   if (th->fin) th->ack_seq++;
 
+  /* 如果要确认的序列号小于已经读取的字节数，则应该有问题，看下面英文提示 */
   if (before(sk->acked_seq, sk->copied_seq)) {
 	printk("*** tcp.c:tcp_data bug acked < copied\n");
 	sk->acked_seq = sk->copied_seq;
@@ -3210,7 +3247,8 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
 
 /* This functions checks to see if the tcp header is actually acceptable. */
 /* 函数用于检查接收的数据包序列号是否正确， 或者更准确的说， 是否需要对该数据
- * 包进行进一步的处理
+ * 包进行进一步的处理，
+ * 返回1，表示该包正常 
  */
 static int
 tcp_sequence(struct sock *sk, struct tcphdr *th, short len,
@@ -3218,12 +3256,16 @@ tcp_sequence(struct sock *sk, struct tcphdr *th, short len,
 {
 	unsigned long next_seq;
 
+    /* 获取tcp数据长度 */
 	next_seq = len - 4*th->doff;
 	if (th->fin)
 		next_seq++;
 	/* if we have a zero window, we can't have any data in the packet.. */
+    /* 本地窗口为0，表示本地缓冲区已满，不能在接受数据了，故会直接丢弃 */
 	if (next_seq && !sk->window)
 		goto ignore_it;
+
+    /* 获取位置序列号 */
 	next_seq += th->seq;
 
 	/*
@@ -3234,9 +3276,13 @@ tcp_sequence(struct sock *sk, struct tcphdr *th, short len,
 	 */
 
 	/* have we already seen all of this packet? */
+    /* 如果当前接收到的序列号在希望接收到的序列号之前，
+      * 表明该数据包已被接收，则丢弃该包 
+      */
 	if (!after(next_seq+1, sk->acked_seq))
 		goto ignore_it;
 	/* or does it start beyond the window? */
+    /* 或者是超过了本地的接收窗口，则也丢弃 */
 	if (!before(th->seq, sk->acked_seq + sk->window + 1))
 		goto ignore_it;
 
@@ -3244,6 +3290,8 @@ tcp_sequence(struct sock *sk, struct tcphdr *th, short len,
 	return 1;
 
 ignore_it:
+
+    /* 拒绝接收包 */
 	DPRINTF((DBG_TCP, "tcp_sequence: rejecting packet.\n"));
 
 	/*

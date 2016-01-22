@@ -578,6 +578,12 @@ sock_bind(int fd, struct sockaddr *umyaddr, int addrlen)
  * necessary for a listen, and if that works, we mark the socket as
  * ready for listening.
  */
+
+/* 监听套接字 
+ * fd表示要监听的套接字描述符
+ * backlog表示在accept函数中等待读取的队列的长度，
+ * 也就是struct sock的max_ack_backlog
+ */
 static int
 sock_listen(int fd, int backlog)
 {
