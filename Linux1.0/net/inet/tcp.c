@@ -352,6 +352,12 @@ tcp_readable(struct sock *sk)
 #endif	
 	if (before(counted, skb->h.th->seq)) 	/* Found a hole so stops here */
 		break;
+
+	/* counted为已经读取字节的位置，skb->h.th->seq为skb数据的第一个字节的序列号
+	 * counted-skb->h.th->seq为skb中用户已经读取的字节数 
+	 * sum 表示skb还有多少字节的数据没有读取，如果sum<0表示整个skb已经被用户读取了。 
+	 */
+	
 	sum = skb->len -(counted - skb->h.th->seq);	/* Length - header but start from where we are up to (avoid overlaps) */
 	if (skb->h.th->syn)
 		sum++;
@@ -360,7 +366,9 @@ tcp_readable(struct sock *sk)
 		if (skb->h.th->syn) amount--;
 		counted += sum;
 	}
-	if (amount && skb->h.th->psh) break;
+	if (amount && skb->h.th->psh)
+		break;
+	/* 处理下一个skb */
 	skb =(struct sk_buff *)skb->next;		/* Move along */
   } while(skb != sk->rqueue); /* 扫描rqueue整个队列 */
   if (amount && !sk->urginline && sk->urg_data &&
@@ -1134,6 +1142,9 @@ tcp_sendto(struct sock *sk, unsigned char *from,
 }
 
 
+/* 该函数的功能实际上是发送应答数据包，ack_backlog字段记录目前累计的应发送而未发送的
+ * 应答数据包的个数，该函数被cleanup_rbuf函数调用
+ */
 static void
 tcp_read_wakeup(struct sock *sk)
 {
@@ -1143,6 +1154,8 @@ tcp_read_wakeup(struct sock *sk)
   struct sk_buff *buff;
 
   DPRINTF((DBG_TCP, "in tcp read wakeup\n"));
+
+  /* 如果应该应答的数据包个数为0 ，则返回*/
   if (!sk->ack_backlog) return;
 
   /*
@@ -1155,6 +1168,8 @@ tcp_read_wakeup(struct sock *sk)
    * We need to grab some memory, and put together an ack,
    * and then put it into the queue to be sent.
    */
+
+  /* 分配一个应答数据包的大小 */
   buff = sk->prot->wmalloc(sk,MAX_ACK_SIZE,1, GFP_ATOMIC);
   if (buff == NULL) {
 	/* Try again real soon. */
@@ -1164,6 +1179,7 @@ tcp_read_wakeup(struct sock *sk)
 
   buff->mem_addr = buff;
   buff->mem_len = MAX_ACK_SIZE;
+  /* 实际的数据长度就是一个tcp的头部长度 */
   buff->len = sizeof(struct tcphdr);
   buff->sk = sk;
 
@@ -1180,6 +1196,8 @@ tcp_read_wakeup(struct sock *sk)
   t1 =(struct tcphdr *)(buff->data +tmp);
 
   memcpy(t1,(void *) &sk->dummy_th, sizeof(*t1));
+  /* 表示本地将要发送的下一个数据包的第一个字节的序号  
+    */
   t1->seq = htonl(sk->sent_seq);
   t1->ack = 1;
   t1->res1 = 0;
@@ -1205,6 +1223,9 @@ tcp_read_wakeup(struct sock *sk)
  * It should consider sending an ACK to let the
  * other end know we now have a bigger window.
  */
+
+/* 本函数清除已被用户程序读取完的数据包，并通知远端本地新的窗口大小 
+ */
 static void cleanup_rbuf(struct sock *sk)
 {
   unsigned long flags;
@@ -1216,17 +1237,22 @@ static void cleanup_rbuf(struct sock *sk)
   
   save_flags(flags);
   cli();
-  
+
+  /* 释放之前获取读取缓冲区空闲大小 */
   left = sk->prot->rspace(sk);
  
   /*
    * We have to loop through all the buffer headers,
    * and try to free up all the space we can.
    */
+
+  /* 将所有的skb中used为1的都清除 */
   while((skb=skb_peek(&sk->rqueue)) != NULL ) 
   {
+    /* used=1表示该skb中数据已被读完，可以被释放 */
 	if (!skb->used) 
 		break;
+	/* 将skb从链表中移除 */
 	skb_unlink(skb);
 	skb->sk = sk;
 	kfree_skb(skb, FREE_READ);
@@ -1246,6 +1272,8 @@ static void cleanup_rbuf(struct sock *sk)
   if(sk->debug)
   	printk("sk->rspace = %lu, was %d\n", sk->prot->rspace(sk),
   					    left);
+
+  /* 如果不等于，则表明有skb被释放了 */
   if (sk->prot->rspace(sk) != left) 
   {
 	/*
@@ -1371,6 +1399,8 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 
 	/* 已经取走的最后序号 */
 	peek_seq = sk->copied_seq;
+
+	/* seq表示已经读取的序号 */
 	seq = &sk->copied_seq;
 	if (flags & MSG_PEEK)
 		seq = &peek_seq;
@@ -1398,11 +1428,14 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 		do {
 			if (!skb)
 				break;
+			/* 如果已经读取的序号在skb的前面，也就是小于，则停止 */
 			if (before(1+*seq, skb->h.th->seq))
 				break;
+			/* 获取到skb数据首部的偏移量 */
 			offset = 1 + *seq - skb->h.th->seq;
 			if (skb->h.th->syn)
 				offset--;
+			/* 如果偏移量小于整个skb的长度，则表明接下来要读取的数据就在该skb当中 */
 			if (offset < skb->len)
 				goto found_ok_skb;
 			if (!(flags & MSG_PEEK))
@@ -1410,6 +1443,9 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 			skb = (struct sk_buff *)skb->next;
 		} while (skb != sk->rqueue);
 
+		/* 如果在do-while当中没有找到合适的skb进行读取，并且已经读取了超过0的字节数，
+		 * 则循环终止，并返回该读取的字节数 
+		 */
 		if (copied)
 			break;
 
@@ -1424,6 +1460,7 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 				sk->done = 1;
 				break;
 			}
+			/* 返回错误码没有连接 */
 			copied = -ENOTCONN;
 			break;
 		}
@@ -1434,6 +1471,7 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 		}
 			
 		if (nonblock) {
+			/* 如果是非阻塞函数，则返回再来一次提示 */
 			copied = -EAGAIN;
 			break;
 		}
@@ -1451,6 +1489,8 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 
 	found_ok_skb:
 		/* Ok so how much can we use ? */
+		/* 获取剩下还可以读取的字节数 
+		 */
 		used = skb->len - offset;
 		if (len < used)
 			used = len;
@@ -1469,14 +1509,18 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 			}
 		}
 		/* Copy it */
+		/* 将剩下的used长度的数据拷贝到to当中 */
 		memcpy_tofs(to,((unsigned char *)skb->h.th) +
 			skb->h.th->doff*4 + offset, used);
+		/* 增加已经被应用程序读取的字节数 */
 		copied += used;
 		len -= used;
 		to += used;
+		/* 修改了指针指向的内存 */
 		*seq += used;
 		if (after(sk->copied_seq+1,sk->urg_seq))
 			sk->urg_data = 0;
+		/* 如果整个skb的数据都被读取了的话，则标记可以被释放 */
 		if (!(flags & MSG_PEEK) && (used + offset >= skb->len))
 			skb->used = 1;
 	}

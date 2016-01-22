@@ -398,6 +398,7 @@ struct sk_buff *skb_peek_copy(struct sk_buff *volatile* list)
  *	not need to like protocols and sockets.
  */
 
+/* 将skb释放，通过skb中sk来进行 */
 void kfree_skb(struct sk_buff *skb, int rw)
 {
 	if (skb == NULL) {

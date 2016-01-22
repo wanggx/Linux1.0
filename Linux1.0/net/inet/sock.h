@@ -183,8 +183,12 @@ struct sock {
   unsigned char			protocol; /* 传输层协议值 表示当前域中套接字所属的协议 */
   /* 套接字状态 */
   volatile unsigned char	state;
-  volatile unsigned char	ack_backlog;  /*表示当前的侦听队列 */
-  unsigned char			max_ack_backlog;/*表示最大侦听队列*/
+
+  /* ack_backlog字段记录目前累计的应发送而未发送的
+    * 应答数据包的个数
+    */
+  volatile unsigned char	ack_backlog; 
+  unsigned char			max_ack_backlog;  /*表示最大侦听队列*/
   unsigned char			priority;
   unsigned char			debug;
   unsigned short		rcvbuf;  /*表示接收缓冲区的字节长度*/
