@@ -741,6 +741,8 @@ void tcp_enqueue_partial(struct sk_buff * skb, struct sock * sk)
 
 
 /* This routine sends an ack and also updates the window. */
+
+/* 该函数被tcp_ack调用 */
 static void
 tcp_send_ack(unsigned long sequence, unsigned long ack,
 	     struct sock *sk,
@@ -2284,6 +2286,8 @@ sort_send(struct sock *sk)
   
 
 /* This routine deals with incoming acks, but not outgoing ones. */
+
+/* 该函数被tcp_rcv调用 */
 static int
 tcp_ack(struct sock *sk, struct tcphdr *th, unsigned long saddr, int len)
 {
@@ -2659,6 +2663,8 @@ tcp_ack(struct sock *sk, struct tcphdr *th, unsigned long saddr, int len)
  * it will be have already been moved into it.  If there is no
  * room, then we will just have to discard the packet.
  */
+
+/* 该函数被tcp_rcv调用 */
 static int
 tcp_data(struct sk_buff *skb, struct sock *sk, 
 	 unsigned long saddr, unsigned short len)
@@ -3203,6 +3209,9 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
 
 
 /* This functions checks to see if the tcp header is actually acceptable. */
+/* 函数用于检查接收的数据包序列号是否正确， 或者更准确的说， 是否需要对该数据
+ * 包进行进一步的处理
+ */
 static int
 tcp_sequence(struct sock *sk, struct tcphdr *th, short len,
 	     struct options *opt, unsigned long saddr, struct device *dev)
@@ -3258,7 +3267,24 @@ ignore_it:
 }
 
 
-/* 该函数是ip_rcv的上层(传输层)函数 */
+/* 该函数是ip_rcv的上层(传输层)函数 
+ * skb表示接收到的数据包
+ * dev表示接收数据包的网络设备
+ * opt表示被接收数据包可能的ip选项，ip选项的处理实在do_options(ip.c)函数中完成的
+ * daddr表示ip首部中的远端地址字段值，所以从本地接收的角度看，指的是本地地址
+ * len表示ip数据负载的长度，包括tcp首部以及tcp数据负载
+ * saddr表示ip首部中源端ip地址，从本地角度出发就是发送端ip地址
+ * redo标志位，准确地说，tcp_rcv 函数在两个地方被调用，其一就是上文中刚刚提到
+ * 的，被下层网络层模块调用，用于接收新的数据包，这是 redo 标志位设置为 0，表示这是一个
+ * 新的数据包；其二就是在 release_sock 函数中被调用，release_sock 函数对先前缓存在 sock 结构
+ * back_log 队列中的数据包调用 tcp_rcv 函数进行重新接收。而 back_log 中数据包是由 tcp_rcv 函
+ * 数进行缓存的， 读者在下文中即可看到， 当 tcp_rcv 函数发送套接字当前正忙时 （sock 结构 inuse
+ * 字段为 1） ，则将数据包缓存于 back_log 队列中后直接返回，此后由 release_sock 函数负责将数
+ * 据包再次递给 tcp_rcv 函数进行重新处理，此时 redo 字段即被设置为 1，表示这是先前被缓存数
+ * 据包的再次处理。
+ * protocol表示这是一个 inet_protocol 结构类型的变量，表示该套接字所使用的协议以及协议对应的
+ * 接收函数
+ */
 int
 tcp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 	unsigned long daddr, unsigned short len,
@@ -3304,6 +3330,7 @@ tcp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 
   if (!redo) {
 	if (tcp_check(th, len, saddr, daddr )) {
+        /* 到这里则这个包检测有问题，要把它给丢弃 */
 		skb->sk = NULL;
 		DPRINTF((DBG_TCP, "packet dropped with bad checksum.\n"));
 if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
@@ -3341,7 +3368,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
 
 	/* We may need to add it to the backlog here. */
 	cli();
-	/* 如果套接字忙，则将skb插入到back_log队列中 */
+	/* 如果套接字忙，则将skb插入到back_log队列中 ，同时函数返回 */
 	if (sk->inuse) {
 		if (sk->back_log == NULL) {
 			sk->back_log = skb;
@@ -3356,6 +3383,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
 		sti();
 		return(0);
 	}
+    /* 如果sk不忙，则设置为忙 */
 	sk->inuse = 1;
 	sti();
   } else {
@@ -3371,6 +3399,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
   }
 
   /* Charge the memory to the socket. */
+  /* 如果没有缓冲空间存放skb，则将其丢弃 */
   if (sk->rmem_alloc + skb->mem_len >= sk->rcvbuf) {
 	skb->sk = NULL;
 	DPRINTF((DBG_TCP, "dropping packet due to lack of buffer space.\n"));
@@ -3378,6 +3407,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
 	release_sock(sk);
 	return(0);
   }
+  /* 有足够的缓存空间，则增加读已分配大小 */
   sk->rmem_alloc += skb->mem_len;
 
   DPRINTF((DBG_TCP, "About to do switch.\n"));

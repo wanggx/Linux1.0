@@ -398,7 +398,9 @@ struct sk_buff *skb_peek_copy(struct sk_buff *volatile* list)
  *	not need to like protocols and sockets.
  */
 
-/* 将skb释放，通过skb中sk来进行 */
+/* 将skb释放，通过skb中sk来进行，
+ * rw表示该释放的skb是读还是写的缓冲空间，对应的更改缓存空间的大小 
+ */
 void kfree_skb(struct sk_buff *skb, int rw)
 {
 	if (skb == NULL) {

@@ -1,6 +1,12 @@
----- tcp_read Matches (5 in 1 files) ----
-Tcp.c (net\inet):		printk("tcp_read: possible read_queue corruption.\n");
-Tcp.c (net\inet):static int tcp_read(struct sock *sk, unsigned char *to,
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_read: returning %d\n", copied));
-Tcp.c (net\inet):  result=tcp_read(sk, to, to_len, nonblock, flags);
-Tcp.c (net\inet):  tcp_read,
+---- tcp_data Matches (11 in 1 files) ----
+Tcp.c (net\inet):tcp_data(struct sk_buff *skb, struct sock *sk, 
+Tcp.c (net\inet):  DPRINTF((DBG_TCP, "tcp_data len = %d sk = %X:\n", skb->len, sk));
+Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_data: closing socket - %X\n", sk));
+Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_data: skb = %X:\n", skb));
+Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_data adding to chain sk = %X:\n", sk));
+Tcp.c (net\inet):	printk("*** tcp.c:tcp_data bug acked < copied\n");
+Tcp.c (net\inet):			printk("INET: tcp.c:tcp_data memory leak detected.\n");
+Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_data: entering last_ack state sk = %X\n", sk));
+Tcp.c (net\inet):		if (tcp_data(skb, sk, saddr, len)) {
+Tcp.c (net\inet):			if (tcp_data(skb, sk, saddr, len))
+Tcp.c (net\inet):		if (tcp_data(skb, sk, saddr, len)) {
