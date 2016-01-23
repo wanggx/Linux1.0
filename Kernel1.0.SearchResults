@@ -1,7 +1,14 @@
----- OLD Matches (6 in 4 files) ----
-Ip.c (net\inet):#ifdef OLD 		
-Slip.c (drivers\net):#ifdef OLD  
-Slip.c (drivers\net):#ifdef OLD	
-Tcp.c (net\inet):#ifdef OLD	
-Tcp.c (net\inet):#ifdef OLD		
-Udp.c (net\inet):#ifdef OLD
+---- build_header Matches (13 in 4 files) ----
+Raw.c (net\inet):  tmp = sk->prot->build_header(skb, sk->saddr, 
+Sock.h (net\inet):  int			(*build_header)(struct sk_buff *skb,
+Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, sk->saddr, daddr, &dev,
+Tcp.c (net\inet):if (inet_debug == DBG_SLIP) printk("\rtcp_ack: build_header failed\n");
+Tcp.c (net\inet):	tmp = prot->build_header(skb, sk->saddr, sk->daddr, &dev,
+Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, sk->saddr, sk->daddr, &dev,
+Tcp.c (net\inet):  tmp = prot->build_header(buff,sk->saddr, sk->daddr, &dev,
+Tcp.c (net\inet):  tmp = prot->build_header(buff, saddr, daddr, &dev, IPPROTO_TCP, opt,
+Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, newsk->saddr, newsk->daddr, &dev,
+Tcp.c (net\inet):		tmp = prot->build_header(buff,sk->saddr, sk->daddr, &dev,
+Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, sk->saddr, sk->daddr, &dev,
+Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, sk->saddr, sk->daddr, &dev,
+Udp.c (net\inet):  tmp = sk->prot->build_header(skb, saddr, sin->sin_addr.s_addr,

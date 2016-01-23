@@ -3166,7 +3166,7 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
   sk->dummy_th.dest = sin.sin_port;
   release_sock(sk);
 
-  /* 分配了一个新的sk_buff */
+  /* 分配了一个新的申请链接的sk_buff */
   buff = sk->prot->wmalloc(sk,MAX_SYN_SIZE,0, GFP_KERNEL);
   if (buff == NULL) {
 	return(-ENOMEM);
@@ -3176,6 +3176,7 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
   buff->mem_len = MAX_SYN_SIZE;
   buff->len = 24;
   buff->sk = sk;
+  /* 设置free，发送后就立即释放 */
   buff->free = 1;
   t1 = (struct tcphdr *) buff->data;
 
@@ -3202,7 +3203,7 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
   t1->rst = 0;
   t1->urg = 0;
   t1->psh = 0;
-  t1->syn = 1;
+  t1->syn = 1;  /* 设置链接请求标记 */
   t1->urg_ptr = 0;
   t1->doff = 6;
 
