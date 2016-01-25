@@ -897,12 +897,16 @@ static int inet_create(struct socket *sock, int protocol)
   sk->protocol = protocol;
   sk->wmem_alloc = 0;
   sk->rmem_alloc = 0;
+  /* 设置最大的接收和发送缓冲 */
   sk->sndbuf = SK_WMEM_MAX;
   sk->rcvbuf = SK_RMEM_MAX;
   sk->pair = NULL;
   sk->opt = NULL;
+  /* 初始化应用程序下次要写的字节的序列号为0 */
   sk->write_seq = 0;
+  /* 初始化本地希望从远端接收的到字节序号为0 */
   sk->acked_seq = 0;
+  /* 初始化应用程序已经读取的字节数为0 */
   sk->copied_seq = 0;
   sk->fin_seq = 0;
   sk->urg_seq = 0;
@@ -916,6 +920,7 @@ static int inet_create(struct socket *sock, int protocol)
   sk->cong_window = 1; /* start with only sending one packet at a time. */
   sk->cong_count = 0;
   sk->ssthresh = 0;
+  /* 最大窗口初始化为0 */
   sk->max_window = 0;
   sk->urginline = 0;
   sk->intr = 0;
@@ -927,14 +932,17 @@ static int inet_create(struct socket *sock, int protocol)
   sk->keepopen = 0;
   sk->zapped = 0;
   sk->done = 0;
+  /* 初始化需要给远端确认，但还没有确认的包的数量为0 */
   sk->ack_backlog = 0;
   sk->window = 0;
+  /* 初始化已接收的字节总数为0 */
   sk->bytes_rcv = 0;
   /* socket系统调用完成后，socket的状态为TCP_CLOSE */
   sk->state = TCP_CLOSE;  
   sk->dead = 0;
   sk->ack_timed = 0;
   sk->partial = NULL;
+  /* 初始化用户设定的最大报文段长度为0 */
   sk->user_mss = 0;
   sk->debug = 0;
 
@@ -943,17 +951,22 @@ static int inet_create(struct socket *sock, int protocol)
 
   /* how many packets we should send before forcing an ack. 
      if this is set to zero it is the same as sk->delay_acks = 0 */
+
+  /* 在监听的时候会作为listen的参数给传递进来 */
   sk->max_ack_backlog = 0;
   sk->inuse = 0;
   sk->delay_acks = 0;
   sk->wback = NULL;
   sk->wfront = NULL;
   sk->rqueue = NULL;
+  /* 初始化最大传输单元 */
   sk->mtu = 576;
   sk->prot = prot;
   sk->sleep = sock->wait;
+
+  /* 初始化本地和远端地址 */
   sk->daddr = 0;
-  sk->saddr = my_addr();
+  sk->saddr = my_addr();  /* 获取的地址为127.0.0.1 */
   sk->err = 0;
   sk->next = NULL;
   sk->pair = NULL;

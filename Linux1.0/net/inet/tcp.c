@@ -1752,14 +1752,17 @@ tcp_reset(unsigned long saddr, unsigned long daddr, struct tcphdr *th,
  *      can't assume this is always the SYN.  It's always called after
  *      we have set up sk->mtu to our own MTU.
  */
- 
-static void
-tcp_options(struct sock *sk, struct tcphdr *th)
+
+/* 该函数专门用来处理tcp选项 */
+static void tcp_options(struct sock *sk, struct tcphdr *th)
 {
   unsigned char *ptr;
+
+  /* 获取选项数据长度 */
   int length=(th->doff*4)-sizeof(struct tcphdr);
   int mss_seen = 0;
-    
+
+  /* 获取选项数据指针 */
   ptr = (unsigned char *)(th + 1);
   
   while(length>0)
@@ -1768,8 +1771,11 @@ tcp_options(struct sock *sk, struct tcphdr *th)
   	int opsize=*ptr++;
   	switch(opcode)
   	{
+  	    /* 列表结束选项 */
   		case TCPOPT_EOL:
   			return;
+
+        /* 无操作选项 */
   		case TCPOPT_NOP:
   			length-=2;
   			continue;
@@ -1781,7 +1787,8 @@ tcp_options(struct sock *sk, struct tcphdr *th)
   			{
   				case TCPOPT_MSS:
   					if(opsize==4 && th->syn)
-  					{
+  					{   
+  					    /* 取当前最大传输单元和选项中最大报文长度的大小两者中的较小者 */
   						sk->mtu=min(sk->mtu,ntohs(*(unsigned short *)ptr));
 						mss_seen = 1;
   					}
@@ -1796,9 +1803,12 @@ tcp_options(struct sock *sk, struct tcphdr *th)
     if (! mss_seen)
       sk->mtu=min(sk->mtu, 536);  /* default MSS if none sent */
   }
+  /* 最大报文段长度取两者中较小者 */
   sk->mss = min(sk->max_window, sk->mtu);
 }
 
+
+/* 返回对应地址的网络掩码 */
 static inline unsigned long default_mask(unsigned long dst)
 {
 	dst = ntohl(dst);
@@ -1926,8 +1936,10 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
   newsk->acked_seq = skb->h.th->seq+1;
   newsk->fin_seq = skb->h.th->seq;
   newsk->copied_seq = skb->h.th->seq;
+  /* accept之后产生的新的套接字的状态为TCP_SYN_RECV */
   newsk->state = TCP_SYN_RECV;
   newsk->timeout = 0;
+  /* 连接请求的应答序列号也是根据系统滴答数来确定的 */
   newsk->write_seq = jiffies * SEQ_TICK - seq_offset;
   newsk->window_seq = newsk->write_seq;
   newsk->rcv_ack_seq = newsk->write_seq;
@@ -2040,6 +2052,7 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
   t1->urg = 0;
   t1->psh = 0;
   t1->syn = 1;
+  /* 给请求客户端返回的确认序列号 */
   t1->ack_seq = ntohl(skb->h.th->seq+1);
   t1->doff = sizeof(*t1)/4+1;
 
@@ -3159,8 +3172,10 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
 
   sk->inuse = 1;
   sk->daddr = sin.sin_addr.s_addr;
+  /* 在发送连接请求时，生成的发送序列号是根据滴答数来完成的 */
   sk->write_seq = jiffies * SEQ_TICK - seq_offset;
   sk->window_seq = sk->write_seq;
+  /* 初始化接收到的确认序列号为发送序列号的前一位 */
   sk->rcv_ack_seq = sk->write_seq -1;
   sk->err = 0;
   sk->dummy_th.dest = sin.sin_port;
@@ -3190,6 +3205,8 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
 	return(-ENETUNREACH);
   }
   buff->len += tmp;
+
+  /* 取出tcp头在skb中的位置，然后根据sk中的dummy_th来快速构建tcp的头 */
   t1 = (struct tcphdr *)((char *)t1 +tmp);
 
   memcpy(t1,(void *)&(sk->dummy_th), sizeof(*t1));
@@ -3205,13 +3222,14 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
   t1->psh = 0;
   t1->syn = 1;  /* 设置链接请求标记 */
   t1->urg_ptr = 0;
-  t1->doff = 6;
+  t1->doff = 6;   /* 和前面的24对应 */
 
 /* use 512 or whatever user asked for */
   if (sk->user_mss)
     sk->mtu = sk->user_mss;
   else {
 #ifdef SUBNETSARELOCAL
+    /* 如果和本地地址不同，且和本地地址的掩码相与不为0 */
     if ((sk->saddr ^ sk->daddr) & default_mask(sk->saddr))
 #else
     if ((sk->saddr ^ sk->daddr) & dev->pa_mask)
@@ -3224,6 +3242,15 @@ static int tcp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
   sk->mtu = min(sk->mtu, dev->mtu - HEADER_SIZE);
 
   /* Put in the TCP options to say MTU. */
+  /* 获取选项数据的地址 
+    * 最大报文段长度选项MSS，MSS选项用于在TCP连接建立时，
+    * 收发双发协商通信时每一个报文段所能承载的最大数据长度。
+    * 这个选项由4个字节构成：第1字节（选项类型）为2；第2字节（选项长度）为4，
+    * 然后是一个16比特的选项数据，指出报文段中允许的最大数据长度（以字节为单位）。
+    * MSS选项只能在初始化连接请求（SYN=1）的报文段中使用。
+    * 在报文段中发送MSS选项的终端利用该选项来对端TCP实体通告本端点在一个报文段中所能够接受的最大数据长度。
+    * 若没有指定这个选项意味着本终端能够接受任何长度的报文段。
+    */
   ptr = (unsigned char *)(t1+1);
   ptr[0] = 2;
   ptr[1] = 4;

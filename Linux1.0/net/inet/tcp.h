@@ -73,7 +73,7 @@
  
 #define TCPOPT_NOP		1
 #define TCPOPT_EOL		0
-#define TCPOPT_MSS		2
+#define TCPOPT_MSS		2           /* 设置tcp报文最大长度 */
 
 /*
  * The next routines deal with comparing 32 bit unsigned ints

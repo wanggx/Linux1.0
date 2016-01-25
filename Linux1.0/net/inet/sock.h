@@ -127,7 +127,9 @@ struct sock {
   struct sk_buff		*volatile send_tail;
   struct sk_buff		*volatile send_head;
 
-  /* back_log为接收的数据包缓存队列。用于计算目前累计的应发送而未发送的应答数据包的个数 */
+  /* back_log为接收的数据包缓存队列，在函数tcp_data中如果struct sock的inuse为1，
+    * 则将接收到的skb插入到back_log中
+    */
   struct sk_buff		*volatile back_log;
 
   /* partial 队列中缓存的单个数据包源于 TCP 协议的流式传输，对于 TCP 协议，为了避免在网络中
@@ -163,7 +165,11 @@ struct sock {
   unsigned short		bytes_rcv;  /* 已接收字节总数*/
 /* mss is min(mtu, max_window) */
   unsigned short		mtu;  /*最大传输单元*/     /* mss negotiated in the syn's */
-  volatile unsigned short	mss; /*最大报文长度：MSS=MTU-IP 首部长度-TCP首部长度 */      /* current eff. mss - can change */
+
+  /* 最大报文长度：MSS=MTU-IP首部长度-TCP首部长度,MSS=TCP报文段长度-TCP首部长度。
+    * current eff. mss - can change  
+    */
+  volatile unsigned short	mss; 
   volatile unsigned short	user_mss; /*用户指定的 MSS值*/ /* mss requested by user in ioctl */
   volatile unsigned short	max_window;
   unsigned short		num;  		/*对应本地端口号*/

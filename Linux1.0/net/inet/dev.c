@@ -251,6 +251,8 @@ int chk_addr(unsigned long addr)
  * al when it doesn't know which address to use (i.e. it does not
  * yet know from or to which interface to go...).
  */
+
+/* 获取本地地址 */
 unsigned long
 my_addr(void)
 {

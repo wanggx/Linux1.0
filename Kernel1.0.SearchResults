@@ -1,14 +1,4 @@
----- build_header Matches (13 in 4 files) ----
-Raw.c (net\inet):  tmp = sk->prot->build_header(skb, sk->saddr, 
-Sock.h (net\inet):  int			(*build_header)(struct sk_buff *skb,
-Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, sk->saddr, daddr, &dev,
-Tcp.c (net\inet):if (inet_debug == DBG_SLIP) printk("\rtcp_ack: build_header failed\n");
-Tcp.c (net\inet):	tmp = prot->build_header(skb, sk->saddr, sk->daddr, &dev,
-Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, sk->saddr, sk->daddr, &dev,
-Tcp.c (net\inet):  tmp = prot->build_header(buff,sk->saddr, sk->daddr, &dev,
-Tcp.c (net\inet):  tmp = prot->build_header(buff, saddr, daddr, &dev, IPPROTO_TCP, opt,
-Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, newsk->saddr, newsk->daddr, &dev,
-Tcp.c (net\inet):		tmp = prot->build_header(buff,sk->saddr, sk->daddr, &dev,
-Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, sk->saddr, sk->daddr, &dev,
-Tcp.c (net\inet):  tmp = sk->prot->build_header(buff, sk->saddr, sk->daddr, &dev,
-Udp.c (net\inet):  tmp = sk->prot->build_header(skb, saddr, sin->sin_addr.s_addr,
+---- SUBNETSARELOCAL Matches (3 in 1 files) ----
+Tcp.c (net\inet):#define SUBNETSARELOCAL
+Tcp.c (net\inet):#ifdef SUBNETSARELOCAL
+Tcp.c (net\inet):#ifdef SUBNETSARELOCAL
