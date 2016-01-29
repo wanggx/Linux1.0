@@ -1,4 +1,3 @@
----- SUBNETSARELOCAL Matches (3 in 1 files) ----
-Tcp.c (net\inet):#define SUBNETSARELOCAL
-Tcp.c (net\inet):#ifdef SUBNETSARELOCAL
-Tcp.c (net\inet):#ifdef SUBNETSARELOCAL
+---- udp_close Matches (2 in 1 files) ----
+Udp.c (net\inet):udp_close(struct sock *sk, int timeout)
+Udp.c (net\inet):  udp_close,

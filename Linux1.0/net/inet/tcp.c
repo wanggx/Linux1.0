@@ -3554,6 +3554,9 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
 		if ((opt && (opt->security != 0 ||
 			    opt->compartment != 0)) || 
 #endif
+            /* 在连接建立状况下，如果有复位标记，则会将本sk的状态设置为TCP_CLOSE
+                 * 同时向远端发送复位操作 
+                 */
 				 th->syn) {
 			sk->err = ECONNRESET;
 			sk->state = TCP_CLOSE;
@@ -3598,6 +3601,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
 		release_sock(sk);
 		return(0);
 
+    /* 如果tcp是关闭状态，则接收到的还没有处理的skb都会被释放掉 */
 	case TCP_CLOSE:
 		if (sk->dead || sk->daddr) {
 			DPRINTF((DBG_TCP, "packet received for closed,dead socket\n"));
@@ -3631,6 +3635,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
 			return(0);
 		}
 
+        /* 如果是连接请求 */
 		if (th->syn) {
 #if 0
 			if (opt->security != 0 || opt->compartment != 0) {

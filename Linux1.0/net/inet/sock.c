@@ -1861,6 +1861,10 @@ void release_sock(struct sock *sk)
 	return;
   }
 
+  /* 这个blog非常重要，在下面的while循环中会调用到tcp_rcv,
+    * 在该函数中也可能调用到release_sock，如果是同一个sock
+    * 就不会造成函数调用的死循环 
+    */
   if (sk->blog) return;
 
   /* See if we have any packets built up. */
@@ -1876,7 +1880,7 @@ void release_sock(struct sock *sk)
     */
   while(sk->back_log != NULL) {
 	struct sk_buff *skb;
-	/* 表示之后的数据包都要被丢弃 */
+	/* 表示之后的数据包都要被丢弃，这里应该不是丢弃，而是不处理 */
 	sk->blog = 1;
 	skb =(struct sk_buff *)sk->back_log;
 	DPRINTF((DBG_INET, "release_sock: skb = %X:\n", skb));
@@ -1900,7 +1904,7 @@ void release_sock(struct sock *sk)
 	(struct inet_protocol *)sk->pair); 
 	cli();
   }
-  /* 刚开标记 */
+  /* 打开标记 */
   sk->blog = 0;
   sk->inuse = 0;
   sti();
