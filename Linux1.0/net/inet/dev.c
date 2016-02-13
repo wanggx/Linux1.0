@@ -585,6 +585,9 @@ dev_transmit(void)
   }
 }
 
+/* 变量in_bh是为了防止重复执行下半部分，即下半部分不允许重入，
+ * 从net_bh实现的功能来看，重入很可能造成内核不一致
+ */
 static volatile char in_bh = 0;
 
 int in_inet_bh()	/* Used by timer.c */
@@ -609,6 +612,8 @@ inet_bh(void *tmp)
   int nitcount;
 
   /* Atomically check and mark our BUSY state. */
+
+  /* 将原来的位设置为1，如果原来的位为1，则直接返回 */
   if (set_bit(1, (void*)&in_bh))
       return;
 

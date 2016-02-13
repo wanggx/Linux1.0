@@ -98,7 +98,7 @@ struct sock {
    * Not all are volatile, but some are, so we
    * might as well say they all are.
    */
-  /*inuse=1 表示其它进程正在使用该 sock 结构，本进程需等待*/
+  /* inuse=1 表示其它进程正在使用该 sock 结构，本进程需等待 */
   volatile char                 inuse,
 				dead, /* dead=1 表示该 sock 结构已处于释放状态*/
 				urginline,/* urginline=1 表示紧急数据将被当作普通数据处理。*/
@@ -112,6 +112,9 @@ struct sock {
 				destroy,/* destroy=1 表示该 sock 结构等待销毁*/
 				ack_timed,
 				no_check,
+				/* 如果zapped=1，则表示该套接字已被远端复位，要发送数据包，必须重新建立
+                      * 连接
+                      */
 				zapped,	/* In ax25 & ipx means not linked */
 				broadcast,
 				nonagle;/* noagle=1 表示不使用 NAGLE 算法*/
@@ -305,7 +308,7 @@ struct proto {
 
 #define TIME_WRITE	1  /* 超时重传 */
 #define TIME_CLOSE	2
-#define TIME_KEEPOPEN	3  /* 包活 */
+#define TIME_KEEPOPEN	3  /* 保活 */
 #define TIME_DESTROY	4  /* 套接字释放 */
 #define TIME_DONE	5	/* used to absorb those last few packets */
 #define TIME_PROBE0	6   /* 非0窗口探测 */

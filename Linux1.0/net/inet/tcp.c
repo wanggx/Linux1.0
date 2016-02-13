@@ -1145,7 +1145,7 @@ tcp_sendto(struct sock *sk, unsigned char *from,
 
 
 /* 该函数的功能实际上是发送应答数据包，ack_backlog字段记录目前累计的应发送而未发送的
- * 应答数据包的个数，该函数被cleanup_rbuf函数调用
+ * 应答数据包的个数，该函数被cleanup_rbuf函数调用，也可以在时钟函数当中调用
  */
 static void
 tcp_read_wakeup(struct sock *sk)
@@ -3814,6 +3814,16 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
   * This routine sends a packet with an out of date sequence
   * number. It assumes the other end will try to ack it.
   */
+/* 暗示远端向本地发送数据包
+ * 需要说明的一点是函数对当前套接字状态的判断， 判断的原则是本地状态允许主动发送数据包。
+ * tcp_write_wakeup 函数只在 tcp_send_probe0 函数中被调用，tcp_send_probe0 函数用于发送窗口
+ * 探测数据包，每当窗口探测定时器超时，该函数即被调用。窗口探测定时器是 TCP 协议四大定
+ * 时器之一（超时重传定时器，保活定时器，窗口探测定时器，2MSL 定时器） ，用于探测远端主
+ * 机窗口，防止远端主机窗口通报数据包丢失从而造成死锁，具体情况参考 TCP 协议规范
+ * （RFC793） 。从远端主机角度而言，在接收到一个 ACK 包后，其调用 tcp_ack 函数进行处理，
+ * 该函数实现中检查是否有可以发送的数据包，如有即刻发送，由此而言，tcp_write_wakeup 确实
+ * 完成了其所声称的作用
+ */
 static void
 tcp_write_wakeup(struct sock *sk)
 {
@@ -3822,6 +3832,7 @@ tcp_write_wakeup(struct sock *sk)
   struct device *dev=NULL;
   int tmp;
 
+  /* 如果等于1表示该连接已被远端复位，所以直接退出 */
   if (sk->zapped)
 	return;	/* Afer a valid reset we can send no more */
 
@@ -3835,7 +3846,7 @@ tcp_write_wakeup(struct sock *sk)
   buff->mem_addr = buff;
   buff->mem_len = MAX_ACK_SIZE;
   buff->len = sizeof(struct tcphdr);
-  buff->free = 1;
+  buff->free = 1; /* 这种数据包发送出去之后就立即释放 */
   buff->sk = sk;
   DPRINTF((DBG_TCP, "in tcp_write_wakeup\n"));
   t1 = (struct tcphdr *) buff->data;

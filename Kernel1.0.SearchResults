@@ -1,3 +1,5 @@
----- udp_close Matches (2 in 1 files) ----
-Udp.c (net\inet):udp_close(struct sock *sk, int timeout)
-Udp.c (net\inet):  udp_close,
+---- in_bh Matches (4 in 1 files) ----
+Dev.c (net\inet):static volatile char in_bh = 0;
+Dev.c (net\inet):	return(in_bh==0?0:1);
+Dev.c (net\inet):  if (set_bit(1, (void*)&in_bh))
+Dev.c (net\inet):  in_bh = 0;
