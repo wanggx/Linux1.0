@@ -1,5 +1,4 @@
----- in_bh Matches (4 in 1 files) ----
-Dev.c (net\inet):static volatile char in_bh = 0;
-Dev.c (net\inet):	return(in_bh==0?0:1);
-Dev.c (net\inet):  if (set_bit(1, (void*)&in_bh))
-Dev.c (net\inet):  in_bh = 0;
+---- sock_getsockname Matches (3 in 1 files) ----
+Socket.c (net):sock_getsockname(int fd, struct sockaddr *usockaddr, int *usockaddr_len)
+Socket.c (net):  DPRINTF((net_debug, "NET: sock_getsockname: fd = %d\n", fd));
+Socket.c (net):		return(sock_getsockname(get_fs_long(args+0),

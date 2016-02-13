@@ -503,6 +503,9 @@ static int sock_socket(int family, int type, int protocol)
 }
 
 
+/* 这个和pipe功能有相似之处，pipe是单工的，socketpair是双工的
+ * family只能是UNIX域的。
+ */
 static int
 sock_socketpair(int family, int type, int protocol, unsigned long usockvec[2])
 {
@@ -518,6 +521,7 @@ sock_socketpair(int family, int type, int protocol, unsigned long usockvec[2])
    * Obtain the first socket and check if the underlying protocol
    * supports the socketpair call.
    */
+  /* 如果创建失败，则直接返回 */
   if ((fd1 = sock_socket(family, type, protocol)) < 0) return(fd1);
   sock1 = sockfd_lookup(fd1, NULL);
   if (!sock1->ops->socketpair) {

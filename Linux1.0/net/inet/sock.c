@@ -527,7 +527,12 @@ inet_fcntl(struct socket *sock, unsigned int cmd, unsigned long arg)
 /*
  *	Set socket options on an inet socket.
  */
- 
+
+/* level指定选项代码的类型
+ * optname选项名称
+ * optval选项值
+ * optlen选项长度
+ */
 static int inet_setsockopt(struct socket *sock, int level, int optname,
 		    char *optval, int optlen)
 {
@@ -539,8 +544,6 @@ static int inet_setsockopt(struct socket *sock, int level, int optname,
 	else
 		return sk->prot->setsockopt(sk,level,optname,optval,optlen);
 }
-
-
 
 
 static int inet_getsockopt(struct socket *sock, int level, int optname,
@@ -559,6 +562,8 @@ static int inet_getsockopt(struct socket *sock, int level, int optname,
  *	This is meant for all protocols to use and covers goings on
  *	at the socket level. Everything here is generic.
  */
+
+
 
 int sock_setsockopt(struct sock *sk, int level, int optname,
 		char *optval, int optlen)
@@ -623,7 +628,7 @@ int sock_setsockopt(struct sock *sk, int level, int optname,
 				sk->reuse = 0;
 			return(0);
 
-		case SO_KEEPALIVE:
+		case SO_KEEPALIVE:  /* 表示是否使用保活定时器 */
 			if (val)
 				sk->keepopen = 1;
 			else 
@@ -1353,6 +1358,9 @@ static int inet_accept(struct socket *sock, struct socket *newsock, int flags)
 }
 
 
+/* 获取socket的信息
+ * peer表示是获取本地信息还是远端信息
+ */
 static int
 inet_getname(struct socket *sock, struct sockaddr *uaddr,
 		 int *uaddr_len, int peer)
@@ -1382,6 +1390,7 @@ inet_getname(struct socket *sock, struct sockaddr *uaddr,
 	printk("Warning: sock->data = NULL: %d\n" ,__LINE__);
 	return(0);
   }
+  /* 获取远端信息，否则就是本地信息 */
   if (peer) {
 	if (!tcp_connected(sk->state)) return(-ENOTCONN);
 	sin.sin_port = sk->dummy_th.dest;

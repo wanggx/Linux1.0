@@ -3911,6 +3911,7 @@ int tcp_setsockopt(struct sock *sk, int level, int optname, char *optval, int op
 {
 	int val,err;
 
+    /* 如果不是tcp的套接口，则执行ip层的套接口 */
 	if(level!=SOL_TCP)
 		return ip_setsockopt(sk,level,optname,optval,optlen);
 

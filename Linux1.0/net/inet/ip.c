@@ -1564,6 +1564,9 @@ ip_retransmit(struct sock *sk, int all)
  *	Socket option code for IP. This is the end of the line after any TCP,UDP etc options on
  *	an IP socket.
  */
+
+/* ip层套接口的设置  
+ */
  
 int ip_setsockopt(struct sock *sk, int level, int optname, char *optval, int optlen)
 {
