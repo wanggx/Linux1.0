@@ -123,6 +123,7 @@ static int arp_proxies=0;	/* So we can avoid the proxy arp
 				   overhead with the usual case of
 				   no proxy arps */
 
+/* 收到的arp缓存队列 */
 struct sk_buff * volatile arp_q = NULL;
 
 static struct arp_table *arp_lookup(unsigned long addr);
@@ -152,6 +153,7 @@ eth_aprint(unsigned char *ptr, int len)
 
 
 /* Dump an ARP packet. Not complete yet for non-Ethernet packets. */
+/* 打印arp信息 */
 static void
 arp_print(struct arphdr *arp)
 {

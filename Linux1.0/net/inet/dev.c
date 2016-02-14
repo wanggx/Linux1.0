@@ -102,6 +102,9 @@ static struct packet_type ax25_packet_type = {
 #endif
 
 
+/* arp协议属于网络层协议，arp协议在网络层的处理最终交给
+ * arp_rcv处理
+ */
 static struct packet_type arp_packet_type = {
   NET16(ETH_P_ARP),
   0,		/* copy */

@@ -48,6 +48,9 @@
  * arp_tha and arp_tpa in that order, according to the lengths
  * specified.  Field names used correspond to RFC 826.
  */
+
+/* arp协议的首部格式 
+ */
 struct arphdr {
   unsigned short	ar_hrd;		/* format of hardware address	*/
   unsigned short	ar_pro;		/* format of protocol address	*/
@@ -66,12 +69,14 @@ struct arphdr {
 
 
 /* ARP ioctl request. */
+/* 该结构用于设置获取arp表项信息 */
 struct arpreq {
   struct sockaddr	arp_pa;		/* protocol address		*/
   struct sockaddr	arp_ha;		/* hardware address		*/
   int			arp_flags;	/* flags			*/
 };
 
+/* arp表项状态值 */
 /* ARP Flag values. */
 #define	ATF_INUSE	0x01		/* entry in use			*/
 #define ATF_COM		0x02		/* completed entry (ha valid)	*/

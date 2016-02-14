@@ -1,4 +1,9 @@
----- sock_getsockname Matches (3 in 1 files) ----
-Socket.c (net):sock_getsockname(int fd, struct sockaddr *usockaddr, int *usockaddr_len)
-Socket.c (net):  DPRINTF((net_debug, "NET: sock_getsockname: fd = %d\n", fd));
-Socket.c (net):		return(sock_getsockname(get_fs_long(args+0),
+---- arp_q Matches (8 in 2 files) ----
+Arp.c (net\inet):struct sk_buff * volatile arp_q = NULL;
+Arp.c (net\inet):  work_q = arp_q;
+Arp.c (net\inet):  arp_q = NULL;
+Arp.c (net\inet):		skb_queue_head(&arp_q,skb);
+Arp.c (net\inet):	if (skb_peek(&arp_q))
+Arp.c (net\inet):  if(arp_q==NULL)
+Arp.c (net\inet):  skb_queue_tail(&arp_q,skb);
+Arp.h (net\inet):extern struct sk_buff *arp_q;
