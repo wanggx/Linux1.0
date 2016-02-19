@@ -85,7 +85,7 @@ extern unsigned long avenrun[];		/* Load averages */
 #define TASK_RUNNING		0
 #define TASK_INTERRUPTIBLE	1
 #define TASK_UNINTERRUPTIBLE	2	/*内核一些特定流程，是不可被打断的，也就是可以忽略某些信号*/
-#define TASK_ZOMBIE		3
+#define TASK_ZOMBIE		3           /* 进程的僵尸状态 */
 #define TASK_STOPPED		4
 #define TASK_SWAPPING		5
 

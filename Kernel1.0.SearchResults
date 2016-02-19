@@ -1,9 +1,13 @@
----- setsid Matches (8 in 6 files) ----
-Main.c (init):static inline _syscall0(pid_t,setsid)
-Main.c (init):			setsid();
-Sched.c (kernel):sys_getpgrp, sys_setsid, sys_sigaction, sys_sgetmask, sys_ssetmask,
-Setsid.c (lib): *  linux/lib/setsid.c
-Setsid.c (lib):_syscall0(pid_t,setsid)
-Sys.c (kernel):asmlinkage int sys_setsid(void)
-Sys.h (include\linux):extern int sys_setsid();
-Unistd.h (include\linux):#define __NR_setsid		 66
+---- in_group_p Matches (13 in 7 files) ----
+Acl.c (fs\ext2):	else if (in_group_p (inode->i_gid))
+Exec.c (fs):	    euid) || ((i & S_ISGID) && !in_group_p(bprm.inode->i_gid))) &&
+Exec.c (fs):	else if (in_group_p(bprm.inode->i_gid))
+Namei.c (fs):	else if (in_group_p(inode->i_gid))
+Open.c (fs):	else if (in_group_p(inode->i_gid))
+Open.c (fs):	if (!suser() && !in_group_p(inode->i_gid))
+Open.c (fs):	if (!suser() && !in_group_p(inode->i_gid))
+Open.c (fs):	     (in_group_p(group) || group == inode->i_gid)) ||
+Open.c (fs):	     (in_group_p(group) || group == inode->i_gid)) ||
+Sched.h (include\linux):extern int in_group_p(gid_t grp);
+Sys.c (kernel):int in_group_p(gid_t grp)
+Util.c (ipc):	else if (in_group_p(ipcp->cgid) || in_group_p(ipcp->gid))

@@ -535,6 +535,7 @@ void init(void)
 		}
 		if (!pid) {
 			close(0);close(1);close(2);
+            /* 设置子进程为新会话的首进程 */
 			setsid();
 			(void) open("/dev/tty1",O_RDWR,0);
 			(void) dup(0);

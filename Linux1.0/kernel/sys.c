@@ -474,7 +474,7 @@ asmlinkage int sys_brk(unsigned long brk)
  * LBT 04.03.94
  */
 
-/* 设置进程组id */
+/* 设置进程的进程组id */
 asmlinkage int sys_setpgid(pid_t pid, pid_t pgid)
 {
 	struct task_struct * p;
@@ -502,12 +502,13 @@ found_task:
 			return -EACCES;
 	} else if (p != current)
 		return -ESRCH;
-	/* 如果是进程组的领导进程，则不许可*/
+	/* 如果是进程组的领导进程，则不许可，也就是进程组的领导进程是不可以更改组号的 */
 	if (p->leader)
 		return -EPERM;
 	if (pgid != pid) {
 		struct task_struct * tmp;
 		for_each_task (tmp) {
+            /* 存在进程组号为pgid且和当前进程在同一个会话期的进程 */
 			if (tmp->pgrp == pgid &&
 			 tmp->session == current->session)
 				goto ok_pgid;
@@ -544,10 +545,16 @@ asmlinkage int sys_getpgrp(void)
 
 asmlinkage int sys_setsid(void)
 {
+    /* 如果当前进程是进程组的领导进程，则不许可，
+      * 创建会话的进程必须成为新进程组的领导进程
+      */
 	if (current->leader)
 		return -EPERM;
+    /* 设置当前进程为组的领导进程 */
 	current->leader = 1;
+    /* 同时设置新的会话id和新的进程组id为当前进程的id */
 	current->session = current->pgrp = current->pid;
+    /* 设置没有控制终端 */
 	current->tty = -1;
 	return current->pgrp;
 }
@@ -555,11 +562,14 @@ asmlinkage int sys_setsid(void)
 /*
  * Supplementary group ID's
  */
+
+/* 获取groups数组中的值，并设置到grouplist当中 */
 asmlinkage int sys_getgroups(int gidsetsize, gid_t *grouplist)
 {
 	int i;
 
 	if (gidsetsize) {
+        /* 如果错误，则返回失败 */
 		i = verify_area(VERIFY_WRITE, grouplist, sizeof(gid_t) * gidsetsize);
 		if (i)
 			return i;
@@ -575,6 +585,7 @@ asmlinkage int sys_getgroups(int gidsetsize, gid_t *grouplist)
 	return(i);
 }
 
+/* 将grouplist中的值设置到groups当中 */
 asmlinkage int sys_setgroups(int gidsetsize, gid_t *grouplist)
 {
 	int	i;
@@ -591,6 +602,7 @@ asmlinkage int sys_setgroups(int gidsetsize, gid_t *grouplist)
 	return 0;
 }
 
+/* 判断当前进程是否在grp组当中 */
 int in_group_p(gid_t grp)
 {
 	int	i;

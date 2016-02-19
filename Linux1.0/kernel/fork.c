@@ -160,6 +160,7 @@ asmlinkage int sys_fork(struct pt_regs regs)
 	p->signal = 0;
 	p->it_real_value = p->it_virt_value = p->it_prof_value = 0;
 	p->it_real_incr = p->it_virt_incr = p->it_prof_incr = 0;
+    /* 子进程的进程组领导进程属性不继承 */
 	p->leader = 0;		/* process leadership doesn't inherit */
 	p->utime = p->stime = 0;
 	p->cutime = p->cstime = 0;
