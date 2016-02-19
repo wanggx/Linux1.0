@@ -792,6 +792,7 @@ asmlinkage int sys_getrusage(int who, struct rusage *ru)
 	return getrusage(current, who, ru);
 }
 
+/* 设置进程新创建文件的默认权限 */
 asmlinkage int sys_umask(int mask)
 {
 	int old = current->umask;
