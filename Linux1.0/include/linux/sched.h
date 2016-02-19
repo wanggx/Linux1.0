@@ -192,7 +192,10 @@ struct task_struct {
 	int did_exec:1;
 	unsigned long start_code,end_code,end_data,start_brk,brk,start_stack,start_mmap;
 	unsigned long arg_start, arg_end, env_start, env_end;
-	/* pgrp表示进程组号，pid表示进程号
+	/* pgrp表示进程组号，pid表示进程号，进程组会有一个
+	 * 进程组领导进程，领导进程的pid成为进程组的id 
+	 * 用来识别进程组，多个进程组还可以构成一个会话
+	 * 
 	 */
 	int pid,pgrp,session,leader;
 	int	groups[NGROUPS];
@@ -213,7 +216,9 @@ struct task_struct {
 	 * For ease of programming... Normal sleeps don't need to
 	 * keep track of a wait-queue: every task has an entry of its own
 	 */
+	/* 用户id，有效id */
 	unsigned short uid,euid,suid;
+	/* 用户组id，有效组id*/
 	unsigned short gid,egid,sgid;
 	unsigned long timeout;
 	unsigned long it_real_value, it_prof_value, it_virt_value;

@@ -251,6 +251,8 @@ void ctrl_alt_del(void)
  * 100% compatible with BSD.  A program which uses just setgid() will be
  * 100% compatible with POSIX w/ Saved ID's. 
  */
+
+/* 设置实际，有效用户组id */
 asmlinkage int sys_setregid(gid_t rgid, gid_t egid)
 {
 	int old_rgid = current->gid;
@@ -280,6 +282,8 @@ asmlinkage int sys_setregid(gid_t rgid, gid_t egid)
 /*
  * setgid() is implemeneted like SysV w/ SAVED_IDS 
  */
+
+/* 设置组id */
 asmlinkage int sys_setgid(gid_t gid)
 {
 	if (suser())
@@ -469,10 +473,13 @@ asmlinkage int sys_brk(unsigned long brk)
  * Auch. Had to add the 'did_exec' flag to conform completely to POSIX.
  * LBT 04.03.94
  */
+
+/* 设置进程组id */
 asmlinkage int sys_setpgid(pid_t pid, pid_t pgid)
 {
 	struct task_struct * p;
 
+	/* 如果是0，则设置当前进程*/
 	if (!pid)
 		pid = current->pid;
 	if (!pgid)
@@ -486,13 +493,16 @@ asmlinkage int sys_setpgid(pid_t pid, pid_t pgid)
 	return -ESRCH;
 
 found_task:
+	/* 如果进程的父进程或者创建p的进程是当前进程 */
 	if (p->p_pptr == current || p->p_opptr == current) {
+		/* 找到的进程必须和当前的进程在同一个会话当中 */
 		if (p->session != current->session)
 			return -EPERM;
 		if (p->did_exec)
 			return -EACCES;
 	} else if (p != current)
 		return -ESRCH;
+	/* 如果是进程组的领导进程，则不许可*/
 	if (p->leader)
 		return -EPERM;
 	if (pgid != pid) {
@@ -510,19 +520,23 @@ ok_pgid:
 	return 0;
 }
 
+/* 获取进程的组id */
 asmlinkage int sys_getpgid(pid_t pid)
 {
 	struct task_struct * p;
 
+	/* 如果是0，则返回当前进程的组id */
 	if (!pid)
 		return current->pgrp;
 	for_each_task(p) {
 		if (p->pid == pid)
 			return p->pgrp;
 	}
+	/* 否则返回没有这样的进程*/
 	return -ESRCH;
 }
 
+/* 获取当前进程的组id */
 asmlinkage int sys_getpgrp(void)
 {
 	return current->pgrp;

@@ -1,9 +1,9 @@
----- arp_q Matches (8 in 2 files) ----
-Arp.c (net\inet):struct sk_buff * volatile arp_q = NULL;
-Arp.c (net\inet):  work_q = arp_q;
-Arp.c (net\inet):  arp_q = NULL;
-Arp.c (net\inet):		skb_queue_head(&arp_q,skb);
-Arp.c (net\inet):	if (skb_peek(&arp_q))
-Arp.c (net\inet):  if(arp_q==NULL)
-Arp.c (net\inet):  skb_queue_tail(&arp_q,skb);
-Arp.h (net\inet):extern struct sk_buff *arp_q;
+---- setsid Matches (8 in 6 files) ----
+Main.c (init):static inline _syscall0(pid_t,setsid)
+Main.c (init):			setsid();
+Sched.c (kernel):sys_getpgrp, sys_setsid, sys_sigaction, sys_sgetmask, sys_ssetmask,
+Setsid.c (lib): *  linux/lib/setsid.c
+Setsid.c (lib):_syscall0(pid_t,setsid)
+Sys.c (kernel):asmlinkage int sys_setsid(void)
+Sys.h (include\linux):extern int sys_setsid();
+Unistd.h (include\linux):#define __NR_setsid		 66
