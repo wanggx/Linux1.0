@@ -1,13 +1,12 @@
----- in_group_p Matches (13 in 7 files) ----
-Acl.c (fs\ext2):	else if (in_group_p (inode->i_gid))
-Exec.c (fs):	    euid) || ((i & S_ISGID) && !in_group_p(bprm.inode->i_gid))) &&
-Exec.c (fs):	else if (in_group_p(bprm.inode->i_gid))
-Namei.c (fs):	else if (in_group_p(inode->i_gid))
-Open.c (fs):	else if (in_group_p(inode->i_gid))
-Open.c (fs):	if (!suser() && !in_group_p(inode->i_gid))
-Open.c (fs):	if (!suser() && !in_group_p(inode->i_gid))
-Open.c (fs):	     (in_group_p(group) || group == inode->i_gid)) ||
-Open.c (fs):	     (in_group_p(group) || group == inode->i_gid)) ||
-Sched.h (include\linux):extern int in_group_p(gid_t grp);
-Sys.c (kernel):int in_group_p(gid_t grp)
-Util.c (ipc):	else if (in_group_p(ipcp->cgid) || in_group_p(ipcp->gid))
+---- groups Matches (11 in 4 files) ----
+Inode.c (fs\ext2):			    "group >= groups count");
+Inode.c (fs\ext2):			    "group >= groups count");
+Proc.c (fs\nfs):	for (i = 0; i < 16 && i < NGROUPS && current->groups[i] != NOGROUP; i++)
+Proc.c (fs\nfs):		*p++ = htonl(current->groups[i]);
+Sched.h (include\linux):	int	groups[NGROUPS];
+Sys.c (kernel):	for (i = 0 ; (i < NGROUPS) && (current->groups[i] != NOGROUP) ; i++) {
+Sys.c (kernel):		put_fs_word(current->groups[i], (short *) grouplist);
+Sys.c (kernel):		current->groups[i] = get_fs_word((unsigned short *) grouplist);
+Sys.c (kernel):		current->groups[i] = NOGROUP;
+Sys.c (kernel):		if (current->groups[i] == NOGROUP)
+Sys.c (kernel):		if (current->groups[i] == grp)

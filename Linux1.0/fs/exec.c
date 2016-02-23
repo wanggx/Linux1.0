@@ -579,6 +579,7 @@ restart_interp:
 		goto exec_error2;
 	}
 	i = bprm.inode->i_mode;
+    /* 如果可执行文件设置了S_ISUID，则进程的euid必须是可执行文件的属主 */
 	if (IS_NOSUID(bprm.inode) && (((i & S_ISUID) && bprm.inode->i_uid != current->
 	    euid) || ((i & S_ISGID) && !in_group_p(bprm.inode->i_gid))) &&
 	    !suser()) {

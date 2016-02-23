@@ -198,6 +198,14 @@ struct task_struct {
 	 * 
 	 */
 	int pid,pgrp,session,leader;
+    /* 在没有附加组ID（Suplimentary ID）的年代，一个用户只能属于自已的同名组，
+      * 例如chinsung的用户ID是1000，那么它只属于chinsung组，这个组的组ID也是1000，
+      * 如果要访问一个属于ftp的文件，那么应该先将自己的组ID换成ftp的组ID才行。
+      * 显然，这有点麻烦。于是自BSD4.2以后，出现了附加组ID的概念：
+      * 一个用户可以属于一个组，还可以属于若干附加组；在进行权限校验时，
+      * 不光检查这个用户所在的组，还要检查这个用户所在的附加组。
+      * 这更贴近生活实际了，好比我们同时会在好几个项目组
+      */
 	int	groups[NGROUPS];
 	/* 
 	 * pointers to (original) parent process, youngest child, younger sibling,
@@ -216,7 +224,15 @@ struct task_struct {
 	 * For ease of programming... Normal sleeps don't need to
 	 * keep track of a wait-queue: every task has an entry of its own
 	 */
-	/* 用户id，有效id */
+	/* 用户id，有效id 一个进程如果没有SUID或SGID位，则euid=uid egid=gid，
+	 * 分别是运行这个程序的用户的uid和gid。例如kevin用户的uid和gid分别为204和202，
+	 * foo用户的uid和gid为 200，201，kevin运行myfile程序形成的进程的euid=uid=204，
+	 * egid=gid=202，内核根据这些值来判断进程对资源访问的限制，
+	 * 其实就是kevin用户对资源访问的权限，和foo没关系。 
+      * 如果一个程序设置了SUID，则euid和egid变成被运行的程序的所有者的uid和gid，
+      * 例如kevin用户运行myfile，euid=200，egid=201，uid=204，gid=202，
+      * 则这个进程具有它的属主foo的资源访问权限。
+      */
 	unsigned short uid,euid,suid;
 	/* 用户组id，有效组id*/
 	unsigned short gid,egid,sgid;
