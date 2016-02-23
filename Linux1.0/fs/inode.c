@@ -14,10 +14,10 @@
 
 static struct inode_hash_entry {
 	struct inode * inode;
-	int updating;
+	int updating;       /* 防止多个进程同时操作一个hash节点中的链表时，出现错乱 */
 } hash_table[NR_IHASH];
 
-static struct inode * first_inode;
+static struct inode * first_inode;   /* inode空闲链表的首部 */
 static struct wait_queue * inode_wait = NULL;
 static int nr_inodes = 0, nr_free_inodes = 0;
 
@@ -394,6 +394,7 @@ repeat:
 	return;
 }
 
+/* 从空闲链表中获取一个空闲inode */
 struct inode * get_empty_inode(void)
 {
 	struct inode * inode, * best;
@@ -491,7 +492,8 @@ struct inode * iget(struct super_block * sb,int nr)
 	return __iget(sb,nr,1);
 }
 
-/* 获取超级块对应i节点号的数据，先是获取一个空的inode，
+/* 获取超级块对应i节点号的数据，如果在高速缓冲中可以找到，则返回找到的inode，
+ * 如果没有找到，则先是获取一个空的inode，
  * 然后根据inode调用read_inode函数从硬盘中读取ext2_inode的数据
  */
 struct inode * __iget(struct super_block * sb, int nr, int crossmntp)
@@ -515,6 +517,7 @@ repeat:
 			goto found_it;
 	if (!empty) {
 		h->updating++;
+        /* 因为get_empty_inode需要操作inode链表，所以此时需要排它性操作 */
 		empty = get_empty_inode();
 		if (!--h->updating)
 			wake_up(&update_wait);

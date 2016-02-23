@@ -498,6 +498,7 @@ found_task:
 		/* 找到的进程必须和当前的进程在同一个会话当中 */
 		if (p->session != current->session)
 			return -EPERM;
+        /* 如果是执行了execve族函数的进程则不许可 */
 		if (p->did_exec)
 			return -EACCES;
 	} else if (p != current)

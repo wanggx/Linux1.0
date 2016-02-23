@@ -167,7 +167,7 @@ struct tss_struct {
 struct task_struct {
 /* these are hardcoded - don't touch */
 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
-	long counter;
+	long counter;           /* 动态优先级 */
 	long priority;
 	/* 注意很多地方的这种写法 if (current->signal & ~current->blocked)
 	 * signal表示发送给进程的信号位图，blocked表示进程阻塞的信号位图
@@ -188,7 +188,9 @@ struct task_struct {
 	int elf_executable:1;
 	int dumpable:1;
 	/* 表示内存吃紧时，该进程是否可以被交换 */
-	int swappable:1;		
+	int swappable:1;
+    /* 区分进程正在执行老程序代码，还是用系统调用execve()装入一个新的程序 
+      */
 	int did_exec:1;
 	unsigned long start_code,end_code,end_data,start_brk,brk,start_stack,start_mmap;
 	unsigned long arg_start, arg_end, env_start, env_end;

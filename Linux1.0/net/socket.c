@@ -378,7 +378,11 @@ void sock_close(struct inode *inode, struct file *file)
   sock_release(sock);
 }
 
-
+/* sock_awaitconn 函数只用于 UNIX 域， 用于处理一个客户端连接请求。
+ * socket 结构中 iconn， conn结构用于 UNIX 域中连接操作，
+ * 其中 iconn 只用于服务器端，表示等待连接但尚未完成连接的
+ * 客户端 socket 结构链表。
+ */
 int
 sock_awaitconn(struct socket *mysock, struct socket *servsock)
 {
@@ -387,6 +391,8 @@ sock_awaitconn(struct socket *mysock, struct socket *servsock)
   DPRINTF((net_debug,
 	"NET: sock_awaitconn: trying to connect socket 0x%x to 0x%x\n",
 							mysock, servsock));
+
+  /* 检查服务端是否处于侦听状态 */
   if (!(servsock->flags & SO_ACCEPTCON)) {
 	DPRINTF((net_debug,
 		"NET: sock_awaitconn: server not accepting connections\n"));

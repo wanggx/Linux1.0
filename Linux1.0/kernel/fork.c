@@ -145,7 +145,7 @@ asmlinkage int sys_fork(struct pt_regs regs)
 		goto bad_fork_free;
 	task[nr] = p;
 	*p = *current;
-	p->did_exec = 0;
+	p->did_exec = 0;    /* 默认是没有被execve族函数执行 */
 	p->kernel_stack_page = 0;
 	p->state = TASK_UNINTERRUPTIBLE;
 	p->flags &= ~(PF_PTRACED|PF_TRACESYS);

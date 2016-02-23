@@ -702,7 +702,7 @@ restart_interp:
 		/* 如果加载失败则继续使用其他的加载方式 */
 		if (retval == 0) {
 			iput(bprm.inode);
-			current->did_exec = 1;
+			current->did_exec = 1; /* 当前进程执行过execve函数 */
 			return 0;
 		}
 		fmt++;

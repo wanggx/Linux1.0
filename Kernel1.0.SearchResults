@@ -1,12 +1,6 @@
----- groups Matches (11 in 4 files) ----
-Inode.c (fs\ext2):			    "group >= groups count");
-Inode.c (fs\ext2):			    "group >= groups count");
-Proc.c (fs\nfs):	for (i = 0; i < 16 && i < NGROUPS && current->groups[i] != NOGROUP; i++)
-Proc.c (fs\nfs):		*p++ = htonl(current->groups[i]);
-Sched.h (include\linux):	int	groups[NGROUPS];
-Sys.c (kernel):	for (i = 0 ; (i < NGROUPS) && (current->groups[i] != NOGROUP) ; i++) {
-Sys.c (kernel):		put_fs_word(current->groups[i], (short *) grouplist);
-Sys.c (kernel):		current->groups[i] = get_fs_word((unsigned short *) grouplist);
-Sys.c (kernel):		current->groups[i] = NOGROUP;
-Sys.c (kernel):		if (current->groups[i] == NOGROUP)
-Sys.c (kernel):		if (current->groups[i] == grp)
+---- updating Matches (5 in 2 files) ----
+Arp.c (net\inet):	DPRINTF((DBG_ARP, "ARP: updating entry for %s\n", in_ntoa(addr)));
+Inode.c (fs):	int updating;
+Inode.c (fs):		h->updating++;
+Inode.c (fs):		if (!--h->updating)
+Inode.c (fs):	while (h->updating)

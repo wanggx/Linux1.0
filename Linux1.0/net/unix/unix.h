@@ -33,8 +33,8 @@ struct unix_proto_data {
 					/* -1=not initialised	-bgm	*/
 	struct socket	*socket;	/* socket we're bound to	*/
 	int		protocol;
-	struct sockaddr_un	sockaddr_un;
-	short		sockaddr_len;	/* >0 if name bound		*/
+	struct sockaddr_un	sockaddr_un;        /* 绑定的地址 */
+	short		sockaddr_len;	/* >0 if name bound		*/  /* 设定绑定地址长度 */
 	char		*buf;   /* 一页的缓冲大小 */
 	int		bp_head, bp_tail;
 	struct inode	*inode;
