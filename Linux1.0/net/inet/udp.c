@@ -200,6 +200,7 @@ udp_check(struct udphdr *uh, int len,
 }
 
 
+/* udp数据校验 */
 static void
 udp_send_check(struct udphdr *uh, unsigned long saddr, 
 	       unsigned long daddr, int len, struct sock *sk)
@@ -211,7 +212,7 @@ udp_send_check(struct udphdr *uh, unsigned long saddr,
   if (uh->check == 0) uh->check = 0xffff;
 }
 
-
+/* udp发送数据函数 */
 static int
 udp_send(struct sock *sk, struct sockaddr_in *sin,
 	 unsigned char *from, int len)
@@ -473,9 +474,13 @@ udp_recvfrom(struct sock *sk, unsigned char *to, int len,
   er=verify_area(VERIFY_WRITE,to,len);
   if(er)
   	return er;
+
+  /* 获取接收队列中的一个skb */
   skb=skb_recv_datagram(sk,flags,noblock,&er);
   if(skb==NULL)
   	return er;
+
+  /* 确定实际读取的字节数 */
   copied = min(len, skb->len);
 
   /* FIXME : should use udp header size info value */
@@ -505,6 +510,9 @@ udp_read(struct sock *sk, unsigned char *buff, int len, int noblock,
 }
 
 
+/* udp协议的连接函数，在udp的连接函数当中并没有像tcp那样
+ * 去发送数据包进行连接而是直接就是更改状态为TCP_ESTABLISHED
+ */
 int
 udp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
 {
@@ -519,6 +527,8 @@ udp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
   	return er;
 
   memcpy_fromfs(&sin, usin, sizeof(sin));
+
+  /* 要是AF_INET协议族 */
   if (sin.sin_family && sin.sin_family != AF_INET) 
   	return(-EAFNOSUPPORT);
 
@@ -532,6 +542,7 @@ udp_connect(struct sock *sk, struct sockaddr_in *usin, int addr_len)
 }
 
 
+/* udp连接关闭 */
 static void
 udp_close(struct sock *sk, int timeout)
 {
@@ -543,6 +554,7 @@ udp_close(struct sock *sk, int timeout)
 
 
 /* All we need to do is get the socket, and then do a checksum. */
+/* udp协议的接收函数，和tcp的tcp_rcv函数功能相同 */
 int
 udp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 	unsigned long daddr, unsigned short len,
@@ -551,7 +563,9 @@ udp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
   struct sock *sk;
   struct udphdr *uh;
 
+  /* 获取udp协议的头部 */
   uh = (struct udphdr *) skb->h.uh;
+  /* 获取udp协议上服务器绑定的套接字 */
   sk = get_sock(&udp_prot, uh->dest, saddr, uh->source, daddr);
   if (sk == NULL) 
   {
@@ -586,6 +600,7 @@ udp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 
 
   /* Charge it to the socket. */
+  /* 判断是否超过了接收缓冲的大小 */
   if (sk->rmem_alloc + skb->mem_len >= sk->rcvbuf) 
   {
 	skb->sk = NULL;
@@ -605,6 +620,7 @@ udp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 
   skb->len = len - sizeof(*uh);
 
+  /* 通知进程数据已经接收到 */
   if (!sk->dead) 
   	sk->data_ready(sk,skb->len);
   	

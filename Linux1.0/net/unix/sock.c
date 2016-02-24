@@ -52,6 +52,7 @@
 
 #include "unix.h"
 
+/* UNIX域协议数据的数组 */
 struct unix_proto_data unix_datas[NSOCKETS];
 static int unix_debug = 0;
 
@@ -230,7 +231,9 @@ unix_proto_recv(struct socket *sock, void *buff, int len, int nonblock,
   return(unix_proto_read(sock, (char *) buff, len, nonblock));
 }
 
-
+/* 在协议数组中查找满足条件的协议数据，
+ * 找找条件为协议族和inode 
+ */
 static struct unix_proto_data *
 unix_data_lookup(struct sockaddr_un *sockun, int sockaddr_len,
 		 struct inode *inode)
@@ -246,7 +249,7 @@ unix_data_lookup(struct sockaddr_un *sockun, int sockaddr_len,
   return(NULL);
 }
 
-
+/* 分配一个unix域的协议数据 */
 static struct unix_proto_data *unix_data_alloc(void)
 {
   struct unix_proto_data *upd;
@@ -271,7 +274,7 @@ static struct unix_proto_data *unix_data_alloc(void)
   return(NULL);
 }
 
-
+/* 增加upd的引用计数 */
 static inline void
 unix_data_ref(struct unix_proto_data *upd)
 {
@@ -283,13 +286,15 @@ unix_data_ref(struct unix_proto_data *upd)
   dprintf(1, "UNIX: data_ref: refing data 0x%x(%d)\n", upd, upd->refcnt);
 }
 
-
+/* 减少upd的引用计数 */
 static void unix_data_deref(struct unix_proto_data *upd)
 {
   if (!upd) {
     dprintf(1, "UNIX: data_deref: upd = NULL\n");
     return;
   }
+
+  /* 如果引用计数为1，则释放upd的buf */
   if (upd->refcnt == 1) {
 	dprintf(1, "UNIX: data_deref: releasing data 0x%x\n", upd);
 	if (upd->buf) {
@@ -401,6 +406,7 @@ static int unix_proto_bind(struct socket *sock, struct sockaddr *umyaddr,
   if(er)
   	return er;
   memcpy_fromfs(&upd->sockaddr_un, umyaddr, sockaddr_len);
+  /* 设置字符串结束 */
   upd->sockaddr_un.sun_path[sockaddr_len-UN_PATH_OFFSET] = '\0';
   if (upd->sockaddr_un.sun_family != AF_UNIX) {
 	dprintf(1, "UNIX: bind: family is %d, not AF_UNIX(%d)\n",
@@ -408,11 +414,15 @@ static int unix_proto_bind(struct socket *sock, struct sockaddr *umyaddr,
 	return(-EINVAL);
   }
 
+  /* 将路径拷贝到fname当中 */
   memcpy(fname, upd->sockaddr_un.sun_path, sockaddr_len-UN_PATH_OFFSET);
   fname[sockaddr_len-UN_PATH_OFFSET] = '\0';
   old_fs = get_fs();
   set_fs(get_ds());
   i = do_mknod(fname, S_IFSOCK | S_IRWXUGO, 0);
+  /* 注意这里在open_namei之后并没有调用iput,
+    * 如果调用了，则在高速缓存中文件对应的inode就被释放了，也就是引用计数为0 。
+    */
   if (i == 0) i = open_namei(fname, 0, S_IFSOCK, &upd->inode, NULL);
   set_fs(old_fs);
   if (i < 0) {
@@ -433,6 +443,8 @@ static int unix_proto_bind(struct socket *sock, struct sockaddr *umyaddr,
  * (I can't for the life of me find an application where that
  * wouldn't be the case!)
  */
+
+/* UNIX域的连接函数 */
 static int
 unix_proto_connect(struct socket *sock, struct sockaddr *uservaddr,
 		   int sockaddr_len, int flags)
@@ -452,6 +464,8 @@ unix_proto_connect(struct socket *sock, struct sockaddr *uservaddr,
 	dprintf(1, "UNIX: connect: bad length %d\n", sockaddr_len);
 	return(-EINVAL);
   }
+
+  /* 正在连接或已经连接上了，则直接返回 */
   if (sock->state == SS_CONNECTING) return(-EINPROGRESS);
   if (sock->state == SS_CONNECTED) return(-EISCONN);
 

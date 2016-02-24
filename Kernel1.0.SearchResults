@@ -1,12 +1,6 @@
----- tcp_data Matches (11 in 1 files) ----
-Tcp.c (net\inet):tcp_data(struct sk_buff *skb, struct sock *sk, 
-Tcp.c (net\inet):  DPRINTF((DBG_TCP, "tcp_data len = %d sk = %X:\n", skb->len, sk));
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_data: closing socket - %X\n", sk));
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_data: skb = %X:\n", skb));
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_data adding to chain sk = %X:\n", sk));
-Tcp.c (net\inet):	printk("*** tcp.c:tcp_data bug acked < copied\n");
-Tcp.c (net\inet):			printk("INET: tcp.c:tcp_data memory leak detected.\n");
-Tcp.c (net\inet):	DPRINTF((DBG_TCP, "tcp_data: entering last_ack state sk = %X\n", sk));
-Tcp.c (net\inet):		if (tcp_data(skb, sk, saddr, len)) {
-Tcp.c (net\inet):			if (tcp_data(skb, sk, saddr, len))
-Tcp.c (net\inet):		if (tcp_data(skb, sk, saddr, len)) {
+---- updating Matches (5 in 2 files) ----
+Arp.c (net\inet):	DPRINTF((DBG_ARP, "ARP: updating entry for %s\n", in_ntoa(addr)));
+Inode.c (fs):	int updating;
+Inode.c (fs):		h->updating++;
+Inode.c (fs):		if (!--h->updating)
+Inode.c (fs):	while (h->updating)

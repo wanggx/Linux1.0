@@ -44,12 +44,12 @@ struct linger {
 #define MSG_PEEK	2   /* 仅仅是数据预先读取和检查 */
 
 /* Setsockoptions(2) level. Thanks to BSD these must match IPPROTO_xxx */
-#define SOL_SOCKET	1
-#define SOL_IP		0
+#define SOL_SOCKET	1  /* 基本套接口 */
+#define SOL_IP		0  /* ip套接口 */
 #define SOL_IPX		256
 #define SOL_AX25	257
-#define SOL_TCP		6
-#define SOL_UDP		17
+#define SOL_TCP		6  /* tcp套接口 */
+#define SOL_UDP		17 /* udp套接口 */
 
 /* For setsockoptions(2) */
 #define SO_DEBUG	1

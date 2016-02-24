@@ -378,7 +378,11 @@ void sock_close(struct inode *inode, struct file *file)
   sock_release(sock);
 }
 
-
+/* sock_awaitconn 函数只用于 UNIX 域， 用于处理一个客户端连接请求。
+ * socket 结构中 iconn， conn结构用于 UNIX 域中连接操作，
+ * 其中 iconn 只用于服务器端，表示等待连接但尚未完成连接的
+ * 客户端 socket 结构链表。
+ */
 int
 sock_awaitconn(struct socket *mysock, struct socket *servsock)
 {
@@ -387,6 +391,8 @@ sock_awaitconn(struct socket *mysock, struct socket *servsock)
   DPRINTF((net_debug,
 	"NET: sock_awaitconn: trying to connect socket 0x%x to 0x%x\n",
 							mysock, servsock));
+
+  /* 检查服务端是否处于侦听状态 */
   if (!(servsock->flags & SO_ACCEPTCON)) {
 	DPRINTF((net_debug,
 		"NET: sock_awaitconn: server not accepting connections\n"));
@@ -503,6 +509,9 @@ static int sock_socket(int family, int type, int protocol)
 }
 
 
+/* 这个和pipe功能有相似之处，pipe是单工的，socketpair是双工的
+ * family只能是UNIX域的。
+ */
 static int
 sock_socketpair(int family, int type, int protocol, unsigned long usockvec[2])
 {
@@ -518,6 +527,7 @@ sock_socketpair(int family, int type, int protocol, unsigned long usockvec[2])
    * Obtain the first socket and check if the underlying protocol
    * supports the socketpair call.
    */
+  /* 如果创建失败，则直接返回 */
   if ((fd1 = sock_socket(family, type, protocol)) < 0) return(fd1);
   sock1 = sockfd_lookup(fd1, NULL);
   if (!sock1->ops->socketpair) {
@@ -577,6 +587,12 @@ sock_bind(int fd, struct sockaddr *umyaddr, int addrlen)
  * Perform a listen. Basically, we allow the protocol to do anything
  * necessary for a listen, and if that works, we mark the socket as
  * ready for listening.
+ */
+
+/* 监听套接字 
+ * fd表示要监听的套接字描述符
+ * backlog表示在accept函数中等待读取的队列的长度，
+ * 也就是struct sock的max_ack_backlog
  */
 static int
 sock_listen(int fd, int backlog)

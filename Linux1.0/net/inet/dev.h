@@ -27,6 +27,12 @@
 /* for future expansion when we will have different priorities. */
 #define DEV_NUMBUFFS	3
 #define MAX_ADDR_LEN	7
+
+/* 注意mac帧的格式为 头部+数据部分+帧尾部
+ * 头部 6+6+2 6表示mac地址，2表示上层协议类型
+ * 尾部 4 校验 
+ * 中间数据部分长度为46-1500字节
+ */
 #define MAX_HEADER	18
 
 #define IS_MYADDR	1		/* address is (one of) our own	*/

@@ -20,6 +20,7 @@
 
 #include <linux/tcp.h>
 
+/* 特殊的包里面都包含了tcp和ip的头部长度 */
 #define MAX_SYN_SIZE	44 + sizeof (struct sk_buff) + MAX_HEADER
 #define MAX_FIN_SIZE	40 + sizeof (struct sk_buff) + MAX_HEADER
 #define MAX_ACK_SIZE	40 + sizeof (struct sk_buff) + MAX_HEADER
@@ -72,7 +73,7 @@
  
 #define TCPOPT_NOP		1
 #define TCPOPT_EOL		0
-#define TCPOPT_MSS		2
+#define TCPOPT_MSS		2           /* 设置tcp报文最大长度 */
 
 /*
  * The next routines deal with comparing 32 bit unsigned ints

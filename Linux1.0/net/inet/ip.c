@@ -207,7 +207,9 @@ ip_send(struct sk_buff *skb, unsigned long daddr, int len, struct device *dev,
  * protocol knows what it's doing, otherwise it uses the
  * routing/ARP tables to select a device struct.
  */
-/* 构造ip协议的首部 */
+/* 构造ip协议的首部和mac协议的首部
+ * 函数返回值为mac首部和ip首部总长度
+ */
 int ip_build_header(struct sk_buff *skb, unsigned long saddr, unsigned long daddr,
 		struct device **dev, int type, struct options *opt, int len, int tos, int ttl)
 {
@@ -1561,6 +1563,9 @@ ip_retransmit(struct sock *sk, int all)
 /*
  *	Socket option code for IP. This is the end of the line after any TCP,UDP etc options on
  *	an IP socket.
+ */
+
+/* ip层套接口的设置  
  */
  
 int ip_setsockopt(struct sock *sk, int level, int optname, char *optval, int optlen)

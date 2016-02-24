@@ -26,7 +26,7 @@ struct tcphdr {
   unsigned short	dest;  /* 目的端口号 */
   unsigned long		seq; 	/* tcp字节的序列号，本报文段的第一个字节的序号 */
   unsigned long		ack_seq; /* 对远端确认的序列号 */
-  unsigned short	res1:4,
+  unsigned short	res1:4,    /* 保留位 */
 			doff:4,     /* 数据偏移，它指出tcp报文段的数据起始处到tcp报文段的起始处有多远，
 						 * 因为tcp首部长度是不固定的，单位为4字节 
 						 */

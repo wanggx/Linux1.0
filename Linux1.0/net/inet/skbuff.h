@@ -61,7 +61,7 @@ struct sk_buff {
 	struct ethhdr	*eth;
 	struct iphdr	*iph;
 	struct udphdr	*uh;
-	struct arphdr	*arp;
+	struct arphdr	*arp;   /* arpÊ×²¿ */
 	unsigned char	*raw;
 	unsigned long	seq;
 #ifdef CONFIG_IPX	

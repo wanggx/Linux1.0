@@ -102,6 +102,9 @@ static struct packet_type ax25_packet_type = {
 #endif
 
 
+/* arp协议属于网络层协议，arp协议在网络层的处理最终交给
+ * arp_rcv处理
+ */
 static struct packet_type arp_packet_type = {
   NET16(ETH_P_ARP),
   0,		/* copy */
@@ -251,6 +254,8 @@ int chk_addr(unsigned long addr)
  * al when it doesn't know which address to use (i.e. it does not
  * yet know from or to which interface to go...).
  */
+
+/* 获取本地地址 */
 unsigned long
 my_addr(void)
 {
@@ -583,6 +588,9 @@ dev_transmit(void)
   }
 }
 
+/* 变量in_bh是为了防止重复执行下半部分，即下半部分不允许重入，
+ * 从net_bh实现的功能来看，重入很可能造成内核不一致
+ */
 static volatile char in_bh = 0;
 
 int in_inet_bh()	/* Used by timer.c */
@@ -607,6 +615,8 @@ inet_bh(void *tmp)
   int nitcount;
 
   /* Atomically check and mark our BUSY state. */
+
+  /* 将原来的位设置为1，如果原来的位为1，则直接返回 */
   if (set_bit(1, (void*)&in_bh))
       return;
 

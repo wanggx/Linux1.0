@@ -167,6 +167,7 @@ void skb_copy_datagram(struct sk_buff *skb, int offset, char *to, int size)
  *	Now does seqpacket.
  */
 
+/* udp协议的select系统调用 */
 int datagram_select(struct sock *sk, int sel_type, select_table *wait)
 {
 	select_wait(sk->sleep, wait);

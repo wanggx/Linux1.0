@@ -527,7 +527,12 @@ inet_fcntl(struct socket *sock, unsigned int cmd, unsigned long arg)
 /*
  *	Set socket options on an inet socket.
  */
- 
+
+/* level指定选项代码的类型
+ * optname选项名称
+ * optval选项值
+ * optlen选项长度
+ */
 static int inet_setsockopt(struct socket *sock, int level, int optname,
 		    char *optval, int optlen)
 {
@@ -539,8 +544,6 @@ static int inet_setsockopt(struct socket *sock, int level, int optname,
 	else
 		return sk->prot->setsockopt(sk,level,optname,optval,optlen);
 }
-
-
 
 
 static int inet_getsockopt(struct socket *sock, int level, int optname,
@@ -559,6 +562,8 @@ static int inet_getsockopt(struct socket *sock, int level, int optname,
  *	This is meant for all protocols to use and covers goings on
  *	at the socket level. Everything here is generic.
  */
+
+
 
 int sock_setsockopt(struct sock *sk, int level, int optname,
 		char *optval, int optlen)
@@ -623,7 +628,7 @@ int sock_setsockopt(struct sock *sk, int level, int optname,
 				sk->reuse = 0;
 			return(0);
 
-		case SO_KEEPALIVE:
+		case SO_KEEPALIVE:  /* 表示是否使用保活定时器 */
 			if (val)
 				sk->keepopen = 1;
 			else 
@@ -897,12 +902,16 @@ static int inet_create(struct socket *sock, int protocol)
   sk->protocol = protocol;
   sk->wmem_alloc = 0;
   sk->rmem_alloc = 0;
+  /* 设置最大的接收和发送缓冲 */
   sk->sndbuf = SK_WMEM_MAX;
   sk->rcvbuf = SK_RMEM_MAX;
   sk->pair = NULL;
   sk->opt = NULL;
+  /* 初始化应用程序下次要写的字节的序列号为0 */
   sk->write_seq = 0;
+  /* 初始化本地希望从远端接收的到字节序号为0 */
   sk->acked_seq = 0;
+  /* 初始化应用程序已经读取的字节数为0 */
   sk->copied_seq = 0;
   sk->fin_seq = 0;
   sk->urg_seq = 0;
@@ -916,6 +925,7 @@ static int inet_create(struct socket *sock, int protocol)
   sk->cong_window = 1; /* start with only sending one packet at a time. */
   sk->cong_count = 0;
   sk->ssthresh = 0;
+  /* 最大窗口初始化为0 */
   sk->max_window = 0;
   sk->urginline = 0;
   sk->intr = 0;
@@ -927,14 +937,17 @@ static int inet_create(struct socket *sock, int protocol)
   sk->keepopen = 0;
   sk->zapped = 0;
   sk->done = 0;
+  /* 初始化需要给远端确认，但还没有确认的包的数量为0 */
   sk->ack_backlog = 0;
   sk->window = 0;
+  /* 初始化已接收的字节总数为0 */
   sk->bytes_rcv = 0;
   /* socket系统调用完成后，socket的状态为TCP_CLOSE */
   sk->state = TCP_CLOSE;  
   sk->dead = 0;
   sk->ack_timed = 0;
   sk->partial = NULL;
+  /* 初始化用户设定的最大报文段长度为0 */
   sk->user_mss = 0;
   sk->debug = 0;
 
@@ -943,17 +956,22 @@ static int inet_create(struct socket *sock, int protocol)
 
   /* how many packets we should send before forcing an ack. 
      if this is set to zero it is the same as sk->delay_acks = 0 */
+
+  /* 在监听的时候会作为listen的参数给传递进来 */
   sk->max_ack_backlog = 0;
   sk->inuse = 0;
   sk->delay_acks = 0;
   sk->wback = NULL;
   sk->wfront = NULL;
   sk->rqueue = NULL;
+  /* 初始化最大传输单元 */
   sk->mtu = 576;
   sk->prot = prot;
   sk->sleep = sock->wait;
+
+  /* 初始化本地和远端地址 */
   sk->daddr = 0;
-  sk->saddr = my_addr();
+  sk->saddr = my_addr();  /* 获取的地址为127.0.0.1 */
   sk->err = 0;
   sk->next = NULL;
   sk->pair = NULL;
@@ -1340,6 +1358,9 @@ static int inet_accept(struct socket *sock, struct socket *newsock, int flags)
 }
 
 
+/* 获取socket的信息
+ * peer表示是获取本地信息还是远端信息
+ */
 static int
 inet_getname(struct socket *sock, struct sockaddr *uaddr,
 		 int *uaddr_len, int peer)
@@ -1369,6 +1390,7 @@ inet_getname(struct socket *sock, struct sockaddr *uaddr,
 	printk("Warning: sock->data = NULL: %d\n" ,__LINE__);
 	return(0);
   }
+  /* 获取远端信息，否则就是本地信息 */
   if (peer) {
 	if (!tcp_connected(sk->state)) return(-ENOTCONN);
 	sin.sin_port = sk->dummy_th.dest;
@@ -1848,6 +1870,10 @@ void release_sock(struct sock *sk)
 	return;
   }
 
+  /* 这个blog非常重要，在下面的while循环中会调用到tcp_rcv,
+    * 在该函数中也可能调用到release_sock，如果是同一个sock
+    * 就不会造成函数调用的死循环 
+    */
   if (sk->blog) return;
 
   /* See if we have any packets built up. */
@@ -1863,7 +1889,7 @@ void release_sock(struct sock *sk)
     */
   while(sk->back_log != NULL) {
 	struct sk_buff *skb;
-	/* 表示之后的数据包都要被丢弃 */
+	/* 表示之后的数据包都要被丢弃，这里应该不是丢弃，而是不处理 */
 	sk->blog = 1;
 	skb =(struct sk_buff *)sk->back_log;
 	DPRINTF((DBG_INET, "release_sock: skb = %X:\n", skb));
@@ -1887,7 +1913,7 @@ void release_sock(struct sock *sk)
 	(struct inet_protocol *)sk->pair); 
 	cli();
   }
-  /* 刚开标记 */
+  /* 打开标记 */
   sk->blog = 0;
   sk->inuse = 0;
   sti();

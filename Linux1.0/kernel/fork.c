@@ -145,7 +145,7 @@ asmlinkage int sys_fork(struct pt_regs regs)
 		goto bad_fork_free;
 	task[nr] = p;
 	*p = *current;
-	p->did_exec = 0;
+	p->did_exec = 0;    /* 默认是没有被execve族函数执行 */
 	p->kernel_stack_page = 0;
 	p->state = TASK_UNINTERRUPTIBLE;
 	p->flags &= ~(PF_PTRACED|PF_TRACESYS);
@@ -160,6 +160,7 @@ asmlinkage int sys_fork(struct pt_regs regs)
 	p->signal = 0;
 	p->it_real_value = p->it_virt_value = p->it_prof_value = 0;
 	p->it_real_incr = p->it_virt_incr = p->it_prof_incr = 0;
+    /* 子进程的进程组领导进程属性不继承 */
 	p->leader = 0;		/* process leadership doesn't inherit */
 	p->utime = p->stime = 0;
 	p->cutime = p->cstime = 0;

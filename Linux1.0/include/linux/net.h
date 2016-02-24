@@ -78,8 +78,11 @@ struct socket {
   struct proto_ops	*ops;		/* protocols do most everything	*/
   /* 这就是socket的协议数据，其实就是struct sock结构 */
   void			*data;		/* protocol data		*/
-  /* 在INET域中下面两个指针为NULL */
+  /* 在INET域中下面两个指针为NULL
+    * 指向建立完全连接的对方 socket 结构
+    */
   struct socket		*conn;		/* server socket connected to	*/
+  /* 等待建立连接的socket结构 */
   struct socket		*iconn;		/* incomplete client conn.s	*/
   struct socket		*next;
   /* 等待使用该socket的进程队列 */

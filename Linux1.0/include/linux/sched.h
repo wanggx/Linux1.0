@@ -85,7 +85,7 @@ extern unsigned long avenrun[];		/* Load averages */
 #define TASK_RUNNING		0
 #define TASK_INTERRUPTIBLE	1
 #define TASK_UNINTERRUPTIBLE	2	/*内核一些特定流程，是不可被打断的，也就是可以忽略某些信号*/
-#define TASK_ZOMBIE		3
+#define TASK_ZOMBIE		3           /* 进程的僵尸状态 */
 #define TASK_STOPPED		4
 #define TASK_SWAPPING		5
 
@@ -167,7 +167,7 @@ struct tss_struct {
 struct task_struct {
 /* these are hardcoded - don't touch */
 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
-	long counter;
+	long counter;           /* 动态优先级 */
 	long priority;
 	/* 注意很多地方的这种写法 if (current->signal & ~current->blocked)
 	 * signal表示发送给进程的信号位图，blocked表示进程阻塞的信号位图
@@ -188,13 +188,26 @@ struct task_struct {
 	int elf_executable:1;
 	int dumpable:1;
 	/* 表示内存吃紧时，该进程是否可以被交换 */
-	int swappable:1;		
+	int swappable:1;
+    /* 区分进程正在执行老程序代码，还是用系统调用execve()装入一个新的程序 
+      */
 	int did_exec:1;
 	unsigned long start_code,end_code,end_data,start_brk,brk,start_stack,start_mmap;
 	unsigned long arg_start, arg_end, env_start, env_end;
-	/* pgrp表示进程组号，pid表示进程号
+	/* pgrp表示进程组号，pid表示进程号，进程组会有一个
+	 * 进程组领导进程，领导进程的pid成为进程组的id 
+	 * 用来识别进程组，多个进程组还可以构成一个会话
+	 * 
 	 */
 	int pid,pgrp,session,leader;
+    /* 在没有附加组ID（Suplimentary ID）的年代，一个用户只能属于自已的同名组，
+      * 例如chinsung的用户ID是1000，那么它只属于chinsung组，这个组的组ID也是1000，
+      * 如果要访问一个属于ftp的文件，那么应该先将自己的组ID换成ftp的组ID才行。
+      * 显然，这有点麻烦。于是自BSD4.2以后，出现了附加组ID的概念：
+      * 一个用户可以属于一个组，还可以属于若干附加组；在进行权限校验时，
+      * 不光检查这个用户所在的组，还要检查这个用户所在的附加组。
+      * 这更贴近生活实际了，好比我们同时会在好几个项目组
+      */
 	int	groups[NGROUPS];
 	/* 
 	 * pointers to (original) parent process, youngest child, younger sibling,
@@ -213,7 +226,17 @@ struct task_struct {
 	 * For ease of programming... Normal sleeps don't need to
 	 * keep track of a wait-queue: every task has an entry of its own
 	 */
+	/* 用户id，有效id 一个进程如果没有SUID或SGID位，则euid=uid egid=gid，
+	 * 分别是运行这个程序的用户的uid和gid。例如kevin用户的uid和gid分别为204和202，
+	 * foo用户的uid和gid为 200，201，kevin运行myfile程序形成的进程的euid=uid=204，
+	 * egid=gid=202，内核根据这些值来判断进程对资源访问的限制，
+	 * 其实就是kevin用户对资源访问的权限，和foo没关系。 
+      * 如果一个程序设置了SUID，则euid和egid变成被运行的程序的所有者的uid和gid，
+      * 例如kevin用户运行myfile，euid=200，egid=201，uid=204，gid=202，
+      * 则这个进程具有它的属主foo的资源访问权限。
+      */
 	unsigned short uid,euid,suid;
+	/* 用户组id，有效组id*/
 	unsigned short gid,egid,sgid;
 	unsigned long timeout;
 	unsigned long it_real_value, it_prof_value, it_virt_value;

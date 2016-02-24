@@ -27,6 +27,8 @@
 
 
 /* This structure defines the ARP mapping cache. */
+
+/* arp表项，也就是arp缓存 */
 struct arp_table {
   struct arp_table		*next;
   volatile unsigned long	last_used;
