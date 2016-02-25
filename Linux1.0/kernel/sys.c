@@ -632,6 +632,7 @@ asmlinkage int sys_newuname(struct new_utsname * name)
 	return error;
 }
 
+/* 获取当前系统的名称，版本和主机等信息 */
 asmlinkage int sys_uname(struct old_utsname * name)
 {
 	int error;
@@ -677,6 +678,8 @@ asmlinkage int sys_olduname(struct oldold_utsname * name)
 /*
  * Only sethostname; gethostname can be implemented by calling uname()
  */
+
+/* 设置主机名称 */
 asmlinkage int sys_sethostname(char *name, int len)
 {
 	int	i;
@@ -713,6 +716,8 @@ asmlinkage int sys_setdomainname(char *name, int len)
 	return 0;
 }
 
+
+/* 获取系统资源上限 */
 asmlinkage int sys_getrlimit(unsigned int resource, struct rlimit *rlim)
 {
 	int error;
@@ -729,6 +734,7 @@ asmlinkage int sys_getrlimit(unsigned int resource, struct rlimit *rlim)
 	return 0;	
 }
 
+/* 设置系统资源上限 */
 asmlinkage int sys_setrlimit(unsigned int resource, struct rlimit *rlim)
 {
 	struct rlimit new_rlim, *old_rlim;
@@ -754,6 +760,8 @@ asmlinkage int sys_setrlimit(unsigned int resource, struct rlimit *rlim)
  * a lot simpler!  (Which we're not doing right now because we're not
  * measuring them yet).
  */
+
+/* 获取系统资源使用情况 */
 int getrusage(struct task_struct *p, int who, struct rusage *ru)
 {
 	int error;

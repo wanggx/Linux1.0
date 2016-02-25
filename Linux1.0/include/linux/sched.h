@@ -234,6 +234,7 @@ struct task_struct {
       * 如果一个程序设置了SUID，则euid和egid变成被运行的程序的所有者的uid和gid，
       * 例如kevin用户运行myfile，euid=200，egid=201，uid=204，gid=202，
       * 则这个进程具有它的属主foo的资源访问权限。
+      * 使用euid来确认资源的访问权限 
       */
 	unsigned short uid,euid,suid;
 	/* 用户组id，有效组id*/
@@ -253,10 +254,10 @@ struct task_struct {
 /* file system info */
 	int link_count;
 	int tty;		/* -1 if no tty, so it must be signed */
-	unsigned short umask;
-	struct inode * pwd;
-	struct inode * root;
-	struct inode * executable;
+	unsigned short umask;  /* 进程创建文件时默认的权限反码 */
+	struct inode * pwd;    /* 进程的当前工作目录 */
+	struct inode * root;   /* 当前进程的根目录 */
+	struct inode * executable; /* 当前进程可执行文件 */
 	/* 虚拟地址链，在地址链表中，
 	 * 地址空间是按照从小到大的顺序来存放的
 	 */

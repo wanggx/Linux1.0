@@ -239,6 +239,8 @@ extern int get_tty_queue(struct tty_queue * queue);
  * the size of this structure, and it needs to be done with care.
  * 						- TYT, 9/14/92
  */
+
+/* øÿ÷∆÷’∂ÀΩ·ππ */
 struct tty_struct {
 	struct termios *termios;
 	int pgrp;

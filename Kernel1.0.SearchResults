@@ -1,6 +1,21 @@
----- updating Matches (5 in 2 files) ----
-Arp.c (net\inet):	DPRINTF((DBG_ARP, "ARP: updating entry for %s\n", in_ntoa(addr)));
-Inode.c (fs):	int updating;
-Inode.c (fs):		h->updating++;
-Inode.c (fs):		if (!--h->updating)
-Inode.c (fs):	while (h->updating)
+---- executable Matches (20 in 10 files) ----
+Binfmt_coff.c (fs):	    printk ("not executable bit\n");
+Binfmt_coff.c (fs):	    printk ("flushing executable\n");
+Binfmt_coff.c (fs):	    current->executable  = bprm->inode; /* Store inode for file  */
+Binfmt_elf.c (fs):	current->executable = bprm->inode;
+Exec.c (fs):	if (current->executable) {
+Exec.c (fs):		iput(current->executable);
+Exec.c (fs):		current->executable = NULL;
+Exec.c (fs):	current->executable = NULL;  /* for OMAGIC files */
+Exec.c (fs):			printk("%s: executable not page aligned\n", current->comm);
+Exec.c (fs):		current->executable = bprm->inode;
+Exit.c (kernel):	iput(current->executable);
+Exit.c (kernel):	current->executable = NULL;
+Fork.c (kernel):	if (current->executable)
+Fork.c (kernel):		current->executable->i_count++;
+Link.c (fs\proc):			inode = p->executable;
+Memory.c (mm):		if (inode != (*p)->executable) {
+Namei.c (fs): 			if (inode == (*p)->executable) {
+Sched.h (include\linux):	struct inode * executable; /* 当前进程可执行文件 */
+Shm.c (ipc):		iput (current->executable);
+Shm.c (ipc):		current->executable = NULL;

@@ -223,6 +223,7 @@ asmlinkage int sys_fork(struct pt_regs regs)
 			if ((f = p->filp[i]) != NULL)
 				f->f_count++;
 	}
+    /* 在同一个进程在fork之后，同时增加pwd,root,executable的引用计数 */
 	if (current->pwd)
 		current->pwd->i_count++;
 	if (current->root)

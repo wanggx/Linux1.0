@@ -193,6 +193,8 @@ asmlinkage int sys_access(const char * filename,int mode)
 	return -EACCES;
 }
 
+
+/* 更改当前进程的工作目录 */
 asmlinkage int sys_chdir(const char * filename)
 {
 	struct inode * inode;
@@ -233,6 +235,10 @@ asmlinkage int sys_fchdir(unsigned int fd)
 	return (0);
 }
 
+/* 更改进程的root目录，默认的访问/etc,则是真正的系统/etc目录，
+ * 如果使用该函数更改成/home/demo,则访问/etc目录则实际是/home/demo/etc
+ * 想象一下ftp的根目录
+ */
 asmlinkage int sys_chroot(const char * filename)
 {
 	struct inode * inode;
@@ -241,6 +247,8 @@ asmlinkage int sys_chroot(const char * filename)
 	error = namei(filename,&inode);
 	if (error)
 		return error;
+
+    /* 不是目录则失败返回 */
 	if (!S_ISDIR(inode->i_mode)) {
 		iput(inode);
 		return -ENOTDIR;
@@ -254,6 +262,7 @@ asmlinkage int sys_chroot(const char * filename)
 	return (0);
 }
 
+/* 更改文件的mode */
 asmlinkage int sys_fchmod(unsigned int fd, mode_t mode)
 {
 	struct inode * inode;
@@ -265,6 +274,7 @@ asmlinkage int sys_fchmod(unsigned int fd, mode_t mode)
 		return -ENOENT;
 	if ((current->euid != inode->i_uid) && !suser())
 		return -EPERM;
+    /* 判断文件系统是不是只读的 */
 	if (IS_RDONLY(inode))
 		return -EROFS;
 	if (mode == (mode_t) -1)
@@ -509,6 +519,8 @@ asmlinkage int sys_close(unsigned int fd)
  * This routine simulates a hangup on the tty, to arrange that users
  * are given clean terminals at login time.
  */
+
+/* 挂起当前中断 */
 asmlinkage int sys_vhangup(void)
 {
 	struct tty_struct *tty;

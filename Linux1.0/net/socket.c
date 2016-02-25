@@ -382,6 +382,8 @@ void sock_close(struct inode *inode, struct file *file)
  * socket 结构中 iconn， conn结构用于 UNIX 域中连接操作，
  * 其中 iconn 只用于服务器端，表示等待连接但尚未完成连接的
  * 客户端 socket 结构链表。
+ * servsock表示服务套接字
+ * mysock表示连接套接字 
  */
 int
 sock_awaitconn(struct socket *mysock, struct socket *servsock)
@@ -402,11 +404,13 @@ sock_awaitconn(struct socket *mysock, struct socket *servsock)
   /* Put ourselves on the server's incomplete connection queue. */
   mysock->next = NULL;
   cli();
+  /* 把mysock套接字添加到iconn队列的末尾 */
   if (!(last = servsock->iconn)) servsock->iconn = mysock;
-    else {
+  else {
 	while (last->next) last = last->next;
 	last->next = mysock;
   }
+  /* 设置连接套接字的状态为正在连接 */
   mysock->state = SS_CONNECTING;
   mysock->conn = servsock;
   sti();
@@ -415,6 +419,8 @@ sock_awaitconn(struct socket *mysock, struct socket *servsock)
    * Wake up server, then await connection. server will set state to
    * SS_CONNECTED if we're connected.
    */
+  /* 唤醒服务进程 
+    */
   wake_up_interruptible(servsock->wait);
   if (mysock->state != SS_CONNECTED) {
 	interruptible_sleep_on(mysock->wait);
@@ -609,6 +615,7 @@ sock_listen(int fd, int backlog)
 	return(-EINVAL);
   }
   if (sock->ops && sock->ops->listen) sock->ops->listen(sock, backlog);
+  /* 设置socket的状态为监听状态 */
   sock->flags |= SO_ACCEPTCON;
   return(0);
 }

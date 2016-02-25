@@ -54,6 +54,7 @@ typedef enum {
   SS_DISCONNECTING			/* in process of disconnecting	*/
 } socket_state;
 
+/* ÉèÖÃsocketµÄflagÎª¼àÌı×´Ì¬ */
 #define SO_ACCEPTCON	(1<<16)		/* performed a listen		*/
 
 

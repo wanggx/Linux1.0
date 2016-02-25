@@ -547,6 +547,9 @@ unix_proto_accept(struct socket *sock, struct socket *newsock, int flags)
    * If there aren't any sockets awaiting connection,
    * then wait for one, unless nonblocking.
    */
+  /* 如果没有等待连接的socket，且套接字是非阻塞的则直接返回
+    * 否则睡眠
+    */
   while(!(clientsock = sock->iconn)) {
 	if (flags & O_NONBLOCK) return(-EAGAIN);
 	interruptible_sleep_on(sock->wait);
@@ -560,8 +563,11 @@ unix_proto_accept(struct socket *sock, struct socket *newsock, int flags)
    * Great. Finish the connection relative to server and client,
    * wake up the client and return the new fd to the server.
    */
+  /* 取出其中一个连接的socket */
   sock->iconn = clientsock->next;
   clientsock->next = NULL;
+
+  /* 设置两端套接字的对等连接conn字段，同时设置状态为连接状态 */
   newsock->conn = clientsock;
   clientsock->conn = newsock;
   clientsock->state = SS_CONNECTED;

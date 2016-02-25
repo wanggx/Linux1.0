@@ -38,7 +38,7 @@ struct unix_proto_data {
 	char		*buf;   /* 一页的缓冲大小 */
 	int		bp_head, bp_tail;
 	struct inode	*inode;
-	struct unix_proto_data	*peerupd;
+	struct unix_proto_data	*peerupd;  /* 连接成功后设置对等的协议数据 */
 	struct wait_queue *wait;	/* Lock across page faults (FvK) */
 	int		lock_flag;
 };
