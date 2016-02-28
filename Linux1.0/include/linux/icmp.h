@@ -57,11 +57,11 @@
 #define ICMP_EXC_TTL		0	/* TTL count exceeded		*/
 #define ICMP_EXC_FRAGTIME	1	/* Fragment Reass time exceeded	*/
 
-
+/* icmp协议头部 */
 struct icmphdr {
   unsigned char		type;
   unsigned char		code;
-  unsigned short	checksum;
+  unsigned short	checksum;  /* icmp协议校验和 */
   union {
 	struct {
 		unsigned short	id;

@@ -43,7 +43,7 @@
 #include "arp.h"
 #include "icmp.h"
 
-
+/* 路由表链表 */
 static struct rtable *rt_base = NULL;
 static struct rtable *rt_loopback = NULL;
 
@@ -91,6 +91,8 @@ static void rt_del(unsigned long dst)
 
 /*
  * Remove all routing table entries for a device.
+ */
+/* 清除指定设备的路由表项目
  */
 void rt_flush(struct device *dev)
 {
@@ -162,6 +164,17 @@ static inline struct device * get_gw_dev(unsigned long gw)
 
 /*
  * rewrote rt_add(), as the old one was weird. Linus
+ */
+/* 添加一个新的路由表项
+ * flags：路由表项标志位。
+ * dst：目的IP地址。
+ * mask：子网掩码。
+ * gw：到达目的主机的网关IP地址。
+ * dev：发送到目的地址主机的接口。
+ * mtu：发送对应目的地址主机的最大报文长度。
+ * window：窗口值，意义在相关代码中给出。
+ * 对于这些传入的参数，ip_rt_add函数并非一成不变的使用，而是根据需要对参数值进行修
+ * 改，例如如下对mask子网掩码的修改。
  */
 void rt_add(short flags, unsigned long dst, unsigned long mask,
 	unsigned long gw, struct device *dev)
@@ -241,6 +254,10 @@ void rt_add(short flags, unsigned long dst, unsigned long mask,
 	return;
 }
 
+/* 用于检测对应一个地址的子网掩码是否正确。 一般而言， 一个子网掩码是高位
+ * 连续为1，低位连续为0。不可能出现0，1交错的情况。对于这种交错的情况，就表示子网掩
+ * 码不正确
+ */
 static inline int bad_mask(unsigned long mask, unsigned long addr)
 {
 	if (addr & (mask = ~mask))
@@ -314,6 +331,13 @@ static int rt_new(struct rtentry *r)
 }
 
 
+/* rt_kill函数完成的工作正好与rt_new函数相反：其根据传入的参数删除一个路由表项。删
+ * 除的情况相对添加的情况较为简单， 因为无需对各种参数进行检查， 只要路由表中存在对应
+ * 目的地址的表项， 则简单删除之即可达到目的。 函数实现比较简单， 关键是在404行对rt_del
+ * 函数的调用， 传入的参数是要删除表项对应的目的地址和绑定设备名称。 rt_del函数在前文
+ * 中已经作出分析，其主要有rt_base指向的路由表项链表出发，对其中每个表项进行目的地
+ * 址和设备名称的比较，如果发现二者均匹配的表项，则删除之。
+ */
 static int rt_kill(struct rtentry *r)
 {
 	struct sockaddr_in *trg;
@@ -325,6 +349,13 @@ static int rt_kill(struct rtentry *r)
 
 
 /* Called from the PROCfs module. */
+/* rt_get_info返回系统路由表项信息， 我们在shell下敲入 ‘route’ 命令或者 ‘netstat –rn’
+ * 命令时显示的路由表信息即是该函数的返回值。
+ * 函数实现也很简单，读者结合rtable结构定义很容易理解。
+ * 至此，虽然路由表的主要作用是被IP协议模块查询寻找到达某个目的地址的合适的路由途
+ * 径，但到现在还都是对路由表的维护，下面我们进入使用路由表函数的分析，这些函数将被
+ * 调用查询到达某个目的地址的路由表项。
+ */
 int
 rt_get_info(char *buffer)
 {
@@ -351,6 +382,7 @@ rt_get_info(char *buffer)
  */
 #define early_out ({ goto no_route; 1; })
 
+/* 根据地址找到一个合适的路由表项 */
 struct rtable * rt_route(unsigned long daddr, struct options *opt)
 {
 	struct rtable *rt;

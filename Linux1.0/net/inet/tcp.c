@@ -251,6 +251,8 @@ tcp_retransmit(struct sock *sk, int all)
  * header points to the first 8 bytes of the tcp header.  We need
  * to find the appropriate port.
  */
+
+/* tcp²ã´íÎó´¦Àíº¯Êı */
 void
 tcp_err(int err, unsigned char *header, unsigned long daddr,
 	unsigned long saddr, struct inet_protocol *protocol)

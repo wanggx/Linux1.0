@@ -77,6 +77,21 @@ print_icmp(struct icmphdr *icmph)
 
 
 /* Send an ICMP message. */
+/* 该函数被调用发送一个ICMP错误通报数据包，ICMP错误通报数据包
+ * 一般在接收到远端一个不合法的数据包产生的，用于通知远端发生错误的原因
+ * 1〉 一个 ICMP 错误通报数据包。
+ * 2〉 数据包远端地址是一个广播地址或者是一个多播地址。
+ * 3〉 链路广播数据包（MAC 远端地址设置为全 1） 。
+ * 4〉 分片数据包中非第一个数据包（换句话说，只对所有分片中第一个分片产生 ICMP 错误
+ * 通报数据包，原因很简单，只有第一个分片才包含有传输层协议头部） 。
+ * 5〉 数据包源端地址非单播地址，即全 0 地址，回环地址，多播或广播地址。
+ * 满足以上 5 个条件中之一，即不可产生一个 ICMP 错误通报数据包。
+ * icmp_send 函数实现代码虽然较长，但实现思想非常简单，首先判断引起错误的数据包是否
+ * 满足以上 5 种条件之一，如果满足，则直接返回调用这，不产生 ICMP 错误通报数据包，否
+ * 则更新本地 ICMP 统计信息后，构建一个 ICMP 错误通报数据包并直接调用 ip_queue_xmit
+ * 函数发送个 IP 模块进行处理从而将这个 ICMP 错误通报数据包发送给引起该错误的原数据
+ * 包的发送端。
+ */
 void
 icmp_send(struct sk_buff *skb_in, int type, int code, struct device *dev)
 {
@@ -136,6 +151,18 @@ icmp_send(struct sk_buff *skb_in, int type, int code, struct device *dev)
 
 
 /* Handle ICMP_UNREACH and ICMP_QUENCH. */
+/* icmp_unreach 函数处理的 ICMP 错误类型比较广，这点可以从下文中介绍的 icmp_rcv 总入
+ * 口函数看出。此处我们就事论事，单方面进行该函数的分析。函数实现思想较为简单，对相
+ * 关错误打印错误信息后，调用传输层协议错误处理函数进行处理（tcp_err, udp_err） 。注意
+ * 242 行代码 err 变量被初始化为 ICMP 类型和代码值。最低 8bit 为代码（code）值，次低 8bit
+ * 为类型（type）值。243 行代码初始化 iph 变量指向原数据包中 IP 首部以及传输层 8 字节数
+ * 据，从而传输层错误处理函数可以由此获知上层对应应用进程。269 行代码计算传输层协议
+ * 在 inet_protos 数组中的位置。inet_protos 一个元素类型为 inet_protocol 结构的数组，数组中
+ * 每个元素对应一个传输层协议，协议在数组中的位置由协议编号索引，如 TCP 协议对应索
+ * 引号为 6，UDP 为 17。274-287 行代码完成对传输层协议的遍历，调用协议对应错误处理函
+ * 数进行返回错误的处理。 注意 inet_protos 数组中每个元素对应一个协议， 所以 274 行在一次
+ * 循环后会退出，但这种编码方式提高了程序的可扩展性。
+ */
 static void
 icmp_unreach(struct icmphdr *icmph, struct sk_buff *skb)
 {
@@ -188,6 +215,7 @@ icmp_unreach(struct icmphdr *icmph, struct sk_buff *skb)
 
 	/* Pass it off to everyone who wants it. */
 	if (iph->protocol == ipprot->protocol && ipprot->err_handler) {
+        /* 调用上层协议的错误处理函数 */
 		ipprot->err_handler(err, (unsigned char *)(icmph + 1),
 				    iph->daddr, iph->saddr, ipprot);
 	}
@@ -200,6 +228,9 @@ icmp_unreach(struct icmphdr *icmph, struct sk_buff *skb)
 
 
 /* Handle ICMP_REDIRECT. */
+/* 路由器为特定的目的主机发送重定向消息将
+ * 主机重定向到一个更优的路由器或者告诉主机目的主机实际上是在同一链路上的邻居节点。 
+ */
 static void
 icmp_redirect(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev)
 {
@@ -234,6 +265,8 @@ icmp_redirect(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev)
 
 
 /* Handle ICMP_ECHO ("ping") requests. */
+/* 本函数实现功能单一，即回复一个 Echo 应答数据包
+ */
 static void
 icmp_echo(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev,
 	  unsigned long saddr, unsigned long daddr, int len,
@@ -353,6 +386,7 @@ icmp_address(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev,
 
 
 /* Deal with incoming ICMP packets. */
+/* icmp协议数据接收函数 */
 int
 icmp_rcv(struct sk_buff *skb1, struct device *dev, struct options *opt,
 	 unsigned long daddr, unsigned short len,

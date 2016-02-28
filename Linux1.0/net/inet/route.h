@@ -24,8 +24,8 @@
 
 /* This is an entry in the IP routing table. */
 struct rtable {
-  struct rtable		*rt_next;
-  unsigned long		rt_dst;
+  struct rtable		*rt_next;   /* 指向下一个路由表项目 */
+  unsigned long		rt_dst;     /* 路由表的目的地址 */
   unsigned long		rt_mask;
   unsigned long		rt_gateway;
   unsigned char		rt_flags;

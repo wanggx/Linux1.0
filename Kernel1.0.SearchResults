@@ -1,3 +1,4 @@
----- CONFIG_IP_DEFRAG Matches (2 in 1 files) ----
-Ip.c (net\inet):#define CONFIG_IP_DEFRAG
-Ip.c (net\inet):#ifdef CONFIG_IP_DEFRAG
+---- icmp_rcv Matches (3 in 3 files) ----
+Icmp.c (net\inet):icmp_rcv(struct sk_buff *skb1, struct device *dev, struct options *opt,
+Icmp.h (net\inet):extern int	icmp_rcv(struct sk_buff *skb1, struct device *dev,
+Protocol.c (net\inet):  icmp_rcv,		/* ICMP handler		*/
