@@ -46,6 +46,14 @@
  *	re-entrant.
  */
 
+/* 查看套接字接受队列中是否有数据包，如果有，则直接返回该数据包，
+ * 否则睡眠等待，在睡眠之前需要检查等待的必要性，这些检查包括
+ * 1、套接字是否已经被关闭接收通道，对于这种情况盲目等待是不可取
+ *    此时调用release_sock函数从可能的其他缓存队列中转移数据包(实际上
+      调用release_sock函数对使用udp协议的套接字接收队列不会造成任何影响
+      因为UDP协议根本没有使用back_log暂存队列，并直接返回NULL
+ * 2、套接字在处理的过程当中是否发送错误
+ */
 struct sk_buff *skb_recv_datagram(struct sock *sk, unsigned flags, int noblock, int *err)
 {
 	struct sk_buff *skb;
@@ -118,6 +126,7 @@ restart:
 	     will suddenely eat the rqueue */
 	  if (!(flags & MSG_PEEK))
 	  {
+	    /* 从读队列中获取一个skb */
 		skb=skb_dequeue(&sk->rqueue);
 		if(skb!=NULL)
 			skb->users++;
@@ -137,6 +146,13 @@ restart:
 	  return skb;
 }
 
+
+/* skb_free_datagram 函数释放一个数据包，141 行递减用户计输，每个使用该数据包的进程都
+ * 回增加该 sk_buff 结构的 users 字段，一旦该字段为 0，表示这是一个游离的数据包，可以进
+ * 行释放，否则表示还有进程在使用该数据包，此时不可进行释放，直接返回。148 行检查数
+ * 据包是否仍然处于系统某个队列中， 如果数据包还被挂接在系统队列中， 也不可对其进行释
+ * 放。否则调用 kfree_skb 函数释放数据包所占用的内存空间。
+ */
 void skb_free_datagram(struct sk_buff *skb)
 {
 	unsigned long flags;
@@ -155,6 +171,7 @@ void skb_free_datagram(struct sk_buff *skb)
 	restore_flags(flags);
 }
 
+/* 将内核缓冲区中数据复制到用户缓冲区当中 */
 void skb_copy_datagram(struct sk_buff *skb, int offset, char *to, int size)
 {
 	/* We will know all about the fraglist options to allow >4K receives

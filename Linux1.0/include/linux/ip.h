@@ -71,7 +71,7 @@ struct iphdr {
   unsigned short	frag_off;
   unsigned char		ttl;
   unsigned char		protocol;  /* 表明上层使用的协议 */
-  unsigned short	check;
+  unsigned short	check;     /* ip协议校验和 */
   unsigned long		saddr;
   unsigned long		daddr;
   /*The options start here. */

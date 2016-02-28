@@ -242,9 +242,11 @@ udp_send(struct sock *sk, struct sockaddr_in *sin,
   skb->mem_len  = size;
   skb->sk       = NULL;	/* to avoid changing sk->saddr */
   skb->free     = 1;
+  /* 不知包中mac地址 */
   skb->arp      = 0;
 
   /* Now build the IP and MAC header. */
+  /* buff指向skb中数据的起始位置 */
   buff = skb->data;
   saddr = 0;
   dev = NULL;
@@ -262,6 +264,7 @@ udp_send(struct sock *sk, struct sockaddr_in *sin,
   saddr = dev->pa_addr;
   DPRINTF((DBG_UDP, "UDP: >> MAC+IP len=%d\n", tmp));
 
+  /* 设置skb中有效数据长度 */
   skb->len = tmp + sizeof(struct udphdr) + len;	/* len + UDP + IP + MAC */
   skb->dev = dev;
 #ifdef OLD
@@ -281,6 +284,7 @@ udp_send(struct sock *sk, struct sockaddr_in *sin,
   }
 
   /* Fill in the UDP header. */
+  /* 填充udp的头 */
   uh = (struct udphdr *) buff;
   uh->len = htons(len + sizeof(struct udphdr));
   uh->source = sk->dummy_th.source;
@@ -294,6 +298,7 @@ udp_send(struct sock *sk, struct sockaddr_in *sin,
   udp_send_check(uh, saddr, sin->sin_addr.s_addr, skb->len - tmp, sk);
 
   /* Send the datagram to the interface. */
+  /* 发送数据包，这里数据就到了ip层了 */
   sk->prot->queue_xmit(sk, dev, skb, 1);
 
   return(len);
@@ -330,6 +335,7 @@ udp_sendto(struct sock *sk, unsigned char *from, int len, int noblock,
 	if (sin.sin_port == 0) 
 		return(-EINVAL);
   } else {
+    /* 判断sk的状态 */
 	if (sk->state != TCP_ESTABLISHED) return(-EINVAL);
 	sin.sin_family = AF_INET;
 	sin.sin_port = sk->dummy_th.dest;

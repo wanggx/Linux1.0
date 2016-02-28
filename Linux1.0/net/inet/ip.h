@@ -32,7 +32,7 @@
 
 #define IP_FRAG_TIME	(30 * HZ)		/* fragment lifetime	*/
 
-
+/* 以下两个结构是ip协议分片和重组的重要结构 */
 /* Describe an IP fragment. */
 struct ipfrag {
   int		offset;		/* offset of fragment in IP datagram	*/

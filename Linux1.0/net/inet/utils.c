@@ -103,6 +103,7 @@ dprintf(int level, char *fmt, ...)
 }
 
 
+/* 设置ip层调试的级别 */
 int
 dbg_ioctl(void *arg, int level)
 {

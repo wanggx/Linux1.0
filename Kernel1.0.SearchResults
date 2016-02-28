@@ -1,21 +1,3 @@
----- executable Matches (20 in 10 files) ----
-Binfmt_coff.c (fs):	    printk ("not executable bit\n");
-Binfmt_coff.c (fs):	    printk ("flushing executable\n");
-Binfmt_coff.c (fs):	    current->executable  = bprm->inode; /* Store inode for file  */
-Binfmt_elf.c (fs):	current->executable = bprm->inode;
-Exec.c (fs):	if (current->executable) {
-Exec.c (fs):		iput(current->executable);
-Exec.c (fs):		current->executable = NULL;
-Exec.c (fs):	current->executable = NULL;  /* for OMAGIC files */
-Exec.c (fs):			printk("%s: executable not page aligned\n", current->comm);
-Exec.c (fs):		current->executable = bprm->inode;
-Exit.c (kernel):	iput(current->executable);
-Exit.c (kernel):	current->executable = NULL;
-Fork.c (kernel):	if (current->executable)
-Fork.c (kernel):		current->executable->i_count++;
-Link.c (fs\proc):			inode = p->executable;
-Memory.c (mm):		if (inode != (*p)->executable) {
-Namei.c (fs): 			if (inode == (*p)->executable) {
-Sched.h (include\linux):	struct inode * executable; /* 当前进程可执行文件 */
-Shm.c (ipc):		iput (current->executable);
-Shm.c (ipc):		current->executable = NULL;
+---- ip_defrag Matches (2 in 1 files) ----
+Ip.c (net\inet):static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct device *dev)
+Ip.c (net\inet):        skb=ip_defrag(iph,skb,dev);

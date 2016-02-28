@@ -200,6 +200,7 @@ int ip_addr_match(unsigned long me, unsigned long him)
 
 
 /* Check the address for our address, broadcasts, etc. */
+/* 检查地址类型 */
 int chk_addr(unsigned long addr)
 {
 	struct device *dev;

@@ -474,7 +474,8 @@ struct sk_buff *alloc_skb(unsigned int size,int priority)
 	net_memory+=size;
 	net_skbcount++;
 	skb->magic_debug_cookie=SK_GOOD_SKB;
-	skb->users=0;
+    /* 初始化使用skb的进程数为0 */
+	skb->users=0;   
 	return skb;
 }
 

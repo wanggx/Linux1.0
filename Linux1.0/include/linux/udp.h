@@ -19,10 +19,10 @@
 
 
 struct udphdr {
-  unsigned short	source;
-  unsigned short	dest;
-  unsigned short	len;
-  unsigned short	check;
+  unsigned short	source;  /* 源地址 */
+  unsigned short	dest;    /* 目的地址 */
+  unsigned short	len;     /* 数据长度 */
+  unsigned short	check;   /* 校验和 */
 };
 
 

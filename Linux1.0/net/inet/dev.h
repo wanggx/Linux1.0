@@ -124,6 +124,7 @@ struct device {
   int			  (*stop)(struct device *dev);
   int			  (*hard_start_xmit) (struct sk_buff *skb,
 					      struct device *dev);
+  /* 完成mac首部的创建 */
   int			  (*hard_header) (unsigned char *buff,
 					  struct device *dev,
 					  unsigned short type,
@@ -133,6 +134,7 @@ struct device {
   void			  (*add_arp) (unsigned long addr,
 				      struct sk_buff *skb,
 				      struct device *dev);
+  /* 发送数据包 */
   void			  (*queue_xmit)(struct sk_buff *skb,
 					struct device *dev, int pri);
   int			  (*rebuild_header)(void *eth, struct device *dev);

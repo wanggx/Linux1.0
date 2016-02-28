@@ -179,6 +179,12 @@ build_options(struct iphdr *iph, struct options *opt)
 
 
 /* Take an skb, and fill in the MAC header. */
+/* skb：待创建MAC首部的数据包。
+ * daddr：数据包下一站IP地址，注意不同于最终接收端地址。
+ * len：IP首部及其负载长度。
+ * dev：数据包本地发送设备接口。
+ * saddr：本地IP地址。这个参数没有被使用。
+ */
 static int
 ip_send(struct sk_buff *skb, unsigned long daddr, int len, struct device *dev,
 	unsigned long saddr)
@@ -188,6 +194,7 @@ ip_send(struct sk_buff *skb, unsigned long daddr, int len, struct device *dev,
 
   ptr = skb->data;
   mac = 0;
+  /* 表示mac数据包已成功创建 */
   skb->arp = 1;
   if (dev->hard_header) {
 	mac = dev->hard_header(ptr, dev, ETH_P_IP, daddr, saddr, len);
@@ -287,6 +294,9 @@ int ip_build_header(struct sk_buff *skb, unsigned long saddr, unsigned long dadd
 }
 
 
+/* iph：IP首部
+ * opt：将解析出的选项填入该参数指向的缓冲区中，这个参数是一个options类型的参数
+ */
 static int
 do_options(struct iphdr *iph, struct options *opt)
 {
@@ -436,6 +446,8 @@ do_options(struct iphdr *iph, struct options *opt)
 
 /* This is a version of ip_compute_csum() optimized for IP headers, which
    always checksum on 4 octet boundaries. */
+
+/* ip校验和的快速计算 */
 static inline unsigned short
 ip_fast_csum(unsigned char * buff, int wlen)
 {
@@ -464,6 +476,9 @@ ip_fast_csum(unsigned char * buff, int wlen)
  * This routine does all the checksum computations that don't
  * require anything special (like copying or special headers).
  */
+
+/* 用于计算ip校验合 */
+
 unsigned short
 ip_compute_csum(unsigned char * buff, int len)
 {
@@ -523,8 +538,20 @@ ip_send_check(struct iphdr *iph)
 
 /************************ Fragment Handlers From NET2E not yet with tweaks to beat 4K **********************************/
 
+
+/* ipqueue变量用于创建ipq结构类型的变量，在前文中我们已经提到ipq结构指向的队列是由
+ * ipfrag结构构成的， 每个ipq结构指向的队列及其本身表示一个被分片， 等待重组的数据包；
+ * 而ipqueue表示正在重组多个数据包的情况，ipqueue变量指向的每个ipq结构都表示一个正
+ * 在等待重组的数据包,注意：ipqueue指向的ipq结构队列中，第一个元素的prev字段指向NULL
+ */
+
 static struct ipq *ipqueue = NULL;		/* IP fragment queue	*/
  /* Create a new fragment entry. */
+ 
+/* ip_frag_create函数用于创建一个新的ipfrag结构用于表示新接收到的分片数据包。结合
+ * ipfrag结构定义，该函数实现非常明显，无需多做说明。需要注意的是调用该函数的其他函
+ * 数对相关传入参数的设置。
+ */ 
 static struct ipfrag *ip_frag_create(int offset, int end, struct sk_buff *skb, unsigned char *ptr)
 {
    	struct ipfrag *fp;
@@ -552,6 +579,13 @@ static struct ipfrag *ip_frag_create(int offset, int end, struct sk_buff *skb, u
  * Find the correct entry in the "incomplete datagrams" queue for
  * this IP datagram, and return the queue entry address if found.
  */
+/* 在接收到一个新的分片数据包后，内核通过调用ip_find函数查询该分片数据包所对应的
+ * ipfrag队列，这个队列的头部有一个ipq结构类型指向，具体请参考上图。ip_find函数输入
+ * 的参数是被接收分片数据包的IP首部，通过对IP首部中标识符字段，源，目的IP地址字段以
+ * 及上层协议字段进行比较，返回相应的ipq结构。注意540行将定时器清零，调用ip_find函
+ * 数的其他函数会相应的对定时器进行进一步的处理。所以540行代码并非十分重要。没有也
+ * 可以，下面在分析到ip_defrag函数时，读者即会看到这一点。
+ */
 static struct ipq *ip_find(struct iphdr *iph)
 {
 	struct ipq *qp;
@@ -561,6 +595,7 @@ static struct ipq *ip_find(struct iphdr *iph)
 	qplast = NULL;
 	for(qp = ipqueue; qp != NULL; qplast = qp, qp = qp->next) 
 	{
+	    /* 注意这里的判断条件 */
  		if (iph->id== qp->iph->id && iph->saddr == qp->iph->saddr &&
 			iph->daddr == qp->iph->daddr && iph->protocol == qp->iph->protocol) 
 		{
@@ -1393,6 +1428,7 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
  * skb：被发送的数据包。
  * free：是否对数据包进行缓存以便于此后的超时重发，该字段主要配合TCP协议工作。UDP
  * 协议，ICMP协议等在调用ip_queue_xmit时将该参数设置为1。
+ * 在函数的最后最终交给对应的设备去发送了
  */
 void
 ip_queue_xmit(struct sock *sk, struct device *dev, 
@@ -1401,6 +1437,9 @@ ip_queue_xmit(struct sock *sk, struct device *dev,
   struct iphdr *iph;
   unsigned char *ptr;
 
+  /* 如果数据包无对应套接字，则将free参数设置为1，因为没有对应sock结构，则无法对数据
+    * 包进行缓存， 所以在将数据包发往下层后， 释放数据包 
+    */
   if (sk == NULL) free = 1;
   if (dev == NULL) {
 	printk("IP: ip_queue_xmit dev = NULL\n");
@@ -1433,6 +1472,7 @@ ip_queue_xmit(struct sock *sk, struct device *dev,
 
   /* See if this is the one trashing our queue. Ross? */
   skb->magic = 1;
+  /* free=0表示要将发送的skb插入到已发送但还没有确认的队列上，等待下次超时重发 */
   if (!free) {
 	skb->link3 = NULL;
 	sk->packets_out++;
