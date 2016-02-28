@@ -615,6 +615,11 @@ static struct ipq *ip_find(struct iphdr *iph)
  * it timed out.
  */
 
+/* 释放ipq中间的一个节点以及节点对应的struct ipfrag链表 
+ * ip_free对由一个ipq指向的分片队列中各分片进行释放。参数qp即表示这个ipq结构。释放
+ * 的原因可能因为所有分片都已到达， 而且已经完成分片重组， 或者是在定时器到期之前没有
+ * 接收到需要的其他分片数据包（即极有可能发生分片数据包丢失
+ */
 static void ip_free(struct ipq *qp)
 {
 	struct ipfrag *fp;
@@ -626,6 +631,7 @@ static void ip_free(struct ipq *qp)
 
 	/* Remove this entry from the "incomplete datagrams" queue. */
 	cli();
+    /* 如果qp->prev为NULL,则说明释放的是ipqueue指向的这个节点 */
 	if (qp->prev == NULL) 
 	{
 	 	ipqueue = qp->next;
@@ -634,6 +640,7 @@ static void ip_free(struct ipq *qp)
    	} 
    	else 
    	{
+   	    /* 将qp从双向链表当中删除 */
  		qp->prev->next = qp->next;
  		if (qp->next != NULL) 
  			qp->next->prev = qp->prev;
@@ -667,7 +674,23 @@ static void ip_free(struct ipq *qp)
  
  
  /* Oops- a fragment queue timed out.  Kill it and send an ICMP reply. */
- 
+
+/* 对于数据包重组内核设置有一个定时器， 如果定时器到期这段时间间隔内，
+ * 没有接收到其他数据包， 就表示可能分片数据包传输出现问题， 我们不能永久等待一个可能
+ * 永远无法到达的分片数据包，所以如果定时器超时，就对分片数据包队列进行释放。以防系
+ * 统资源（被分片使用的内存空间等）被永久保留，从而造成资源不可用。而每当接收到一个
+ * 新的分片数据包后，都会对定时器进行重置。换句话说，如果分片在规定的时间内到达，是
+ * 不会发生定时器超时事件的。一旦发生定时器超时事件，就调用ip_expire函数进行处理，
+ * 对目前接收到的分片数据包进行释放， 从而释放表示这些分片所使用的内存空间。 具体的释
+ * 放工作是通过调用ip_free函数完成的。 606-608行代码发送一个ICMP错误报文， 表示分片数
+ * 据包重组超时。
+ * 每个ipq结构对应一个带重组的分片数据包队列以及相关辅助工具，如定时器，所以定时器
+ * 的设置是在ipq结构中完成的， 这一点也可以从ipq结构的定义看出， 而且我们知道每当接收
+ * 到一个新的分片数据包，该定时器都会被重置，直到接收到所有的分片。但是定时器的设置
+ * 是在何处完成的呢？下面介绍的ip_create函数将给出答案。 ip_create函数用于最初接收到
+ * 一个分片数据包时，创建一个ipq结构来对将要到达的其他分片进行缓存，定时器的设置即
+ * 在该函数中进行
+ */
 static void ip_expire(unsigned long arg)
 {
    	struct ipq *qp;
@@ -681,6 +704,7 @@ static void ip_expire(unsigned long arg)
  		    ICMP_EXC_FRAGTIME, qp->iph);
 #endif 		 
  	if(qp->fragments!=NULL)
+        /* 发送一个报错的报文 */
  		icmp_send(qp->fragments->skb,ICMP_TIME_EXCEEDED,
  				ICMP_EXC_FRAGTIME, qp->dev);
  
@@ -696,6 +720,10 @@ static void ip_expire(unsigned long arg)
  * will insert the received fragments at their respective positions.
  */
 
+/* 当IP协议模块检查到接收到了一个分片数据包， 而且尚无对应的ipq结构， 则调用ip_create
+ * 函数创建一个ipq结构用于此后的分片数据包缓存。参数skb表示接收到的分片数据包，iph
+ * 表示分片数据包的IP首部，dev表示接收该分片数据包的网络设备。
+ */
 static struct ipq *ip_create(struct sk_buff *skb, struct iphdr *iph, struct device *dev)
 {
   	struct ipq *qp;
@@ -708,6 +736,8 @@ static struct ipq *ip_create(struct sk_buff *skb, struct iphdr *iph, struct devi
 		printk("IP: create: no memory left !\n");
 		return(NULL);
   	}
+    
+    /* 对数据进行清空 */
  	memset(qp, 0, sizeof(struct ipq));
 
   	/* Allocate memory for the MAC header. */
@@ -742,12 +772,14 @@ static struct ipq *ip_create(struct sk_buff *skb, struct iphdr *iph, struct devi
 /*  	printk("Protocol = %d\n",qp->iph->protocol);*/
 	
   	/* Start a timer for this entry. */
+    /* 设置队列的时钟 */
   	qp->timer.expires = IP_FRAG_TIME;		/* about 30 seconds	*/
   	qp->timer.data = (unsigned long) qp;		/* pointer to queue	*/
   	qp->timer.function = ip_expire;			/* expire function	*/
   	add_timer(&qp->timer);
 
   	/* Add this entry to the queue. */
+    /* 将新创建的一个ipq添加到ipqueue队列的首部 */
   	qp->prev = NULL;
   	cli();
   	qp->next = ipqueue;
@@ -760,6 +792,8 @@ static struct ipq *ip_create(struct sk_buff *skb, struct iphdr *iph, struct devi
  
  
  /* See if a fragment queue is complete. */
+
+/* 检查所有分片是否已经到达 */
 static int ip_done(struct ipq *qp)
 {
 	struct ipfrag *fp;
@@ -786,6 +820,7 @@ static int ip_done(struct ipq *qp)
  
  
 /* Build a new IP datagram from all its fragments. */
+/* 根据数据分片重新产生一个ip数据报，也就是数据重组 */
 static struct sk_buff *ip_glue(struct ipq *qp)
 {
 	struct sk_buff *skb;
@@ -851,6 +886,9 @@ static struct sk_buff *ip_glue(struct ipq *qp)
  
 
 /* Process an incoming IP datagram fragment. */
+/* 如果该函数返回NULL，就表示分片数据包尚未到达完整，还要等待其他分片
+ * 的进一步到达 
+ */
 static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct device *dev)
 {
 	struct ipfrag *prev, *next;
@@ -984,7 +1022,8 @@ static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct 
     	 * Check if we now have a full IP datagram which we can
     	 * bump up to the IP layer...
     	 */
-   
+
+    /* 判断数据分片是否完整，如果完整，则重新生成一个数据报并返回 */
    	if (ip_done(qp)) 
    	{
  		skb2 = ip_glue(qp);		/* glue together the fragments */
@@ -1001,6 +1040,10 @@ static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct 
   * single device frame, and queue such a frame for sending by calling the
   * ip_queue_xmit().  Note that this is recursion, and bad things will happen
   * if this function causes a loop...
+  */
+ /* 函数负责对大的数据包进行分片,如果是本地发送的
+  * 数据包，则is_frag参数被设置为0；如果是转发的数据包，则is_frag参数表示被转发数据
+  * 包是否本身就是一个分片
   */
  void ip_fragment(struct sock *sk, struct sk_buff *skb, struct device *dev, int is_frag)
  {
@@ -1121,6 +1164,13 @@ static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct 
 #ifdef CONFIG_IP_FORWARD
 
 /* Forward an IP datagram to its next destination. */
+/* skb：被转发数据包。
+ * dev：接收该被转发数据包的网络设备。函数将用以判断是否需要进行ICMP重定向报文的发
+ * 送。is_frag：表示被转发数据包是否为一个分片数据包，以及分片所处的位置。当is_frag&1
+ * 为真时，表示这是一个位置处于中间的分片数据包；当is_frag&2为真时，表示这是一个位
+ * 置处于最后的分片数据包；由于ip_rcv函数实现的缺陷，没有对第一个分片进行判断，所以
+ * 此处也就无法表示位置处于最前的第一个分片数据包。
+ */
 static void
 ip_forward(struct sk_buff *skb, struct device *dev, int is_frag)
 {
@@ -1300,10 +1350,11 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
   /*
    * Reassemble IP fragments. 
    */
-
+  /* 如果是一个分片数据包 */
   if(is_frag)
   {
 #ifdef CONFIG_IP_DEFRAG
+        /* 如果分片数据包不完整，也就是返回为NULL，则直接返回 */
         skb=ip_defrag(iph,skb,dev);
         if(skb==NULL)
         {
