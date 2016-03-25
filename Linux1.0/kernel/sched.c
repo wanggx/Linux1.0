@@ -208,6 +208,9 @@ static unsigned long lost_ticks = 0;
  * The "confuse_gcc" goto is used only to get better assembly code..
  * Djikstra probably hates me.
  */
+
+/* 进程调度函数
+ */
 asmlinkage void schedule(void)
 {
 	int c;
@@ -225,6 +228,7 @@ asmlinkage void schedule(void)
 	need_resched = 0;
 	p = &init_task;
 	for (;;) {
+        /* 保证进程链表只扫描一圈 */
 		if ((p = p->next_task) == &init_task)
 			goto confuse_gcc1;
 		if (ticks && p->it_real_value) {
@@ -243,8 +247,13 @@ asmlinkage void schedule(void)
 				itimer_next = p->it_real_value;
 		}
 end_itimer:
+        /* 如果进程是非可中断状态，则在选择调度的程序时，不考虑该进程，
+           * 如进程陷入一种不可中断的睡眠状态，则此时调度程序不可调度该进程
+           */
 		if (p->state != TASK_INTERRUPTIBLE)
 			continue;
+        /* 如果进程接收到了信号，则设置进程的状态为运行态
+           */
 		if (p->signal & ~p->blocked) {
 			p->state = TASK_RUNNING;
 			continue;

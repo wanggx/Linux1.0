@@ -408,7 +408,7 @@ __asm__("str %%ax\n\t" \
  * This also clears the TS-flag if the task we switched to has used
  * tha math co-processor latest.
  */
-/* current在这个时候被改变
+/* current在这个时候被改变，也就是切换到tsk这个进程
  */
 #define switch_to(tsk) \
 __asm__("cmpl %%ecx,_current\n\t" \

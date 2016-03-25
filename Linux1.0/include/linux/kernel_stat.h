@@ -9,6 +9,7 @@
 
 #define DK_NDRIVE 4
 
+/* ¼ÇÂ¼ÄÚºË×´Ì¬ */
 struct kernel_stat {
 	unsigned int cpu_user, cpu_nice, cpu_system;
 	unsigned int dk_drive[DK_NDRIVE];
