@@ -50,7 +50,9 @@ struct new_stat {
 #define S_IFDIR  0040000
 #define S_IFCHR  0020000
 #define S_IFIFO  0010000
-#define S_ISUID  0004000
+#define S_ISUID  0004000		/* u+s可以让用户在执行这个二进制程序的时候，
+								  * effective id变为这个文件的owner user
+								  */
 #define S_ISGID  0002000
 #define S_ISVTX  0001000
 
