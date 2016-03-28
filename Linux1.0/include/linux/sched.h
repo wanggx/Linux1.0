@@ -239,7 +239,15 @@ struct task_struct {
 	unsigned short uid,euid,suid;
 	/* 用户组id，有效组id*/
 	unsigned short gid,egid,sgid;
+	/* 软件定时，指出进程间隔多久被重新唤醒，采用tick为单位 */
 	unsigned long timeout;
+	/* 每个tick使it_real_value减1，减到0时向进程发送信号SIGALRM，并重新设置初值。
+	 * 初值保存在it_real_cr当中
+	 * 不管是用户态还是内核态每个tick使it_prof_value减1，减到0时
+	 * 项进程发送SIGPROF信号，并重新设置，初值由it_prof_incr保存
+	 * 进程在用户态执行时每个tick使it_virt_value减1，减到0
+	 * 时，向进程发送SIGVTALRM信号，并重新设置初值。初值由it_virt_incr保存
+	 */
 	unsigned long it_real_value, it_prof_value, it_virt_value;
 	unsigned long it_real_incr, it_prof_incr, it_virt_incr;
 	long utime,stime,cutime,cstime,start_time;

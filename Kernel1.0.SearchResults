@@ -1,4 +1,4 @@
----- icmp_rcv Matches (3 in 3 files) ----
-Icmp.c (net\inet):icmp_rcv(struct sk_buff *skb1, struct device *dev, struct options *opt,
-Icmp.h (net\inet):extern int	icmp_rcv(struct sk_buff *skb1, struct device *dev,
-Protocol.c (net\inet):  icmp_rcv,		/* ICMP handler		*/
+---- do_timer Matches (3 in 2 files) ----
+Sched.c (kernel):static void do_timer(struct pt_regs * regs)
+Sched.c (kernel):	if (request_irq(TIMER_IRQ,(void (*)(int)) do_timer)!=0)
+Time.c (kernel): * and then do some jiggery to have a version of do_timer that 

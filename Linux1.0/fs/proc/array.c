@@ -86,6 +86,7 @@ static int get_loadavg(char * buffer)
 		LOAD_INT(c), LOAD_FRAC(c));
 }
 
+/* 获取内核状态 */
 static int get_kstat(char * buffer)
 {
         return sprintf(buffer,	"cpu  %u %u %u %lu\n"
@@ -516,6 +517,7 @@ static int array_read(struct inode * inode, struct file * file,char * buf, int c
 	return count;
 }
 
+/* proc文件系统的文件操作符 */
 static struct file_operations proc_array_operations = {
 	NULL,		/* array_lseek */
 	array_read,
@@ -529,6 +531,7 @@ static struct file_operations proc_array_operations = {
 	NULL		/* can't fsync */
 };
 
+/* proc文件系统的inode操作符 */
 struct inode_operations proc_array_inode_operations = {
 	&proc_array_operations,	/* default base directory file-ops */
 	NULL,			/* create */

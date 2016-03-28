@@ -30,6 +30,7 @@ void proc_put_super(struct super_block *sb)
 	unlock_super(sb);
 }
 
+/* proc文件系统的超级块操作符 */
 static struct super_operations proc_sops = { 
 	proc_read_inode,
 	NULL,
@@ -41,6 +42,7 @@ static struct super_operations proc_sops = {
 	NULL
 };
 
+/* 读取proc文件系统的超级块 */
 struct super_block *proc_read_super(struct super_block *s,void *data, 
 				    int silent)
 {
@@ -70,6 +72,7 @@ void proc_statfs(struct super_block *sb, struct statfs *buf)
 	put_fs_long(NAME_MAX, &buf->f_namelen);
 	/* Don't know what value to put in buf->f_fsid */
 }
+
 
 void proc_read_inode(struct inode * inode)
 {

@@ -43,6 +43,7 @@ static int do_remount_sb(struct super_block *sb, int flags, char * data);
 /* this is initialized in init/main.c */
 dev_t ROOT_DEV = 0;
 
+/* 根据文件系统名称来获取文件系统的超级块读取函数 */
 struct file_system_type *get_fs_type(char *name)
 {
 	int a;
@@ -103,6 +104,7 @@ static struct super_block * get_super(dev_t dev)
 			wait_on_super(s);
 			if (s->s_dev == dev)
 				return s;
+			/* 然后再重头开始找 */
 			s = 0+super_blocks;
 		} else
 			s++;
@@ -139,6 +141,7 @@ static struct super_block * read_super(dev_t dev,char *name,int flags,
 		return NULL;
 	check_disk_change(dev);
 	s = get_super(dev);
+	/* 如果找到了就直接返回 */
 	if (s)
 		return s;
 	/* 获取文件系统类型结构
@@ -148,7 +151,7 @@ static struct super_block * read_super(dev_t dev,char *name,int flags,
 						MAJOR(dev), MINOR(dev), name);
 		return NULL;
 	}
-	/*找到一个可用的超级块*/
+	/* 找到一个可用的超级块 */
 	for (s = 0+super_blocks ;; s++) {
 		if (s >= NR_SUPER+super_blocks)
 			return NULL;
@@ -531,9 +534,10 @@ void mount_root(void)
 	}
 	/*循环处理文件系统类型*/
 	for (fs_type = file_systems; fs_type->read_super; fs_type++) {
+		/* 表示是否需要设备，如果我ext2就是1，proc就是0 */
 		if (!fs_type->requires_dev)
 			continue;
-		/*读取每个文件系统的超级块*/
+		/* 读取每个文件系统的超级块 */
 		sb = read_super(ROOT_DEV,fs_type->name,root_mountflags,NULL,1);
 		if (sb) {
 			/* 注意s_mounted是文件系统的根节点 */

@@ -56,6 +56,7 @@ struct file_system_type file_systems[] = {
 	{msdos_read_super,	"msdos",	1},
 #endif
 #ifdef CONFIG_PROC_FS
+	/* proc文件系统超级块读取 */
 	{proc_read_super,	"proc",		0},
 #endif
 #ifdef CONFIG_NFS_FS

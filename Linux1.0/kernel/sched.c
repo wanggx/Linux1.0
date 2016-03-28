@@ -227,21 +227,29 @@ asmlinkage void schedule(void)
 	sti();
 	need_resched = 0;
 	p = &init_task;
+	/* 该循环是将可以调度运行的进程设置为运行态，
+	 * 等待函数的下一级段进行具体的选择调度
+	 * 其中还会根据进程运行的时间来向进程发送相关的信号 
+	 */
 	for (;;) {
         /* 保证进程链表只扫描一圈 */
 		if ((p = p->next_task) == &init_task)
 			goto confuse_gcc1;
 		if (ticks && p->it_real_value) {
+			/* 如果ticks让it_real_value减少为0，则向进程发送SIGALRM信号 */
 			if (p->it_real_value <= ticks) {
 				send_sig(SIGALRM, p, 1);
 				if (!p->it_real_incr) {
 					p->it_real_value = 0;
 					goto end_itimer;
 				}
+				/* 如果it_real_incr不为0，则使it_real_value的值增加到大于ticks为止
+				 */
 				do {
 					p->it_real_value += p->it_real_incr;
 				} while (p->it_real_value <= ticks);
 			}
+			/* 使用it_real_value的值减小ticks */
 			p->it_real_value -= ticks;
 			if (p->it_real_value < itimer_next)
 				itimer_next = p->it_real_value;
@@ -258,6 +266,9 @@ end_itimer:
 			p->state = TASK_RUNNING;
 			continue;
 		}
+		/* 如果超过了进程被重新唤醒的时间，则将进程唤醒
+		 * timeout的作用是指间隔多久后将进程重新唤醒 
+		 */
 		if (p->timeout && p->timeout <= jiffies) {
 			p->timeout = 0;
 			p->state = TASK_RUNNING;
@@ -278,19 +289,23 @@ confuse_gcc1:
 #endif
 	c = -1;
 	next = p = &init_task;
+	/* 选择一个合适的进程来运行，通过switch_to来切换 */
 	for (;;) {
 		if ((p = p->next_task) == &init_task)
 			goto confuse_gcc2;
+		/* 只考虑TASK_RUNNING态进程，且动态优先级比之前的要高 
+		 */
 		if (p->state == TASK_RUNNING && p->counter > c)
 			c = p->counter, next = p;
 	}
 confuse_gcc2:
+	/* 此处动态优先级c为0，表示所有进程的动态优先级最高为0 */
 	if (!c) {
 		for_each_task(p)
 			p->counter = (p->counter >> 1) + p->priority;
 	}
 	if(current != next)
-		kstat.context_swtch++;
+		kstat.context_swtch++; /* 增加内核进程切换次数 */
 	switch_to(next);
 	/* Now maybe reload the debug registers */
 	if(current->debugreg[7]){
@@ -418,7 +433,7 @@ void sleep_on(struct wait_queue **p)
 	__sleep_on(p,TASK_UNINTERRUPTIBLE);
 }
 
-/* 注意对next_timer的操作非常精巧，
+/* next_timer为内核时钟，注意对next_timer的操作非常精巧，
  * 例子如下，4个时钟节点，触发时间分别为1,2,4,5
  * 则expire的实际值为 1,1,2,1，也就是触发时间等于前面的所有expire的和
  */
@@ -591,7 +606,7 @@ static void second_overflow(void)
  * disregard lost ticks for now.. We don't care enough.
  */
 
-/* 通过bo_bottom_half调用到此处 */
+/* 通过do_bottom_half调用到此处，处理内核时钟 */
 static void timer_bh(void * unused)
 {
 	unsigned long mask;
@@ -629,6 +644,8 @@ static void timer_bh(void * unused)
  * irq uses this to decide if it should update the user or system
  * times.
  */
+
+/* 时钟中断的处理函数 */
 static void do_timer(struct pt_regs * regs)
 {
 	unsigned long mask;
