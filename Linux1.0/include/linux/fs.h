@@ -63,6 +63,8 @@ extern unsigned long file_table_init(unsigned long start, unsigned long end);
 /*
  * These are the fs-independent mount-flags: up to 16 flags are supported
  */
+
+/* 文件系统的挂载标记 */
 #define MS_RDONLY    1 /* mount read-only */
 #define MS_NOSUID    2 /* ignore suid and sgid bits */
 #define MS_NODEV     4 /* disallow access to device special files */
@@ -183,7 +185,7 @@ struct inode {
 	unsigned long	i_blocks;	/* 文件数据块数 */
 	struct semaphore i_sem;     /* 操作inode的信号量 */
 	struct inode_operations * i_op;
-	struct super_block * i_sb;      /*对应的超级块*/
+	struct super_block * i_sb;      /*对应的超级块，在inode的读取或查找等操作会用到 */
 	struct wait_queue * i_wait;		/* 操作inode的等待队列 */
 	struct file_lock * i_flock;	    /* 文件锁结构，用于同步或控制 */
 	struct vm_area_struct * i_mmap; /* 该文件映射到的虚拟地址段的地址 */
@@ -262,12 +264,12 @@ struct super_block {
 	unsigned char s_rd_only;
 	unsigned char s_dirt;
 	struct super_operations *s_op;
-	unsigned long s_flags;
+	unsigned long s_flags;       /* 超级块的挂载标记 */
 	unsigned long s_magic;
 	unsigned long s_time;
 	struct inode * s_covered;
 	struct inode * s_mounted;   /*文件系统的挂载点，如果是根文件系统则是/,否则就是挂载点的inode */
-	struct wait_queue * s_wait;
+	struct wait_queue * s_wait; /* 等待操作超级块的进程队列 */
 	union {
 		struct minix_sb_info minix_sb;
 		struct ext_sb_info ext_sb;

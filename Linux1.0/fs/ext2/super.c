@@ -368,6 +368,7 @@ struct super_block * ext2_read_super (struct super_block * sb, void * data,
 {
 	struct buffer_head * bh;
 	struct ext2_super_block * es;
+        /* 注意超级块存放在设备的第一块 */
 	unsigned long sb_block = 1;
 	unsigned long logic_sb_block = 1;
 	int dev = sb->s_dev;

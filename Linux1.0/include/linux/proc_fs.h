@@ -5,6 +5,7 @@
  * The proc filesystem constants/structures
  */
 
+/* proc文件系统的root节点的i节点号为1 */
 #define PROC_ROOT_INO 1
 
 #define PROC_SUPER_MAGIC 0x9fa0

@@ -131,6 +131,10 @@ void put_super(dev_t dev)
 		sb->s_op->put_super(sb);
 }
 
+/* 依次 循环处理文件系统类型，将读取到的文件系统超级块添加到数组super_blocks当中
+  * name表示文件系统的名称 
+  * 返回读取到的文件系统超级块  
+  */
 static struct super_block * read_super(dev_t dev,char *name,int flags,
 				       void *data, int silent)
 {
@@ -545,6 +549,7 @@ void mount_root(void)
 			inode->i_count += 3 ;	/* NOTE! it is logically used 4 times, not 1 */
 			sb->s_covered = inode;
 			sb->s_flags = root_mountflags;
+                        /* 设置进程的工作目录的根目录 */
 			current->pwd = inode;
 			current->root = inode;
 			printk ("VFS: Mounted root (%s filesystem)%s.\n",

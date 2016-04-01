@@ -73,7 +73,7 @@ void proc_statfs(struct super_block *sb, struct statfs *buf)
 	/* Don't know what value to put in buf->f_fsid */
 }
 
-
+/* proc文件系统的indoe读取操作 */
 void proc_read_inode(struct inode * inode)
 {
 	unsigned long ino, pid;
@@ -90,13 +90,17 @@ void proc_read_inode(struct inode * inode)
 	inode->i_blocks = 0;
 	inode->i_blksize = 1024;
 	ino = inode->i_ino;
+        /* 得到进程的pid，为何如此得到？ */
 	pid = ino >> 16;
 	p = task[0];
+        /* 找到相应的进程 */
 	for (i = 0; i < NR_TASKS ; i++)
 		if ((p = task[i]) && (p->pid == pid))
 			break;
 	if (!p || i >= NR_TASKS)
 		return;
+
+        /* 如果是proc的root节点 */
 	if (ino == PROC_ROOT_INO) {
 		inode->i_mode = S_IFDIR | S_IRUGO | S_IXUGO;
 		inode->i_nlink = 2;
