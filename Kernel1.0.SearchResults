@@ -1,4 +1,7 @@
----- do_timer Matches (3 in 2 files) ----
-Sched.c (kernel):static void do_timer(struct pt_regs * regs)
-Sched.c (kernel):	if (request_irq(TIMER_IRQ,(void (*)(int)) do_timer)!=0)
-Time.c (kernel): * and then do some jiggery to have a version of do_timer that 
+---- do_bottom_half Matches (6 in 4 files) ----
+Irq.c (kernel): * do_bottom_half() runs at normal kernel priority: all interrupts
+Irq.c (kernel): * enabled.  do_bottom_half() is atomic with respect to itself: a
+Irq.c (kernel):asmlinkage void do_bottom_half(void)
+Loopback.c (net\inet):		"call _do_bottom_half\n\t"
+Sched.c (kernel):/* 通过do_bottom_half调用到此处，处理内核时钟 */
+sys_call.S (kernel):	call _do_bottom_half

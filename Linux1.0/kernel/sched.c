@@ -88,6 +88,9 @@ asmlinkage int system_call(void);
 static unsigned long init_kernel_stack[1024];
 struct task_struct init_task = INIT_TASK;
 
+/* 它代表从机器启动时算起的时间滴答数。也就是时钟中断的次数
+ * 这个变量最初被初始化为 0，每次时钟中断时都会加 1。
+ */
 unsigned long volatile jiffies=0;
 
 struct task_struct *current = &init_task;
@@ -508,11 +511,13 @@ unsigned long avenrun[3] = { 0,0,0 };
 /*
  * Nr of active tasks - counted in fixed-point numbers
  */
+/* 统计活跃进程 */
 static unsigned long count_active_tasks(void)
 {
 	struct task_struct **p;
 	unsigned long nr = 0;
 
+	/* 扫描进程列表，统计状态为就绪态和交换状态，不可中断状态进程数量 */
 	for(p = &LAST_TASK; p > &FIRST_TASK; --p)
 		if (*p && ((*p)->state == TASK_RUNNING ||
 			   (*p)->state == TASK_UNINTERRUPTIBLE ||
@@ -698,8 +703,9 @@ static void do_timer(struct pt_regs * regs)
 	    xtime.tv_sec++;
 	    second_overflow();
 	}
-
+	/* 只有在这里才会增加jiffies变量，也就是每个节拍增加1 */
 	jiffies++;
+	/* 计算进程负载 */
 	calc_load();
 	if ((VM_MASK & regs->eflags) || (3 & regs->cs)) {
 		current->utime++;
