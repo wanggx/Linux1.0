@@ -717,7 +717,7 @@ asmlinkage int sys_setdomainname(char *name, int len)
 }
 
 
-/* 获取系统资源上限 */
+/* 获取当前进程中资源索引为resource系统资源上限 */
 asmlinkage int sys_getrlimit(unsigned int resource, struct rlimit *rlim)
 {
 	int error;
@@ -734,7 +734,7 @@ asmlinkage int sys_getrlimit(unsigned int resource, struct rlimit *rlim)
 	return 0;	
 }
 
-/* 设置系统资源上限 */
+/* 设置当前进程的系统资源 */
 asmlinkage int sys_setrlimit(unsigned int resource, struct rlimit *rlim)
 {
 	struct rlimit new_rlim, *old_rlim;
@@ -806,8 +806,12 @@ int getrusage(struct task_struct *p, int who, struct rusage *ru)
 	return 0;
 }
 
+/* 获取系统中进程的资源使用情况 */
 asmlinkage int sys_getrusage(int who, struct rusage *ru)
 {
+    /* RUSAGE_SELF表示获取当前进程的资源使用情况
+      * RUSAGE_CHILDREN表示获取子进程的资源使用情况 
+      */
 	if (who != RUSAGE_SELF && who != RUSAGE_CHILDREN)
 		return -EINVAL;
 	return getrusage(current, who, ru);

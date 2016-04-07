@@ -251,8 +251,13 @@ struct task_struct {
 	unsigned long it_real_value, it_prof_value, it_virt_value;
 	unsigned long it_real_incr, it_prof_incr, it_virt_incr;
 	long utime,stime,cutime,cstime,start_time;
+	/* 表示自进程启动以来所发生的缺页中断次数 ，
+	  * maj_flt表示需要读写磁盘，可能是内存页在磁盘中需要load到物理内存当中 
+	  * 也可能是物理页内存不足，需要淘汰部分物理页到磁盘中 
+	  */
 	unsigned long min_flt, maj_flt;
 	unsigned long cmin_flt, cmaj_flt;
+        /* 进程的各种资源限制，如进程数据段，堆栈段，进程的最大虚拟空间等等 */
 	struct rlimit rlim[RLIM_NLIMITS]; 
 	unsigned short used_math;
 	unsigned short rss;	/* number of resident pages */ /*当前在主存中的内存页数*/
@@ -261,6 +266,7 @@ struct task_struct {
 	unsigned long screen_bitmap;
 /* file system info */
 	int link_count;
+	/* 表示进程的控制终端 */
 	int tty;		/* -1 if no tty, so it must be signed */
 	unsigned short umask;  /* 进程创建文件时默认的权限反码 */
 	struct inode * pwd;    /* 进程的当前工作目录 */
