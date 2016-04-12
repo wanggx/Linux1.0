@@ -755,6 +755,7 @@ extern int load_coff_library(int fd);
 #endif
 
 /* Here are the actual binaries that will be accepted  */
+/* linux中不同可执行文件格式的加载函数 */
 struct linux_binfmt formats[] = {
 	{load_aout_binary, load_aout_library},
 #ifdef CONFIG_BINFMT_ELF
@@ -800,6 +801,7 @@ int load_aout_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 	/* OK, This is the point of no return */
 	flush_old_exec(bprm);
 
+	/* 先是代码段+数据段+堆 */
 	current->end_code = N_TXTADDR(ex) + ex.a_text;
 	current->end_data = ex.a_data + current->end_code;
 	current->start_brk = current->brk = current->end_data;

@@ -192,6 +192,11 @@ struct task_struct {
     /* 区分进程正在执行老程序代码，还是用系统调用execve()装入一个新的程序 
       */
 	int did_exec:1;
+	/* start_code,end_code表示代码段的地址空间
+	  * end_data表示数据段的结束地址 
+	  * start_brk表示heap的起始空间，brk表示当前的heap指针 
+	  * start_stack表示stack段的起始地址 
+	  */ 
 	unsigned long start_code,end_code,end_data,start_brk,brk,start_stack,start_mmap;
 	unsigned long arg_start, arg_end, env_start, env_end;
 	/* pgrp表示进程组号，pid表示进程号，进程组会有一个

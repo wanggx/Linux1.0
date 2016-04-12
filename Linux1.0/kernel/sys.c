@@ -400,17 +400,21 @@ asmlinkage int sys_times(struct tms * tbuf)
 	return jiffies;
 }
 
+/* 调整进程堆的大小
+  * 进程地址空间为 代码段+数据段+堆
+  */
 asmlinkage int sys_brk(unsigned long brk)
 {
 	int freepages;
 	unsigned long rlim;
 	unsigned long newbrk, oldbrk;
 
+        /* 如果堆的地址小于代码段的结束位置 */
 	if (brk < current->end_code)
 		return current->brk;
 	newbrk = PAGE_ALIGN(brk);
 	oldbrk = PAGE_ALIGN(current->brk);
-	/*如果相同则不做任何处理*/
+	/*如果相同则不做任何处理，注意这里在比较之前进行了页对齐操作 */
 	if (oldbrk == newbrk)
 		return current->brk = brk;
 
@@ -419,8 +423,9 @@ asmlinkage int sys_brk(unsigned long brk)
 	 */
 
 	/* 如果是收缩brk大小则将收缩的部分反映射
-	 */
+	  */
 	if (brk <= current->brk) {
+                /* 设置当前堆得指针位置 */
 		current->brk = brk;
 		do_munmap(newbrk, oldbrk-newbrk);
 		return brk;
@@ -431,6 +436,11 @@ asmlinkage int sys_brk(unsigned long brk)
 	rlim = current->rlim[RLIMIT_DATA].rlim_cur;
 	if (rlim >= RLIM_INFINITY)
 		rlim = ~0;
+
+        /* 在进程中进程的堆和栈范围是与限制的，
+          * 堆的地址是从小到大的，栈的地址从大到小 
+          * 如果不在合理范围则不做处理  
+          */
 	if (brk - current->end_code > rlim || brk >= current->start_stack - 16384)
 		return current->brk;
 	/*
