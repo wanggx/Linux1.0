@@ -125,7 +125,7 @@ struct elfhdr{
   short int e_type;
   short int e_machine;
   int   e_version;
-  char *e_entry;  /* Entry point */
+  char *e_entry;  /* Entry point */     /* 可执行文件的函数入口点 */
   int   e_phoff;
   int   e_shoff;
   int   e_flags;
@@ -137,6 +137,7 @@ struct elfhdr{
   short int e_shstrndx;
 };
 
+/* elf文件的头 */
 struct elf_phdr{
   int p_type;
   int p_offset;

@@ -53,6 +53,9 @@ asmlinkage int sys_brk(unsigned long);
 
 extern void shm_exit (void);
 
+/* 打开inode，同时给增加一个file指针和一个文件描述符
+  * 相当于dup函数功能吧 
+  */
 int open_inode(struct inode * inode, int mode)
 {
 	int error, fd;
@@ -552,6 +555,7 @@ static int do_execve(char * filename, char ** argv, char ** envp, struct pt_regs
 	int retval;
 	int sh_bang = 0;
 
+        /* 如果代码段不正确，则返回 */
 	if (regs->cs != USER_CS)
 		return -EINVAL;
 	bprm.p = PAGE_SIZE*MAX_ARG_PAGES-4;
@@ -606,6 +610,7 @@ restart_interp:
 	memset(bprm.buf,0,sizeof(bprm.buf));
 	old_fs = get_fs();
 	set_fs(get_ds());
+        /* 此处是读取可执行文件的格式 */
 	retval = read_exec(bprm.inode,0,bprm.buf,128);
 	set_fs(old_fs);
 	if (retval < 0)
@@ -771,7 +776,7 @@ struct linux_binfmt formats[] = {
  * These are the functions used to load a.out style executables and shared
  * libraries.  There is no binary dependent code anywhere else.
  */
-
+/* 加载a.out格式的二进制文件 */
 int load_aout_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 {
 	struct exec ex;

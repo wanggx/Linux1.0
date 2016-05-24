@@ -562,15 +562,15 @@ void ext2_read_inode (struct inode * inode)
 	if (inode->i_ino == EXT2_ACL_IDX_INO ||
 	    inode->i_ino == EXT2_ACL_DATA_INO)
 		/* Nothing to do */ ;
-	else if (S_ISREG(inode->i_mode))
+	else if (S_ISREG(inode->i_mode))             /* 如果是普通文件 */
 		inode->i_op = &ext2_file_inode_operations;
-	else if (S_ISDIR(inode->i_mode))
+	else if (S_ISDIR(inode->i_mode))              /* 如果是目录文件 */
 		inode->i_op = &ext2_dir_inode_operations;
-	else if (S_ISLNK(inode->i_mode))
+	else if (S_ISLNK(inode->i_mode))            /* 如果是符号链接文件 */
 		inode->i_op = &ext2_symlink_inode_operations;
-	else if (S_ISCHR(inode->i_mode))
+	else if (S_ISCHR(inode->i_mode))             /* 字符文件 */
 		inode->i_op = &chrdev_inode_operations;
-	else if (S_ISBLK(inode->i_mode))
+	else if (S_ISBLK(inode->i_mode))             /* 设备文件 */
 		inode->i_op = &blkdev_inode_operations;
 	else if (S_ISFIFO(inode->i_mode))
 		init_fifo(inode);
