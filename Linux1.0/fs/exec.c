@@ -410,7 +410,9 @@ unsigned long change_ldt(unsigned long text_size,unsigned long * page)
 	for (i=MAX_ARG_PAGES-1 ; i>=0 ; i--) {
 		data_base -= PAGE_SIZE;
 		if (page[i]) {
+                        /* 增加进程驻留在内存中的物理页数量 */
 			current->rss++;
+                        /* 此处说明，在栈开始前还有一小段和进程相关的数据 */
 			put_dirty_page(current,page[i],data_base);
 		}
 	}
@@ -469,6 +471,7 @@ end_readexec:
  * that a new one can be started
  */
 
+/* 清理旧进程的资源 */
 void flush_old_exec(struct linux_binprm * bprm)
 {
 	int i;
@@ -486,8 +489,10 @@ void flush_old_exec(struct linux_binprm * bprm)
 				current->comm[i++] = ch;
 	}
 	current->comm[i] = '\0';
+        /* 清理共享内存 */
 	if (current->shm)
 		shm_exit();
+        /* 释放就进程可执行文件的inode */
 	if (current->executable) {
 		iput(current->executable);
 		current->executable = NULL;
@@ -497,6 +502,7 @@ void flush_old_exec(struct linux_binprm * bprm)
 	mpnt = current->mmap;
 	current->mmap = NULL;
 	current->stk_vma = NULL;
+        /* 清理通过mmap函数得到的虚拟地址空间 */
 	while (mpnt) {
 		mpnt1 = mpnt->vm_next;
 		if (mpnt->vm_ops && mpnt->vm_ops->close)
@@ -523,6 +529,7 @@ void flush_old_exec(struct linux_binprm * bprm)
 	if (bprm->e_uid != current->euid || bprm->e_gid != current->egid || 
 	    !permission(bprm->inode,MAY_READ))
 		current->dumpable = 0;
+        /* 清理进程的信号 */
 	current->signal = 0;
 	for (i=0 ; i<32 ; i++) {
 		current->sigaction[i].sa_mask = 0;
@@ -530,10 +537,12 @@ void flush_old_exec(struct linux_binprm * bprm)
 		if (current->sigaction[i].sa_handler != SIG_IGN)
 			current->sigaction[i].sa_handler = NULL;
 	}
+        /* 关闭close_on_exec集合中的文件 */
 	for (i=0 ; i<NR_OPEN ; i++)
 		if (FD_ISSET(i,&current->close_on_exec))
 			sys_close(i);
 	FD_ZERO(&current->close_on_exec);
+        /* 清理用户态进程页表 */
 	clear_page_tables(current);
 	if (last_task_used_math == current)
 		last_task_used_math = NULL;
@@ -809,6 +818,7 @@ int load_aout_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 	/* 先是代码段+数据段+堆 */
 	current->end_code = N_TXTADDR(ex) + ex.a_text;
 	current->end_data = ex.a_data + current->end_code;
+        /* 设置当前堆起始地址和当前的head指针为数据段的结束位置 */
 	current->start_brk = current->brk = current->end_data;
 	current->start_code += N_TXTADDR(ex);
 	current->rss = 0;
@@ -817,6 +827,7 @@ int load_aout_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 	current->executable = NULL;  /* for OMAGIC files */
 	current->sgid = current->egid = bprm->e_gid;
 	if (N_MAGIC(ex) == OMAGIC) {
+                /* 将代码段和数据段映射到进程的虚拟地址空间 */
 		do_mmap(NULL, 0, ex.a_text+ex.a_data,
 			PROT_READ|PROT_WRITE|PROT_EXEC,
 			MAP_FIXED|MAP_PRIVATE, 0);
@@ -861,12 +872,17 @@ int load_aout_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 		bprm->inode->i_count++;
 	}
 beyond_if:
+        /* 从这个地方就可以看出来，进程的bss段其实是在堆当中，
+          * 并且在堆得起始位置处 
+          */
 	sys_brk(current->brk+ex.a_bss);
 	
 	p += change_ldt(ex.a_text,bprm->page);
 	p -= MAX_ARG_PAGES*PAGE_SIZE;
 	p = (unsigned long) create_tables((char *)p,bprm->argc,bprm->envc,0);
+        /* 设置栈的起始位置，并不是从TASK_SIZE开始的 */
 	current->start_stack = p;
+        /* 更改进程的下一条指令指向a.out的入口地址处 */
 	regs->eip = ex.a_entry;		/* eip, magic happens :-) */
 	regs->esp = p;			/* stack pointer */
 	if (current->flags & PF_PTRACED)

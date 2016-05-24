@@ -581,6 +581,12 @@ unsigned long put_page(struct task_struct * tsk,unsigned long page,
  * and we want the dirty-status to be correct (for VM). Thus the same
  * routine, but this time we mark it dirty too.
  */
+
+/* page表示物理地址
+  * address表示线性地址 
+  * 将address线性地址对应原物理页解除映射，并重新映射到page指向的物理页 
+  * 并且设置页为脏 
+  */
 unsigned long put_dirty_page(struct task_struct * tsk, unsigned long page, unsigned long address)
 {
 	unsigned long tmp, *page_table;
@@ -589,6 +595,7 @@ unsigned long put_dirty_page(struct task_struct * tsk, unsigned long page, unsig
 		printk("put_dirty_page: trying to put page %08lx at %08lx\n",page,address);
 	if (mem_map[MAP_NR(page)] != 1)
 		printk("mem_map disagrees with %08lx at %08lx\n",page,address);
+        /* 根据线性地址计算线性地址对应的页目录表项的物理地址 */
 	page_table = PAGE_DIR_OFFSET(tsk->tss.cr3,address);
 	if (PAGE_PRESENT & *page_table)
 		page_table = (unsigned long *) (PAGE_MASK & *page_table);
@@ -605,9 +612,11 @@ unsigned long put_dirty_page(struct task_struct * tsk, unsigned long page, unsig
 			page_table = (unsigned long *) tmp;
 		}
 	}
+        /* 取线性地址对应的页表中的页表项 */
 	page_table += (address >> PAGE_SHIFT) & (PTRS_PER_PAGE-1);
 	if (*page_table) {
 		printk("put_dirty_page: page already exists\n");
+                /* 这是页表项的映射为0，也就是该页表项不指向任何页 */
 		*page_table = 0;
 		invalidate();
 	}

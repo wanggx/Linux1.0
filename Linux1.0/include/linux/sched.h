@@ -185,6 +185,7 @@ struct task_struct {
 	/* exit_signal表示退出时给父进程发送的信号
 	 */
 	int exit_code, exit_signal;
+        /* 是否是elf可执行文件格式 */
 	int elf_executable:1;
 	int dumpable:1;
 	/* 表示内存吃紧时，该进程是否可以被交换 */

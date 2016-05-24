@@ -5,6 +5,7 @@
 
 #ifndef __STRUCT_EXEC_OVERRIDE__
 
+/* a.out可执行文件的头 */
 struct exec
 {
   unsigned long a_info;		/* Use macros N_MAGIC, etc for access */
