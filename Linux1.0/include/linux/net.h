@@ -77,7 +77,9 @@ struct socket {
   socket_state		state;
   long			flags;
   struct proto_ops	*ops;		/* protocols do most everything	*/
-  /* 这就是socket的协议数据，其实就是struct sock结构 */
+  /* 这就是socket的协议数据，其实就是struct sock结构，
+    * 如果是UNIX协议族，则是struct unix_proto_data结构
+    */
   void			*data;		/* protocol data		*/
   /* 在INET域中下面两个指针为NULL
     * 指向建立完全连接的对方 socket 结构
