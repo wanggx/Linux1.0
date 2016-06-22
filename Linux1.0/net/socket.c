@@ -56,7 +56,9 @@ static int sock_select(struct inode *inode, struct file *file, int which, select
 static int sock_ioctl(struct inode *inode, struct file *file,
 		      unsigned int cmd, unsigned long arg);
 
-/* 操作socket的文件操作函数，在Read_write.c中调用到这里 */
+/* 操作socket的文件操作函数，在Read_write.c中调用到这里，
+  * inet,unix协议族都使用这个
+  */
 static struct file_operations socket_file_ops = {
   sock_lseek,
   sock_read,
@@ -500,7 +502,10 @@ static int sock_socket(int family, int type, int protocol)
   }
   sock->type = type;
   sock->ops = ops;
-  /* 根据不同的协议族函数集来创建socket */
+  /* 根据不同的协议族函数集来创建socket，
+    * 因此在不同协议的proto_ops结构当中是没有socket调用的， 
+    * 只有create函数 
+    */
   if ((i = sock->ops->create(sock, protocol)) < 0) {
 	sock_release(sock);
 	return(i);
@@ -554,6 +559,7 @@ sock_socketpair(int family, int type, int protocol, unsigned long usockvec[2])
   }
   sock1->conn = sock2;
   sock2->conn = sock1;
+  /* 完成socketpair操作后，则这只套接字的状态为连接状态 */
   sock1->state = SS_CONNECTED;
   sock2->state = SS_CONNECTED;
 

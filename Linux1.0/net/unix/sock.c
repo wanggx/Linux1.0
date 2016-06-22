@@ -334,6 +334,9 @@ static int unix_proto_create(struct socket *sock, int protocol)
   upd->protocol = protocol;
   upd->socket = sock;
   UN_DATA(sock) = upd;
+  /* 此时设置upd的引用计数为1，
+    * 当socketpair时则在增加一个引用计数
+    */
   upd->refcnt = 1;	/* Now its complete - bgm */
   dprintf(1, "UNIX: create: allocated data 0x%x\n", upd);
   return(0);
@@ -524,10 +527,12 @@ unix_proto_connect(struct socket *sock, struct sockaddr *uservaddr,
 static int
 unix_proto_socketpair(struct socket *sock1, struct socket *sock2)
 {
+  /* 现获取两个socket的协议数据 */
   struct unix_proto_data *upd1 = UN_DATA(sock1), *upd2 = UN_DATA(sock2);
 
   unix_data_ref(upd1);
   unix_data_ref(upd2);
+  /* 设置相互的对等连接 */
   upd1->peerupd = upd2;
   upd2->peerupd = upd1;
   return(0);
@@ -626,6 +631,7 @@ unix_proto_read(struct socket *sock, char *ubuf, int size, int nonblock)
 
   if ((todo = size) <= 0) return(0);
   upd = UN_DATA(sock);
+  /* 如果缓存中没有数据可读，则会等待，如果是非阻塞，则直接返回 */
   while(!(avail = UN_BUF_AVAIL(upd))) {
 	if (sock->state != SS_CONNECTED) {
 		dprintf(1, "UNIX: read: socket not connected\n");
@@ -649,12 +655,13 @@ unix_proto_read(struct socket *sock, char *ubuf, int size, int nonblock)
   do {
 	int part, cando;
 
+        /* 出现问题杀死进程 */
 	if (avail <= 0) {
 		printk("UNIX: read: AVAIL IS NEGATIVE!!!\n");
 		send_sig(SIGKILL, current, 1);
 		return(-EPIPE);
 	}
-
+        /* 获取可以读取字节的数量 */
 	if ((cando = todo) > avail) cando = avail;
 	if (cando >(part = BUF_SIZE - upd->bp_tail)) cando = part;
 	dprintf(1, "UNIX: read: avail=%d, todo=%d, cando=%d\n",
@@ -664,15 +671,19 @@ unix_proto_read(struct socket *sock, char *ubuf, int size, int nonblock)
 		unix_unlock(upd);
 		return er;
 	}
+        /* 先把upd->bp_tail之后cando大小的缓存拷贝到ubuf当中 */
 	memcpy_tofs(ubuf, upd->buf + upd->bp_tail, cando);
+        /* 此处移动已处理字节的末尾 */
 	upd->bp_tail =(upd->bp_tail + cando) &(BUF_SIZE-1);
 	ubuf += cando;
 	todo -= cando;
+        /* 唤醒对等socket的进程等待队列 */
 	if (sock->state == SS_CONNECTED)
 		wake_up_interruptible(sock->conn->wait);
 	avail = UN_BUF_AVAIL(upd);
   } while(todo && avail);
   unix_unlock(upd);
+  /* 返回实际读取的字节数 */
   return(size - todo);
 }
 
@@ -700,6 +711,7 @@ unix_proto_write(struct socket *sock, char *ubuf, int size, int nonblock)
   }
   pupd = UN_DATA(sock)->peerupd;	/* safer than sock->conn */
 
+  /* 计算还可以写多少字节 */
   while(!(space = UN_BUF_SPACE(pupd))) {
 	dprintf(1, "UNIX: write: no space left...\n");
 	if (nonblock) return(-EAGAIN);
@@ -750,7 +762,9 @@ unix_proto_write(struct socket *sock, char *ubuf, int size, int nonblock)
 		unix_unlock(pupd);
 		return er;
 	}
+        /* 将缓存拷贝到pupd->buf当中 */
 	memcpy_fromfs(pupd->buf + pupd->bp_head, ubuf, cando);
+        /* 移动head的位置 */
 	pupd->bp_head =(pupd->bp_head + cando) &(BUF_SIZE-1);
 	ubuf += cando;
 	todo -= cando;

@@ -29,6 +29,7 @@
 
 /* UNIX域协议数据 */
 struct unix_proto_data {
+        /* 初始化分配的时候该变量为-1 */
 	int		refcnt;		/* cnt of reference 0=free	*/
 					/* -1=not initialised	-bgm	*/
 	struct socket	*socket;	/* socket we're bound to	*/
@@ -40,7 +41,7 @@ struct unix_proto_data {
 	struct inode	*inode;
 	struct unix_proto_data	*peerupd;  /* 连接成功后设置对等的协议数据 */
 	struct wait_queue *wait;	/* Lock across page faults (FvK) */
-	int		lock_flag;
+	int		lock_flag;            /* 是否锁住标记 */
 };
 
 extern struct unix_proto_data unix_datas[NSOCKETS];
