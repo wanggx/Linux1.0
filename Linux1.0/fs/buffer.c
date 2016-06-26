@@ -1099,7 +1099,7 @@ static int try_to_free(struct buffer_head * bh, struct buffer_head ** bhp)
  */
 
 /* 收缩缓存空间
- */
+  */
 int shrink_buffers(unsigned int priority)
 {
 	struct buffer_head *bh;
@@ -1170,7 +1170,7 @@ void show_buffers(void)
  */
 
 /* 高速缓存初始化函数
- */
+  */
 void buffer_init(void)
 {
 	int i;

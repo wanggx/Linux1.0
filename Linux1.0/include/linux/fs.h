@@ -267,7 +267,12 @@ struct super_block {
 	unsigned long s_flags;       /* 超级块的挂载标记 */
 	unsigned long s_magic;
 	unsigned long s_time;
-	struct inode * s_covered;
+	/* 在Linux当中如果要将某个文件系统关在到某个目录
+	  * 则会将挂载目录之前的所有内容给屏蔽掉，也就是看不见 
+	  * 看见的则是挂载之后的文件系统的内容，如果将该挂载的文件 
+	  * 系统卸载掉，则原来被屏蔽掉的内容又会重新显示出来  
+	  */
+	struct inode * s_covered;    
 	struct inode * s_mounted;   /*文件系统的挂载点，如果是根文件系统则是/,否则就是挂载点的inode */
 	struct wait_queue * s_wait; /* 等待操作超级块的进程队列 */
 	union {
@@ -277,7 +282,7 @@ struct super_block {
 		struct hpfs_sb_info hpfs_sb;
 		struct msdos_sb_info msdos_sb;
 		struct isofs_sb_info isofs_sb;
-		struct nfs_sb_info nfs_sb;
+		struct nfs_sb_info nfs_sb;		/* 网络文件系统的超级块 */
 		struct xiafs_sb_info xiafs_sb;
 		struct sysv_sb_info sysv_sb;
 	} u;

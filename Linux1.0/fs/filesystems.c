@@ -60,9 +60,11 @@ struct file_system_type file_systems[] = {
 	{proc_read_super,	"proc",		0},
 #endif
 #ifdef CONFIG_NFS_FS
+        /* 网络文件系统 */
 	{nfs_read_super,	"nfs",		0},
 #endif
 #ifdef CONFIG_ISO9660_FS
+        /* ISO文件系统，例如Linux挂载一个ISO文件 */
 	{isofs_read_super,	"iso9660",	1},
 #endif
 #ifdef CONFIG_SYSV_FS

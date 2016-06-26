@@ -198,6 +198,7 @@ void clear_inode(struct inode * inode)
 	insert_inode_free(inode);
 }
 
+/*  判断文件系统是否可以挂载 */
 int fs_may_mount(dev_t dev)
 {
 	struct inode * inode, * next;
@@ -209,6 +210,9 @@ int fs_may_mount(dev_t dev)
 		next = inode->i_next;	/* clear_inode() changes the queues.. */
 		if (inode->i_dev != dev)
 			continue;
+                /* 运行到这里，就是对当前高速缓存当中所有inode设备号为dev的inode进行判断
+                  * 如果if为true，则表明该设备对应的文件系统已被挂载，或者出现异常 
+                  */
 		if (inode->i_count || inode->i_dirt || inode->i_lock)
 			return 0;
 		clear_inode(inode);

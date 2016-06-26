@@ -256,6 +256,7 @@ static int _namei(const char * pathname, struct inode * base,
 		iput(base);
 		return error;
 	}
+        /* 如果跟踪连接 */
 	if (follow_links) {
 		error = follow_link(base,inode,0,0,&inode);
 		if (error)
@@ -266,6 +267,7 @@ static int _namei(const char * pathname, struct inode * base,
 	return 0;
 }
 
+/* 不跟踪连接 */
 int lnamei(const char * pathname, struct inode ** res_inode)
 {
 	int error;
@@ -286,6 +288,9 @@ int lnamei(const char * pathname, struct inode ** res_inode)
  * Open, link etc use their own routines, but this is enough for things
  * like 'chmod' etc.
  */
+/* 打开一个路径对应的inode，如果该路径中存在软连接，
+  * 则继续下去，可以和上面函数对比 
+  */
 int namei(const char * pathname, struct inode ** res_inode)
 {
 	int error;

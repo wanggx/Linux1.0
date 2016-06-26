@@ -58,9 +58,11 @@ void nfs_put_super(struct super_block *sb)
  * Later we can add other mount parameters like caching values.
  */
 
+/* 网络文件系统读取超级块的函数 */
 struct super_block *nfs_read_super(struct super_block *sb, void *raw_data,
 				   int silent)
-{
+{  
+        /* 系统加载的时候raw_data一般为NULL */
 	struct nfs_mount_data *data = (struct nfs_mount_data *) raw_data;
 	struct nfs_server *server;
 	unsigned int fd;

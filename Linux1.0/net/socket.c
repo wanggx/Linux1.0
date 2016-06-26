@@ -1140,6 +1140,7 @@ int sock_register(int family, struct proto_ops *ops)
 }
 
 
+/* ÍøÂçÄ£¿é³õÊ¼»¯ */
 void
 sock_init(void)
 {

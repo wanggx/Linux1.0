@@ -120,6 +120,7 @@ static int parse_options(char *options,char *map,char *conversion, char * rock, 
 	return 1;
 }
 
+/* ISO文件系统超级块读取函数 */
 struct super_block *isofs_read_super(struct super_block *s,void *data,
 				     int silent)
 {

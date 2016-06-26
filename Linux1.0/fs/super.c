@@ -111,6 +111,7 @@ static struct super_block * get_super(dev_t dev)
 	return NULL;
 }
 
+/* 释放相应设备的超级块 */
 void put_super(dev_t dev)
 {
 	struct super_block * sb;
@@ -325,19 +326,31 @@ asmlinkage int sys_umount(char * name)
  * We also have to flush all inode-data for this device, as the new mount
  * might need new info.
  */
+/* 挂载文件系统
+  * dev表示需要挂载的文件系统的设备号
+  * dir表示需要挂载的目录
+  *
+  */
 static int do_mount(dev_t dev, const char * dir, char * type, int flags, void * data)
 {
 	struct inode * dir_i;
 	struct super_block * sb;
 	int error;
 
+	/* 得到对应路径的inode */
 	error = namei(dir,&dir_i);
 	if (error)
 		return error;
+
+	/* 正常情况下，没有其他进程或之前打开该inode的文件没有关闭，则不能挂载
+	  * 也就是不能因为挂载，强行终止其他操作，或者是一个已经挂载的文件系统 
+	  * 不能再让其他的文件系统挂载在它的上面，或者是循环挂载
+	  */
 	if (dir_i->i_count != 1 || dir_i->i_mount) {
 		iput(dir_i);
 		return -EBUSY;
 	}
+	/* 挂载必须要是一个目录，当然不能挂载到一个普通文件上 */
 	if (!S_ISDIR(dir_i->i_mode)) {
 		iput(dir_i);
 		return -EPERM;
@@ -346,11 +359,16 @@ static int do_mount(dev_t dev, const char * dir, char * type, int flags, void * 
 		iput(dir_i);
 		return -EBUSY;
 	}
+	/* 读取挂载文件系统的超级块，
+	  * type表示挂载的文件系统的名称，如nfs，proc，ext2等等
+	  */
 	sb = read_super(dev,type,flags,data,0);
+	/* s_covered不为空表示已经有一个文件系统挂载在该目录，所以不能再次挂载 */
 	if (!sb || sb->s_covered) {
 		iput(dir_i);
 		return -EBUSY;
 	}
+	/* 设置被覆盖的挂载点 */
 	sb->s_covered = dir_i;
 	dir_i->i_mount = sb->s_mounted;
 	return 0;		/* we don't iput(dir_i) - see umount */
@@ -530,6 +548,7 @@ void mount_root(void)
 	struct super_block * sb;
 	struct inode * inode;
 
+	/* 将super_blocks全部数据清0 */
 	memset(super_blocks, 0, sizeof(super_blocks));
 	fcntl_init_locks();
 	if (MAJOR(ROOT_DEV) == FLOPPY_MAJOR) {
