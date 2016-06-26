@@ -113,8 +113,8 @@ struct sock {
 				ack_timed,
 				no_check,
 				/* 如果zapped=1，则表示该套接字已被远端复位，要发送数据包，必须重新建立
-                      * 连接
-                      */
+                                  * 连接，也就是表示接收到了一个rst 
+                                  */
 				zapped,	/* In ax25 & ipx means not linked */
 				broadcast,
 				nonagle;/* noagle=1 表示不使用 NAGLE 算法*/

@@ -232,7 +232,8 @@ unix_proto_recv(struct socket *sock, void *buff, int len, int nonblock,
 }
 
 /* 在协议数组中查找满足条件的协议数据，
- * 找找条件为协议族和inode 
+ * 找找条件为协议族和inode，最终结果一般是 
+ * client找到server端对应的unix_proto_data结构  
  */
 static struct unix_proto_data *
 unix_data_lookup(struct sockaddr_un *sockun, int sockaddr_len,
@@ -249,7 +250,9 @@ unix_data_lookup(struct sockaddr_un *sockun, int sockaddr_len,
   return(NULL);
 }
 
-/* 分配一个unix域的协议数据 */
+/* 分配一个unix域的协议数据，该函数只有在unix_proto_create函数中调用
+  * 也就是分配unix协议域套接字时才会用到
+  */
 static struct unix_proto_data *unix_data_alloc(void)
 {
   struct unix_proto_data *upd;
@@ -351,7 +354,7 @@ static int unix_proto_dup(struct socket *newsock, struct socket *oldsock)
   return(unix_proto_create(newsock, upd->protocol));
 }
 
-
+/* 释放套接字 */
 static int
 unix_proto_release(struct socket *sock, struct socket *peer)
 {
@@ -363,6 +366,7 @@ unix_proto_release(struct socket *sock, struct socket *peer)
 	printk("UNIX: release: socket link mismatch!\n");
 	return(-EINVAL);
   }
+  /* 先释放自己占用的inode节点 */
   if (upd->inode) {
 	dprintf(1, "UNIX: release: releasing inode 0x%x\n", upd->inode);
 	iput(upd->inode);
@@ -370,7 +374,9 @@ unix_proto_release(struct socket *sock, struct socket *peer)
   }
   UN_DATA(sock) = NULL;
   upd->socket = NULL;
+  /* 释放对对等引用的计数 */
   if (upd->peerupd) unix_data_deref(upd->peerupd);
+  /* 释放自己的引用计数 */
   unix_data_deref(upd);
   return(0);
 }
@@ -385,6 +391,8 @@ unix_proto_release(struct socket *sock, struct socket *peer)
  *	  Here we return EINVAL, but it may be necessary to re-bind.
  *	  I think thats what BSD does in the case of datagram sockets...
  */
+
+/* 在这里绑定的过程主要是根据服务端的套接字来创建一个sock文件 */
 static int unix_proto_bind(struct socket *sock, struct sockaddr *umyaddr,
 		int sockaddr_len)
 {
@@ -422,6 +430,7 @@ static int unix_proto_bind(struct socket *sock, struct sockaddr *umyaddr,
   fname[sockaddr_len-UN_PATH_OFFSET] = '\0';
   old_fs = get_fs();
   set_fs(get_ds());
+  /* 注意这里又重新创建了fname */
   i = do_mknod(fname, S_IFSOCK | S_IRWXUGO, 0);
   /* 注意这里在open_namei之后并没有调用iput,
     * 如果调用了，则在高速缓存中文件对应的inode就被释放了，也就是引用计数为0 。
@@ -454,6 +463,7 @@ unix_proto_connect(struct socket *sock, struct sockaddr *uservaddr,
 {
   char fname[sizeof(((struct sockaddr_un *)0)->sun_path) + 1];
   struct sockaddr_un sockun;
+  /* server对应的协议数据 */
   struct unix_proto_data *serv_upd;
   struct inode *inode;
   unsigned long old_fs;
@@ -475,7 +485,9 @@ unix_proto_connect(struct socket *sock, struct sockaddr *uservaddr,
   er=verify_area(VERIFY_READ, uservaddr, sockaddr_len);
   if(er)
   	return er;
+  /* 将数据拷贝到sockun当中 */
   memcpy_fromfs(&sockun, uservaddr, sockaddr_len);
+  /* 设置路径结束符 */
   sockun.sun_path[sockaddr_len-UN_PATH_OFFSET] = '\0';
   if (sockun.sun_family != AF_UNIX) {
 	dprintf(1, "UNIX: connect: family is %d, not AF_UNIX(%d)\n",
@@ -493,12 +505,14 @@ unix_proto_connect(struct socket *sock, struct sockaddr *uservaddr,
   fname[sockaddr_len-UN_PATH_OFFSET] = '\0';
   old_fs = get_fs();
   set_fs(get_ds());
+  /* 打开路径对应文件的inode */
   i = open_namei(fname, 0, S_IFSOCK, &inode, NULL);
   set_fs(old_fs);
   if (i < 0) {
 	dprintf(1, "UNIX: connect: can't open socket %s\n", fname);
 	return(i);
   }
+  /* 查找得到服务器端的upd */
   serv_upd = unix_data_lookup(&sockun, sockaddr_len, inode);
   iput(inode);
   if (!serv_upd) {
@@ -511,6 +525,7 @@ unix_proto_connect(struct socket *sock, struct sockaddr *uservaddr,
 	return(i);
   }
   if (sock->conn) {
+        /* 增加服务端socket的协议数据的引用计数 */
 	unix_data_ref(UN_DATA(sock->conn));
 	UN_DATA(sock)->peerupd = UN_DATA(sock->conn); /* ref server */
   }
@@ -530,6 +545,7 @@ unix_proto_socketpair(struct socket *sock1, struct socket *sock2)
   /* 现获取两个socket的协议数据 */
   struct unix_proto_data *upd1 = UN_DATA(sock1), *upd2 = UN_DATA(sock2);
 
+  /* 增加引用计数，因为每个unix_proto_data都有自己本身和对等的peerupd指向 */
   unix_data_ref(upd1);
   unix_data_ref(upd2);
   /* 设置相互的对等连接 */
@@ -540,6 +556,7 @@ unix_proto_socketpair(struct socket *sock1, struct socket *sock2)
 
 
 /* On accept, we ref the peer's data for safe writes. */
+/* unix协议域的accept函数 */
 static int
 unix_proto_accept(struct socket *sock, struct socket *newsock, int flags)
 {
@@ -575,12 +592,20 @@ unix_proto_accept(struct socket *sock, struct socket *newsock, int flags)
   /* 设置两端套接字的对等连接conn字段，同时设置状态为连接状态 */
   newsock->conn = clientsock;
   clientsock->conn = newsock;
+  /* 先设置客户端套接字的状态为连接状态，
+    * 因为此时客户端套接字正在阻塞的等待服务端的accept 
+    * 在干函数最后一句唤醒等待客户端套接字的进程 
+    */
   clientsock->state = SS_CONNECTED;
   newsock->state = SS_CONNECTED;
+  /* 增加客户端的引用计数和新的套接字对等连接套接字，
+    * 因为此时新的套接字有个指针指向client
+    */
   unix_data_ref(UN_DATA(clientsock));
   UN_DATA(newsock)->peerupd	       = UN_DATA(clientsock);
   UN_DATA(newsock)->sockaddr_un        = UN_DATA(sock)->sockaddr_un;
   UN_DATA(newsock)->sockaddr_len       = UN_DATA(sock)->sockaddr_len;
+  /* 唤醒等待客户端套接字的进程 */
   wake_up_interruptible(clientsock->wait);
   return(0);
 }

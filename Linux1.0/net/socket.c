@@ -386,6 +386,7 @@ void sock_close(struct inode *inode, struct file *file)
  * 客户端 socket 结构链表。
  * servsock表示服务套接字
  * mysock表示连接套接字 
+ * 函数返回0，则表示连接成功  
  */
 int
 sock_awaitconn(struct socket *mysock, struct socket *servsock)
@@ -425,7 +426,11 @@ sock_awaitconn(struct socket *mysock, struct socket *servsock)
     */
   wake_up_interruptible(servsock->wait);
   if (mysock->state != SS_CONNECTED) {
+        /* 当前进程等待在mysock的wait当中 */
 	interruptible_sleep_on(mysock->wait);
+        /* 当前进程被唤醒之后，不是连接状态或是正在连接状态，
+          * 则进行相应的错误处理，如果是正在连接状态，则继续等待连接 
+          */
 	if (mysock->state != SS_CONNECTED &&
 	    mysock->state != SS_DISCONNECTING) {
 		/*
@@ -437,6 +442,7 @@ sock_awaitconn(struct socket *mysock, struct socket *servsock)
 		 */
 		if (mysock->conn == servsock) {
 			cli();
+                        /* 将mysock从servsock的等待连接队列中删除 */
 			if ((last = servsock->iconn) == mysock)
 					servsock->iconn = mysock->next;
 			else {

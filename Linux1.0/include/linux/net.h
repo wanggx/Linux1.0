@@ -82,10 +82,13 @@ struct socket {
     */
   void			*data;		/* protocol data		*/
   /* 在INET域中下面两个指针为NULL
-    * 指向建立完全连接的对方 socket 结构
+    * 指向建立完全连接的对方 socket 结构,一般指 
+    * 连接的服务端socket 
     */
   struct socket		*conn;		/* server socket connected to	*/
-  /* 等待建立连接的socket结构 */
+  /* 等待建立连接的socket结构，unix协议域的accept函数就是
+    * 通过该链表来判断是否有连接的请求 
+    */
   struct socket		*iconn;		/* incomplete client conn.s	*/
   struct socket		*next;
   /* 等待使用该socket的进程队列 */

@@ -32,13 +32,17 @@ struct unix_proto_data {
         /* 初始化分配的时候该变量为-1 */
 	int		refcnt;		/* cnt of reference 0=free	*/
 					/* -1=not initialised	-bgm	*/
+        /*  server对应的套接字 */
 	struct socket	*socket;	/* socket we're bound to	*/
 	int		protocol;
 	struct sockaddr_un	sockaddr_un;        /* 绑定的地址 */
 	short		sockaddr_len;	/* >0 if name bound		*/  /* 设定绑定地址长度 */
 	char		*buf;   /* 一页的缓冲大小 */
-	int		bp_head, bp_tail;
-	struct inode	*inode;
+        /* 标记缓存中数据的起始位置和结束位置，
+          * 来确定还没处理的数据有多少，以及剩余空间的大小 
+          */
+	int		bp_head, bp_tail;     
+	struct inode	*inode;                /* 连接对应的inode */
 	struct unix_proto_data	*peerupd;  /* 连接成功后设置对等的协议数据 */
 	struct wait_queue *wait;	/* Lock across page faults (FvK) */
 	int		lock_flag;            /* 是否锁住标记 */
