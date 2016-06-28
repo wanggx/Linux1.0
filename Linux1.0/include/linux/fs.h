@@ -47,9 +47,9 @@ extern void buffer_init(void);
 extern unsigned long inode_init(unsigned long start, unsigned long end);
 extern unsigned long file_table_init(unsigned long start, unsigned long end);
 
-#define MAJOR(a) (int)((unsigned short)(a) >> 8)   /*主设备号*/
-#define MINOR(a) (int)((unsigned short)(a) & 0xFF) /*次设备号*/
-#define MKDEV(a,b) ((int)((((a) & 0xff) << 8) | ((b) & 0xff)))
+#define MAJOR(a) (int)((unsigned short)(a) >> 8)   /* 主设备号 */
+#define MINOR(a) (int)((unsigned short)(a) & 0xFF) /* 次设备号，此设备号在最低8位 */
+#define MKDEV(a,b) ((int)((((a) & 0xff) << 8) | ((b) & 0xff)))  /* 生成一个设备号，包括主次设备号 */
 
 #ifndef NULL
 #define NULL ((void *) 0)
@@ -172,11 +172,11 @@ struct inode {
 	unsigned long	i_ino;		/* i节点号 */
 	umode_t		i_mode;			/* 文件类型以及文件权限 */
 	nlink_t		i_nlink;		/* 硬链接计数 */
-	uid_t		i_uid;          /* 创建文件的用户ID */
+	uid_t		i_uid;          	/* 创建文件的用户ID */
 	gid_t		i_gid;			/* 创建文件的用户组ID */
 	dev_t		i_rdev;			/* 是设备标识符，也存储了主次设备号，
-								 * 表示设备的实际设备号，不是逻辑设备号 
-								 */
+							* 表示设备的实际设备号，不是逻辑设备号 
+							*/
 	off_t		i_size;			/* 文件大小单位为字节 */
 	time_t		i_atime;
 	time_t		i_mtime;
@@ -226,7 +226,7 @@ struct file {
 	unsigned short f_count;  /*文件的引用计数*/
 	unsigned short f_reada;
 	struct file *f_next, *f_prev;
-	struct inode * f_inode;
+	struct inode * f_inode;		/* 文件对应的inode */
 	struct file_operations * f_op;
 };
 
@@ -262,7 +262,7 @@ struct super_block {
 	unsigned char s_blocksize_bits; /* 块大小用2的幂次方表示的幂*/
 	unsigned char s_lock;  /* 超级块是否被锁住 */
 	unsigned char s_rd_only;
-	unsigned char s_dirt;
+	unsigned char s_dirt;		/* 超级块的脏标记 */
 	struct super_operations *s_op;
 	unsigned long s_flags;       /* 超级块的挂载标记 */
 	unsigned long s_magic;
@@ -275,6 +275,7 @@ struct super_block {
 	struct inode * s_covered;    
 	struct inode * s_mounted;   /*文件系统的挂载点，如果是根文件系统则是/,否则就是挂载点的inode */
 	struct wait_queue * s_wait; /* 等待操作超级块的进程队列 */
+	/* 注意这部分信息是超级块的物理信息 */
 	union {
 		struct minix_sb_info minix_sb;
 		struct ext_sb_info ext_sb;

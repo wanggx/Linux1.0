@@ -218,16 +218,19 @@ static void put_unnamed_dev(dev_t dev)
 	unnamed_dev_in_use[dev] = 0;
 }
 
+/* 执行正在的挂载 */
 static int do_umount(dev_t dev)
 {
 	struct super_block * sb;
 	int retval;
 	
+        /* 如果是根设备，则进行的是从新挂载  */
 	if (dev==ROOT_DEV) {
 		/* Special case for "unmounting" root.  We just try to remount
 		   it readonly, and sync() the device. */
 		if (!(sb=get_super(dev)))
 			return -ENOENT;
+                /* 如果根设备不是只读的 */
 		if (!(sb->s_flags & MS_RDONLY)) {
 			fsync_dev(dev);
 			retval = do_remount_sb(sb, MS_RDONLY, 0);
@@ -265,6 +268,7 @@ static int do_umount(dev_t dev)
  * functions, they should be faked here.  -- jrs
  */
 
+/* 卸载文件系统 */
 asmlinkage int sys_umount(char * name)
 {
 	struct inode * inode;
@@ -298,6 +302,7 @@ asmlinkage int sys_umount(char * name)
 		dummy_inode.i_rdev = dev;
 		inode = &dummy_inode;
 	}
+        /* 设备的主设备号不能超过支持的最大主设备号 */
 	if (MAJOR(dev) >= MAX_BLKDEV) {
 		iput(inode);
 		return -ENXIO;
@@ -329,7 +334,7 @@ asmlinkage int sys_umount(char * name)
 /* 挂载文件系统
   * dev表示需要挂载的文件系统的设备号
   * dir表示需要挂载的目录
-  *
+  * type表示挂载类型，如nfs，proc，ext2
   */
 static int do_mount(dev_t dev, const char * dir, char * type, int flags, void * data)
 {
@@ -381,6 +386,7 @@ static int do_mount(dev_t dev, const char * dir, char * type, int flags, void * 
  * FS-specific mount options can't be altered by remounting.
  */
 
+/* 重新挂载超级块 */
 static int do_remount_sb(struct super_block *sb, int flags, char *data)
 {
 	int retval;

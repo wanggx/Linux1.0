@@ -220,12 +220,16 @@ int fs_may_mount(dev_t dev)
 	return 1;
 }
 
+/* 判断是否可以卸载 */
 int fs_may_umount(dev_t dev, struct inode * mount_root)
 {
 	struct inode * inode;
 	int i;
 
 	inode = first_inode;
+        /* 判断设备对应的所有inode的引用计数是否为0，
+          * 也就是设备的文件是否还被用到 
+          */
 	for (i=0 ; i < nr_inodes ; i++, inode = inode->i_next) {
 		if (inode->i_dev != dev || !inode->i_count)
 			continue;
@@ -236,6 +240,7 @@ int fs_may_umount(dev_t dev, struct inode * mount_root)
 	return 1;
 }
 
+/* 判断超级块是否可以重新挂载 */
 int fs_may_remount_ro(dev_t dev)
 {
 	struct file * file;
@@ -246,6 +251,7 @@ int fs_may_remount_ro(dev_t dev)
 		if (!file->f_count || !file->f_inode ||
 		    file->f_inode->i_dev != dev)
 			continue;
+                /* 判断设备对应的文件是否正常 */
 		if (S_ISREG(file->f_inode->i_mode) && (file->f_mode & 2))
 			return 0;
 	}
@@ -337,6 +343,7 @@ void invalidate_inodes(dev_t dev)
 	}
 }
 
+/* 同步高速缓冲中设备dev的所有inode*/
 void sync_inodes(dev_t dev)
 {
 	int i;

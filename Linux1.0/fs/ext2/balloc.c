@@ -573,6 +573,7 @@ got_block:
 	return j;
 }
 
+/* 返回文件系统中空闲数据块的数量 */
 unsigned long ext2_count_free_blocks (struct super_block * sb)
 {
 #ifdef EXT2FS_DEBUG

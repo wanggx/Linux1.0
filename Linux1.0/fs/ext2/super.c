@@ -624,6 +624,7 @@ static void ext2_commit_super (struct super_block * sb,
  * set s_state to EXT2_VALID_FS after some corrections.
  */
 
+/* 清楚超级块的脏标记 */
 void ext2_write_super (struct super_block * sb)
 {
 	struct ext2_super_block * es;
@@ -642,6 +643,7 @@ void ext2_write_super (struct super_block * sb)
 	sb->s_dirt = 0;
 }
 
+/* 判断超级块是否可以重新挂载 */
 int ext2_remount (struct super_block * sb, int * flags, char * data)
 {
 	struct ext2_super_block * es;
@@ -683,6 +685,7 @@ int ext2_remount (struct super_block * sb, int * flags, char * data)
 	return 0;
 }
 
+/* 获取超级块文件系统的基本信息 */
 void ext2_statfs (struct super_block * sb, struct statfs * buf)
 {
 	long tmp;

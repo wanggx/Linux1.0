@@ -11,7 +11,7 @@
 struct file * first_file;
 int nr_files = 0;
 
-/* å°†fileæ’å…¥åˆ°é“¾å°¾
+/* ½«file²åÈëµ½Á´Î²
  **/
 static void insert_file_free(struct file *file)
 {
@@ -22,8 +22,8 @@ static void insert_file_free(struct file *file)
 	first_file = file;
 }
 
-/* å°†æ–‡ä»¶æŒ‡é’ˆä»ç©ºé—²é“¾è¡¨ä¸­ç§»é™¤ï¼Œå¹¶å§‹ç»ˆè®©first_fileæŒ‡å‘é“¾é¦–
- * å¹¶å°†ç§»é™¤çš„fileå‰åæŒ‡å‘éƒ½æŒ‡ç©º
+/* ½«ÎÄ¼şÖ¸Õë´Ó¿ÕÏĞÁ´±íÖĞÒÆ³ı£¬²¢Ê¼ÖÕÈÃfirst_fileÖ¸ÏòÁ´Ê×
+ * ²¢½«ÒÆ³ıµÄfileÇ°ºóÖ¸Ïò¶¼Ö¸¿Õ
  */
 static void remove_file_free(struct file *file)
 {
@@ -36,7 +36,7 @@ static void remove_file_free(struct file *file)
 	file->f_next = file->f_prev = NULL;
 }
 
-/*å°†fileæ”¾åœ¨ä»¥first_fileä¸ºé¦–çš„æœ«å°¾*/
+/* ½«file·ÅÔÚÒÔfirst_fileÎªÊ×µÄÄ©Î²     */
 static void put_last_free(struct file *file)
 {
 	remove_file_free(file);
@@ -71,11 +71,11 @@ unsigned long file_table_init(unsigned long start, unsigned long end)
 	return start;
 }
 
-/* è·å–ä¸€ä¸ªç©ºçš„æ–‡ä»¶æè¿°ç¬¦ï¼Œæ³¨æ„å¢é•¿çš„æ–‡ä»¶æè¿°ç¬¦
- * å¹¶æ²¡æœ‰è¢«é‡Šæ”¾ï¼Œä½†æ˜¯å¢é•¿çš„æ€»æ•°ä¸ä¼šè¶…è¿‡NR_FILE
- * é‡Šæ”¾æ–‡ä»¶æè¿°ç¬¦å°±æ˜¯å°†f->f_count=0,ç„¶åå¾ªç¯æŸ¥æ‰¾f_count=0çš„
- * æè¿°ç¬¦é‡å¤åˆ©ç”¨ï¼Œè¯¥å‡½æ•°éé˜»å¡ï¼Œå¦‚æœå†…å­˜ä¸­ä½¿ç”¨çš„file
- * æ•°é‡å¤§äºNR_FILEï¼Œåˆ™è¿”å›å¤±è´¥
+/* »ñÈ¡Ò»¸ö¿ÕµÄÎÄ¼şÃèÊö·û£¬×¢ÒâÔö³¤µÄÎÄ¼şÃèÊö·û
+ * ²¢Ã»ÓĞ±»ÊÍ·Å£¬µ«ÊÇÔö³¤µÄ×ÜÊı²»»á³¬¹ıNR_FILE
+ * ÊÍ·ÅÎÄ¼şÃèÊö·û¾ÍÊÇ½«f->f_count=0,È»ºóÑ­»·²éÕÒf_count=0µÄ
+ * ÃèÊö·ûÖØ¸´ÀûÓÃ£¬¸Ãº¯Êı·Ç×èÈû£¬Èç¹ûÄÚ´æÖĞÊ¹ÓÃµÄfile
+ * ÊıÁ¿´óÓÚNR_FILE£¬Ôò·µ»ØÊ§°Ü
  */
 struct file * get_empty_filp(void)
 {
@@ -99,3 +99,4 @@ repeat:
 	}
 	return NULL;
 }
+

@@ -167,6 +167,7 @@ void sync_dev(dev_t dev)
 	sync_buffers(dev, 0);
 }
 
+/* 同步设备 */
 int fsync_dev(dev_t dev)
 {
 	sync_buffers(dev, 0);
