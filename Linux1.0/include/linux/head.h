@@ -6,8 +6,8 @@ typedef struct desc_struct {
 } desc_table[256];
 
 /* 内核全局页目录表正好占用一页的内存，通过二级页表映射，
- * 可以寻址的范围是4GB
- **/
+  * 可以寻址的范围是4GB
+  */
 
 extern unsigned long swapper_pg_dir[1024];
 extern desc_table idt,gdt;

@@ -165,6 +165,7 @@ __asm__ __volatile__("movl %%cr3,%%eax\n\tmovl %%eax,%%cr3": : :"ax")
 
 extern unsigned long high_memory;
 
+/* 获取物理地址对应的页号，相当于是除以4KB */
 #define MAP_NR(addr) ((addr) >> PAGE_SHIFT)
 #define MAP_PAGE_RESERVED (1<<15)			/* 为内核保留的页 */
 

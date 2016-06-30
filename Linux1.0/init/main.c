@@ -128,6 +128,9 @@ static unsigned long memory_start = 0;	/* After mem_init, stores the */
 
 /* 系统内核支持的最大物理和实际物理内存的较小的那个值*/
 static unsigned long memory_end = 0;
+/* 640KB-1MB留给显存了。0xA0000=640KB,当内核大小小于1M时
+  * low_memory_start则指向内核的大小
+  */
 static unsigned long low_memory_start = 0;
 
 static char term[21];
@@ -147,6 +150,8 @@ struct screen_info screen_info;
 
 unsigned char aux_device_present;
 int ramdisk_size;
+
+/* 根文件系统的挂载标记 */
 int root_mountflags = 0;
 
 static char fpu_error = 0;
@@ -369,22 +374,30 @@ asmlinkage void start_kernel(void)
 	memory_end = (1<<20) + (EXT_MEM_K<<10);
 	memory_end &= PAGE_MASK;
 	ramdisk_size = RAMDISK_SIZE;
+        /* 通过命令行判断memory_end的位置 */
 	copy_options(command_line,COMMAND_LINE);
-	/*最大内存支持16MB*/
+	/*如果配置CONFIG_MAX_16M,则最大内存支持16MB*/
 #ifdef CONFIG_MAX_16M
 	if (memory_end > 16*1024*1024)
 		memory_end = 16*1024*1024;
 #endif
 	if (MOUNT_ROOT_RDONLY)
 		root_mountflags |= MS_RDONLY;
+        /* 如果编译出来的内核大于或等于1M,
+          * end对应于核心的大小
+          */
 	if ((unsigned long)&end >= (1024*1024)) {
+                /* 设置可用内存的起始位置为内核的大小 */
 		memory_start = (unsigned long) &end;
 		low_memory_start = PAGE_SIZE;
 	} else {
+                /* 否则设置内核可用内存的大小为1M */
 		memory_start = 1024*1024;
 		low_memory_start = (unsigned long) &end;
 	}
+        /* 将low_memory_start按照页大小对齐 */
 	low_memory_start = PAGE_ALIGN(low_memory_start);
+        /* 设置swapper_pg_dir页目录表的映射 */
 	memory_start = paging_init(memory_start,memory_end);
 	if (strncmp((char*)0x0FFFD9, "EISA", 4) == 0)
 		EISA_bus = 1;

@@ -89,10 +89,10 @@ static int free_area_pages(unsigned long dindex, unsigned long index, unsigned l
 
 
 /*  注意linux的内存分配，采用二级页表，dindex是4M的索引，即页目录表中的索引
- *  index即使页表中的索引，nr是从index索引处开始映射多少页的内存，也即申请了nr
- *  页物理内存,并映射到dindex,index...index+nr的位置上，此处注意swapper_pg_dir
- *	是内核页目录表，记录整个内存的使用情况
- */
+  *  index即使页表中的索引，nr是从index索引处开始映射多少页的内存，也即申请了nr
+  *  页物理内存,并映射到dindex,index...index+nr的位置上，此处注意swapper_pg_dir
+  *  是内核页目录表，记录整个内存的使用情况
+  */
 
 static int alloc_area_pages(unsigned long dindex, unsigned long index, unsigned long nr)
 {

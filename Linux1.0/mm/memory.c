@@ -1168,6 +1168,14 @@ void show_mem(void)
  * This routines also unmaps the page at virtual kernel address 0, so
  * that we can trap those pesky NULL-reference errors in the kernel.
  */
+
+/* 将内核中可用的地址空间映射到swapper_pg_dir页目录表对应的
+  * 0地址处和3g地址处，也就是swapper_pg_dir的第0项和第768项处有 
+  * 若干个页表的映射相同，也就是将系统中所有可用内存映射到swapper_pg_dir 
+  * 当中，并作为内核的全局页目录表，在映射的时候会分配若干的一级页表， 
+  * start_mem------一级页表-------------- end_mem 
+  * 最后返回的就是一级页表之后的首地址 
+  */
 unsigned long paging_init(unsigned long start_mem, unsigned long end_mem)
 {
 	unsigned long * pg_dir;
@@ -1191,7 +1199,7 @@ unsigned long paging_init(unsigned long start_mem, unsigned long end_mem)
 	pg_dir = swapper_pg_dir;
 	while (address < end_mem) {
 		/*在二级页表当中，页目录表中的768项正好是3GB的位置，在每个进程的地址
-		 *空间当中，0-3GB是进程的用户地址空间，3-4GB是进程的内核空间*/
+		  *空间当中，0-3GB是进程的用户地址空间，3-4GB是进程的内核空间*/
 		tmp = *(pg_dir + 768);		/* at virtual addr 0xC0000000 */
 		/* 如果页表项为空，则从start_mem位置开始分配一个页表，而一个页表
 		 * 具有1024项，正好一页大小，然后将这一页表的地址赋给页目录项
@@ -1199,8 +1207,12 @@ unsigned long paging_init(unsigned long start_mem, unsigned long end_mem)
 		if (!tmp) {
 			tmp = start_mem | PAGE_TABLE;
 			*(pg_dir + 768) = tmp;
+                        /* 为了映射swapper_pg_dir时用掉的页表，
+                          *  最后将用掉的页表的最后一个地址给返回
+                          */
 			start_mem += PAGE_SIZE;
 		}
+                /* 在映射0x00000的地址时，会擦除之前的映射 */
 		*pg_dir = tmp;			/* also map it in at 0x0000000 for init */
 		pg_dir++;
 		/*获取页表的地址*/
@@ -1249,11 +1261,12 @@ void mem_init(unsigned long start_low_mem,
 		*--p = MAP_PAGE_RESERVED;
 	start_low_mem = PAGE_ALIGN(start_low_mem);
 	start_mem = PAGE_ALIGN(start_mem);
-	/*如果start_low_mem小于1M则640KB-1MB留给显存了。0xA0000=640KB*/
+	/* 如果start_low_mem小于1M则640KB-1MB留给显存了。0xA0000=640KB */
 	while (start_low_mem < 0xA0000) {
 		mem_map[MAP_NR(start_low_mem)] = 0;
 		start_low_mem += PAGE_SIZE;
 	}
+        /* 将可用内存区的页表数组项都设置为0，表示为空闲 */
 	while (start_mem < end_mem) {
 		mem_map[MAP_NR(start_mem)] = 0;
 		start_mem += PAGE_SIZE;
@@ -1285,8 +1298,8 @@ void mem_init(unsigned long start_low_mem,
 			continue;
 		}
 		/* 如果物理页是空闲的，则将该空闲页表添加到free_page_list当中
-		 * 放在链首，同时增加nr_free_pages
-		 **/
+		  * 放在链首，同时增加nr_free_pages
+		  */
 		*(unsigned long *) tmp = free_page_list;
 		free_page_list = tmp;
 		nr_free_pages++;

@@ -14,6 +14,11 @@
 #include <linux/string.h>
 #include <linux/ctype.h>
 
+/* 字符串到数字的转换
+  * endp表示转换字符串的结束位置
+  * cp表示转换字符串的起始位置 
+  * base表示进制 
+  */
 unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base)
 {
 	unsigned long result = 0,value;
