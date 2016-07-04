@@ -1633,7 +1633,7 @@ tcp_shutdown(struct sock *sk, int how)
   release_sock(sk);
 }
 
-
+/* 调用tcp_read函数从sock中的读取队列中读取数据 */
 static int
 tcp_recvfrom(struct sock *sk, unsigned char *to,
 	     int to_len, int nonblock, unsigned flags,
@@ -1661,6 +1661,7 @@ tcp_recvfrom(struct sock *sk, unsigned char *to,
 
   if (result < 0) return(result);
   
+  /* 获取套接字的相关信息 */
   sin.sin_family = AF_INET;
   sin.sin_port = sk->dummy_th.dest;
   sin.sin_addr.s_addr = sk->daddr;
@@ -1869,6 +1870,9 @@ tcp_conn_request(struct sock *sk, struct sk_buff *skb,
   	sk->data_ready(sk,0);
   } else {
 	DPRINTF((DBG_TCP, "tcp_conn_request on dead socket\n"));
+	/* 如果服务端的套接字已经死掉，当还有连接请求时，
+	  * 则服务端会向客户端发送重置命令
+	  */
 	tcp_reset(daddr, saddr, th, sk->prot, opt, dev, sk->ip_tos,sk->ip_ttl);
 	kfree_skb(skb, FREE_READ);
 	return;
@@ -2723,9 +2727,14 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 	return(0);
   }
 
-  /* 如果接收通道关闭，因为接收通道已经关闭所以不用添加到rqueue队列当中 */
+  /* 如果接收通道关闭，也就是不接收数据。
+    * 因为接收通道已经关闭所以不用添加到rqueue队列当中
+    */
   if (sk->shutdown & RCV_SHUTDOWN) {
 	sk->acked_seq = th->seq + skb->len + th->syn + th->fin;
+	/* 如果socket的接收通道关闭，当对方仍有数据发送过来时，
+	  * 则向对方发送一个复位命令
+	  */
 	tcp_reset(sk->saddr, sk->daddr, skb->h.th,
 	sk->prot, NULL, skb->dev, sk->ip_tos, sk->ip_ttl);
 	sk->state = TCP_CLOSE;
@@ -2734,7 +2743,7 @@ tcp_data(struct sk_buff *skb, struct sock *sk,
 	DPRINTF((DBG_TCP, "tcp_data: closing socket - %X\n", sk));
 	kfree_skb(skb, FREE_READ);
 
-    /* 如果sk没有死，则唤醒等待struct sock的进程 */
+	/* 如果sk没有死，则唤醒等待struct sock的进程 */
 	if (!sk->dead) sk->state_change(sk);
 	return(0);
   }
@@ -3030,6 +3039,9 @@ static inline int tcp_urg(struct sock *sk, struct tcphdr *th,
 
 
 /* This deals with incoming fins. 'Linus at 9 O'clock' 8-) */
+/* 远端发送fin标记，也就是远端的发送通道关闭，本地的接收通道关闭，
+  * 关闭TCP的接收通道，
+  */
 static int
 tcp_fin(struct sock *sk, struct tcphdr *th, 
 	 unsigned long saddr, struct device *dev)
@@ -3037,6 +3049,8 @@ tcp_fin(struct sock *sk, struct tcphdr *th,
   DPRINTF((DBG_TCP, "tcp_fin(sk=%X, th=%X, saddr=%X, dev=%X)\n",
 						sk, th, saddr, dev));
   
+
+  /* 触发状态回到函数 */
   if (!sk->dead) {
 	sk->state_change(sk);
   }
@@ -3069,6 +3083,7 @@ tcp_fin(struct sock *sk, struct tcphdr *th,
 		reset_timer(sk, TIME_CLOSE, TCP_TIMEWAIT_LEN);
 		return(0);
   }
+  /* 增加一个字节的序列 */
   sk->ack_backlog++;
 
   return(0);
@@ -3389,6 +3404,8 @@ tcp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 	DPRINTF((DBG_TCP, "tcp.c: tcp_rcv dev = NULL\n"));
 	return(0);
   }
+
+  /* 获取接收到的数据包的tcp头部 */
   th = skb->h.th;
 
   /* Find the socket. */
@@ -3406,6 +3423,7 @@ tcp_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 	 DPRINTF((DBG_TCP, "sk = %X:\n", sk));
   }
 
+  /* 如果是从对方接收到的数据，而不是缓存下来的数据包 */
   if (!redo) {
 	if (tcp_check(th, len, saddr, daddr )) {
         /* 到这里则这个包检测有问题，要把它给丢弃 */
@@ -3423,6 +3441,9 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
 	th->seq = ntohl(th->seq);
 
 	/* See if we know about the socket. */
+	/* 如果本地的套接字已经不在，或者释放了，
+	  * 或者本地的端口号上根本就没有服务，则同样发送复位命令
+	  */
 	if (sk == NULL) {
 		if (!th->rst)
 			tcp_reset(daddr, saddr, th, &tcp_prot, opt,dev,skb->ip_hdr->tos,255);
@@ -3498,11 +3519,16 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: bad checksum\n");
 	 * for an ack that is never going to be sent.
 	 */
 	case TCP_LAST_ACK:
+		/* 如果TCP连接被中断，被设置复位标记，则设置相应的错误信息 */
 		if (th->rst) {
+			/* 设置摧毁标记 */
 			sk->zapped=1;
+			/* 同时设置连接重置错误 */
 			sk->err = ECONNRESET;
+			/* 设置sock的状态 */
  			sk->state = TCP_CLOSE;
 			sk->shutdown = SHUTDOWN_MASK;
+			/* 如果当前sock没死，则触发状态更改回调 */
 			if (!sk->dead) {
 				sk->state_change(sk);
 			}
@@ -3529,6 +3555,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
 			return(0);
 		}
 
+		/* 同样是如果连接被复位 */
 		if (th->rst) {
 			sk->zapped=1;
 			/* This means the thing should really be closed. */
@@ -3556,9 +3583,9 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
 		if ((opt && (opt->security != 0 ||
 			    opt->compartment != 0)) || 
 #endif
-            /* 在连接建立状况下，如果有复位标记，则会将本sk的状态设置为TCP_CLOSE
-                 * 同时向远端发送复位操作 
-                 */
+		    /* 在连接建立状况下，如果没有复位标记，则会将本sk的状态设置为TCP_CLOSE
+                      * 同时向远端发送复位操作 
+                      */
 				 th->syn) {
 			sk->err = ECONNRESET;
 			sk->state = TCP_CLOSE;
@@ -3594,6 +3621,7 @@ if (inet_debug == DBG_SLIP) printk("\rtcp_rcv: not in seq\n");
 		}
 
 		/* Moved: you must do data then fin bit */
+		/* 当接收到对方的fin标记时，也就是远端需要关闭连接 */
 		if (th->fin && tcp_fin(sk, th, saddr, dev)) {
 			kfree_skb(skb, FREE_READ);
 			release_sock(sk);

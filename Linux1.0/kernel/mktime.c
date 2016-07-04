@@ -38,6 +38,7 @@ static int month[12] = {
 	DAY*(31+29+31+30+31+30+31+31+30+31+30)
 };
 
+/* 返回从1970年1月1号0时起到开机后，经过的秒数 */
 long kernel_mktime(struct mktime * time)
 {
 	long res;

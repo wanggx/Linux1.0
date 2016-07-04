@@ -38,6 +38,7 @@
  * kernel variables
  */
 long tick = 1000000 / HZ;               /* timer interrupt period */
+/* 系统当前时间 */
 volatile struct timeval xtime;		/* The current time */
 int tickadj = 500/HZ;			/* microsecs */
 
@@ -698,6 +699,7 @@ static void do_timer(struct pt_regs * regs)
 	else
 	    time_adjust_step = 0;
 
+        /* 在时钟中断中修改系统的当前时间 */
 	if (xtime.tv_usec >= 1000000) {
 	    xtime.tv_usec -= 1000000;
 	    xtime.tv_sec++;

@@ -160,7 +160,7 @@ struct sock {
   /* 如果还没有收到数据，则在该等待队列中等待
    */
   struct wait_queue		**sleep;/*进程等待sock的地位*/
-  unsigned long			daddr;  /*套接字的远端地址*/
+  unsigned long			daddr;   /*套接字的远端地址*/
   /*绑定地址*/
   unsigned long			saddr;  /*套接字的本地地址*/
   unsigned short		max_unacked;/* 最大未处理请求连接数（应答数） */
@@ -316,9 +316,9 @@ struct proto {
 
 #define PROT_SOCK	1024	/* Sockets 0-1023 can't be bound too unless you are superuser */
 
-#define SHUTDOWN_MASK	3  /* 完全关闭 */
-#define RCV_SHUTDOWN	1  /* 接收通道关闭 */
-#define SEND_SHUTDOWN	2  /* 发送通道关闭 */
+#define SHUTDOWN_MASK	3   /* 完全关闭 */
+#define RCV_SHUTDOWN	1     /* 接收通道关闭 */
+#define SEND_SHUTDOWN	2   /* 发送通道关闭 */
 
 
 extern void			destroy_sock(struct sock *sk);

@@ -70,6 +70,8 @@ void time_init(void)
 	    BCD_TO_BIN(time.year);
 	  }
 	time.mon--;
+        /* 获取系统当前距离1970年1月1号0时起到现在的秒数
+          */
 	xtime.tv_sec = kernel_mktime(&time);
       }
 /* 
@@ -92,6 +94,7 @@ asmlinkage int sys_time(long * tloc)
 	return i;
 }
 
+/* 修改系统当前时间 */
 asmlinkage int sys_stime(long * tptr)
 {
 	if (!suser())

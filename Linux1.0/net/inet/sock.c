@@ -1789,8 +1789,6 @@ void sock_wfree(struct sock *sk, void *mem, unsigned long size)
   }
 }
 
-
-
 void sock_rfree(struct sock *sk, void *mem, unsigned long size)
 {
   DPRINTF((DBG_INET, "sock_rfree(sk=%X, mem=%X, size=%d)\n", sk, mem, size));
