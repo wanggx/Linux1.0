@@ -226,6 +226,7 @@ struct sock {
   struct tcphdr			dummy_th;/* 缓存的 TCP首部，在 TCP协议中创建一个发送数据包时可以利用此字段快速创建 TCP 首部。*/
 
   /* This part is used for the timeout functions (timer.c). */
+  /* 表示struct sock是什么类型的时钟，如TIME_WRITE等等 */
   int				timeout;	/* What are we waiting for? */
   struct timer_list		timer;
 
@@ -300,14 +301,14 @@ struct proto {
   int			(*getsockopt)(struct sock *sk, int level, int optname,
   				char *optval, int *option);  	 
   unsigned short	max_header;
-  unsigned long		retransmits;
+  unsigned long		retransmits;      /* 表示协议超时重传的次数 */
   /* 通过端口号和SOCK_ARRAY_SIZE取与得到索引 */
   struct sock *		sock_array[SOCK_ARRAY_SIZE];
   char			name[80];   /* 协议名称如TCP,UDP等等 */
 };
 
 #define TIME_WRITE	1  /* 超时重传 */
-#define TIME_CLOSE	2
+#define TIME_CLOSE	2   /* 等待关闭 */
 #define TIME_KEEPOPEN	3  /* 保活 */
 #define TIME_DESTROY	4  /* 套接字释放 */
 #define TIME_DONE	5	/* used to absorb those last few packets */

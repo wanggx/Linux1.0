@@ -51,7 +51,7 @@ struct sk_buff {
   struct sk_buff		*volatile link3;
   struct sk_buff		*volatile* list;
   struct sock			*sk;     /* 指定这个sk_buff是那个sock的 */
-  volatile unsigned long	when;	/* used to compute rtt's	*/
+  volatile unsigned long	when;	/* used to compute rtt's	*/   /* 表示数据的发送时间 */
   /* skb对应的设备，最终skb中的数据需要交给设备发送出去，也就是链路层 */
   struct device			*dev;         
   void				*mem_addr; /* 记录自己在内存中地址 */

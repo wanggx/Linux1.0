@@ -1073,6 +1073,7 @@ static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct 
    	DPRINTF((DBG_IP, " DST=%s\n", in_ntoa(iph->daddr)));
  
    	/* Check for any "DF" flag. */
+        /* 如果ip包不允许分片，则使用icmp发送不可分片错误 */
    	if (ntohs(iph->frag_off) & IP_DF) 
    	{
  		DPRINTF((DBG_IP, "IP: Fragmentation Desired, but DF set !\n"));
@@ -1094,6 +1095,7 @@ static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct 
 	  offset = (ntohs(iph->frag_off) & 0x1fff) << 3;
 	else
    	  offset = 0;
+        /* 将一个大的数据包分多个数据包发送 */
    	while(left > 0) 
    	{
  		len = left;
@@ -1154,6 +1156,7 @@ static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct 
 /* 		printk("Queue frag\n");*/
  
  		/* Put this fragment into the sending queue. */
+                /* 发送分片后的每个数据片 */
  		ip_queue_xmit(sk, dev, skb2, 1);
 /* 		printk("Queued\n");*/
    	}
@@ -1508,6 +1511,7 @@ ip_queue_xmit(struct sock *sk, struct device *dev,
   skb->ip_hdr = iph;
   iph->tot_len = ntohs(skb->len-dev->hard_header_len);
 
+  /* 如果超过最大传输单元，则一定要分片 */
   if(skb->len > dev->mtu)
   {
 /*  	printk("Fragment!\n");*/
@@ -1611,6 +1615,7 @@ ip_do_retransmit(struct sock *sk, int all)
 	}
 
 oops:	retransmits++;
+        /* 增加协议超时重传的次数 */
 	sk->prot->retransmits ++;
 	if (!all) break;
 
@@ -1627,6 +1632,7 @@ oops:	retransmits++;
  * initiating a backoff.
  */
 
+/* ip协议的超时重传函数 */
 void
 ip_retransmit(struct sock *sk, int all)
 {

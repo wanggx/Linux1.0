@@ -29,6 +29,7 @@
 
 
 /* These are the defined Ethernet Protocol ID's. */
+/* 系统中定义的以太网协议ID */
 #define ETH_P_LOOP	0x0060		/* Ethernet Loopback packet	*/
 #define ETH_P_ECHO	0x0200		/* Ethernet Echo packet		*/
 #define ETH_P_PUP	0x0400		/* Xerox PUP packet		*/
@@ -42,6 +43,7 @@
 #define ETH_P_ALL	0x0003		/* Every packet (be careful!!!) */
 
 /* This is an Ethernet frame header. */
+/* 以太网头部 */
 struct ethhdr {
   unsigned char		h_dest[ETH_ALEN];	/* destination eth addr	*/
   unsigned char		h_source[ETH_ALEN];	/* source ether addr	*/

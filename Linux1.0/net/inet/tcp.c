@@ -224,6 +224,7 @@ static void tcp_time_wait(struct sock *sk)
  *	nothing clever here.
  */
 
+/* tcpÖØ´«º¯Êı */
 static void
 tcp_retransmit(struct sock *sk, int all)
 {

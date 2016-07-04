@@ -52,6 +52,7 @@
 #include <linux/ddi.h>
 
 
+/* 将x的0-8位和8-16未调换 */
 #define NET16(x)	((((x) >> 8) & 0x00FF) | (((x) << 8) & 0xFF00))
 
 

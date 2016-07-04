@@ -157,6 +157,7 @@ struct packet_type {
 				 * devices will have to translate
 				 * appropriately.
 				 */
+  /* copy功能和struct inet_protocol中的copy意义相同  */
   unsigned short	copy:1;
   /* 交给上层处理的函数，如ip包(通过type字段来判断)则处理函数是ip_rcv */
   int			(*func) (struct sk_buff *, struct device *,

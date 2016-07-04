@@ -98,6 +98,7 @@ void
 net_timer (unsigned long data)
 {
   struct sock *sk = (struct sock*)data;
+  /* 相当于获取时钟的类型吧， */
   int why = sk->timeout;
   /* timeout is overwritten by 'delete_timer' and 'reset_timer' */
 
@@ -189,6 +190,7 @@ net_timer (unsigned long data)
 	  /* printk("timer: seq %d retrans %d out %d cong %d\n", sk->send_head->h.seq,
 	     sk->retransmits, sk->packets_out, sk->cong_window); */
 	  DPRINTF ((DBG_TMR, "retransmitting.\n"));
+          /* 调用tcp协议的超时重传函数 */
 	  sk->prot->retransmit (sk, 0);
 	  if ((sk->state == TCP_ESTABLISHED && sk->retransmits && !(sk->retransmits & 7))
 	    || (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR1)) {

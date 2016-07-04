@@ -298,9 +298,11 @@ dev_add_pack(struct packet_type *pt)
   /*
    *	NIT taps must go at the end or inet_bh will leak!
    */
-   
+  
+
   if(pt->type==NET16(ETH_P_ALL))
   {
+        /* 将pt添加到末尾 */
   	pt->next=NULL;
   	if(ptype_base==NULL)
 	  	ptype_base=pt;
@@ -316,6 +318,7 @@ dev_add_pack(struct packet_type *pt)
 
 
 /* Remove a protocol ID from the list.  This will change soon. */
+/* 该函数功能和inet_del_protocol函数差不多 */
 void
 dev_remove_pack(struct packet_type *pt)
 {

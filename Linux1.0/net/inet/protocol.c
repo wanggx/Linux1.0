@@ -129,7 +129,7 @@ void inet_add_protocol(struct inet_protocol *prot)
   }
 }
 
-/* 函数协议 */
+/* 该函数删除指定的传输层协议 */
 int
 inet_del_protocol(struct inet_protocol *prot)
 {

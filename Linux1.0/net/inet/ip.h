@@ -26,6 +26,7 @@
 
 /* IP flags. */
 #define IP_CE		0x8000		/* Flag: "Congestion"		*/
+/* 表示不分段 */
 #define IP_DF		0x4000		/* Flag: "Don't Fragment"	*/
 #define IP_MF		0x2000		/* Flag: "More Fragments"	*/
 #define IP_OFFSET	0x1FFF		/* "Fragment Offset" part	*/
