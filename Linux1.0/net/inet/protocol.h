@@ -47,9 +47,10 @@ struct inet_protocol {
 				       unsigned long daddr,
 				       unsigned long saddr,
 				       struct inet_protocol *protocol);
+  /* 表示同一个协议的链表，先通过protocol来hash出来索引 */
   struct inet_protocol *next;  
   unsigned char		protocol;  /*不同协议的一个ID,通过枚举来赋值的*/
-  unsigned char		copy:1;
+  unsigned char		copy:1;    /* 表示在next的链表中，是否还有后续的元素的protocol值和当前相同 */
   void			*data;
   char 			*name;	/* 协议名称 */
 };

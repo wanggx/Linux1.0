@@ -50,9 +50,13 @@ unsigned long intr_count = 0;
  * If bit N of bh_mask is set then the Nth element of bh_base contains the address of a bottom half routine. 
  * If bit N of bh_active is set then the N'th bottom half handler routine should be called as soon as the scheduler deems reasonable.
  */
+/* 表示是否可以处理某个中断的下半部分，是否可以处理通过
+  * bh_active & hb_mask来判断
+  */
 unsigned long bh_active = 0;
 /* mask表示bh_base中包含有地址实例 */
 unsigned long bh_mask = 0xFFFFFFFF;
+/* 中断的下半部分数组 */
 struct bh_struct bh_base[32]; 
 
 void disable_irq(unsigned int irq_nr)
@@ -102,6 +106,7 @@ void enable_irq(unsigned int irq_nr)
  */
 
 /* http://www.tldp.org/LDP/tlk/kernel/kernel.html */
+/* 执行中断的下半部分 */
 asmlinkage void do_bottom_half(void)
 {
 	unsigned long active;
@@ -212,6 +217,7 @@ static struct sigaction irq_sigaction[16] = {
  * IRQ's should use this format: notably the keyboard/timer
  * routines.
  */
+/* 处理中断 */
 asmlinkage void do_IRQ(int irq, struct pt_regs * regs)
 {
 	struct sigaction * sa = irq + irq_sigaction;
@@ -233,6 +239,7 @@ asmlinkage void do_fast_IRQ(int irq)
 	sa->sa_handler(irq);
 }
 
+/* 注册中断 */
 int irqaction(unsigned int irq, struct sigaction * new_sa)
 {
 	struct sigaction * sa;
@@ -266,6 +273,10 @@ int irqaction(unsigned int irq, struct sigaction * new_sa)
 	return 0;
 }
 		
+/* 注册中断请求
+  * irq为中断请求号 
+  * handle为中断处理句柄  
+  */
 int request_irq(unsigned int irq, void (*handler)(int))
 {
 	struct sigaction sa;

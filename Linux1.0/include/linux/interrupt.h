@@ -34,6 +34,7 @@ extern inline void disable_bh(int nr)
 	__asm__ __volatile__("andl %1,%0":"=m" (bh_mask):"ir" (~(1<<nr)));
 }
 
+/* 禁用中断下半部分 */
 extern inline void enable_bh(int nr)
 {
 	__asm__ __volatile__("orl %1,%0":"=m" (bh_mask):"ir" (1<<nr));

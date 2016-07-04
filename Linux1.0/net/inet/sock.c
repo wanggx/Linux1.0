@@ -2048,6 +2048,7 @@ void inet_proto_init(struct ddi_proto *pro)
   }
 
   /* Initialize the DEV module. */
+  /* 初始化网络设备 */
   dev_init();
 
   /* Initialize the "Buffer Head" pointers. */

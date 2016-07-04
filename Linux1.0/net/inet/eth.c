@@ -94,6 +94,7 @@ eth_dump(struct ethhdr *eth)
 
 
 /* Create the Ethernet MAC header. */
+/* 构建以太网头部的回调函数 */
 int
 eth_header(unsigned char *buff, struct device *dev, unsigned short type,
 	   unsigned long daddr, unsigned long saddr, unsigned len)

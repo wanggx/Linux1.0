@@ -93,16 +93,19 @@ unsigned long net_dev_init (unsigned long mem_start, unsigned long mem_end)
    long.
  */
 
-/* 这个函数执行完毕之后，Linux就可以正确操作网卡，
+/* 初始化以太网设备函数 
+ * 这个函数执行完毕之后，Linux就可以正确操作网卡，
  * 而网卡已经作为一个dev对象嵌入到Linux内核  
  */
 struct device *init_etherdev(struct device *dev, int sizeof_private,
 							 unsigned long *mem_startp)
 {
 	int i;
+        /* 表示是否是一个新的设备 */
 	int new_device = 0;
 
 	if (dev == NULL) {
+                /* eth%d表示网卡的名称，注意每个设备后面的内存布局 */
 		int alloc_size = sizeof(struct device) + sizeof("eth%d ")
 			+ sizeof_private;
 		if (mem_startp && *mem_startp ) {
@@ -149,6 +152,7 @@ struct device *init_etherdev(struct device *dev, int sizeof_private,
 	if (new_device) {
 		/* Append the device to the device queue. */
 		struct device **old_devp = &dev_base;
+                /* 将新的设备添加到设备链表的末尾 */
 		while ((*old_devp)->next)
 			old_devp = & (*old_devp)->next;
 		(*old_devp)->next = dev;

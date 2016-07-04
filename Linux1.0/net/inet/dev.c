@@ -125,7 +125,7 @@ static struct packet_type arp_packet_type = {
 #endif
 };
 
-
+/* ip包类型结构 */
 static struct packet_type ip_packet_type = {
   NET16(ETH_P_IP),
   0,		/* copy */
@@ -347,6 +347,7 @@ dev_remove_pack(struct packet_type *pt)
 
 
 /* Find an interface in the list. This will change soon. */
+/* 根据名称来获取设备 */
 struct device *
 dev_get(char *name)
 {
@@ -491,7 +492,7 @@ dev_queue_xmit(struct sk_buff *skb, struct device *dev, int pri)
  */
 
 /* 驱动程序调用 netif_rx 将接收到的数据包缓存于该队列中
- */
+  */
 void
 netif_rx(struct sk_buff *skb)
 {
@@ -657,6 +658,9 @@ inet_bh(void *tmp)
 	 * change soon if I get my way- FvK), and forward the packet
 	 * to anyone who wants it.
 	 */
+	/* 扫描所有包类型的链表，然后根据包类型来调用相应的上层函数
+	  * 如ip_rcv，arp_rcv等等
+	  */
 	for (ptype = ptype_base; ptype != NULL; ptype = ptype->next) {
 		if (ptype->type == type || ptype->type == NET16(ETH_P_ALL)) {
 			struct sk_buff *skb2;
@@ -686,6 +690,7 @@ inet_bh(void *tmp)
 			flag = 1;
 
 			/* Kick the protocol handler. */
+			/* 调用网络层的ip_rcv函数等等*/
 			ptype->func(skb2, skb->dev, ptype);
 		}
 	}
@@ -1040,6 +1045,7 @@ dev_ioctl(unsigned int cmd, void *arg)
 
 
 /* Initialize the DEV module. */
+/* 初始化所有的设备 */
 void
 dev_init(void)
 {

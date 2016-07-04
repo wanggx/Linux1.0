@@ -1294,7 +1294,7 @@ ip_forward(struct sk_buff *skb, struct device *dev, int is_frag)
 #endif
 
 /* This function receives all incoming IP datagrams. */
-/* 该函数通过 */
+/* 该函数在链路层被调用 */
 int
 ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 {

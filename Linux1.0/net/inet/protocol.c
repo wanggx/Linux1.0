@@ -81,6 +81,10 @@ static struct inet_protocol icmp_protocol = {
 
 
 struct inet_protocol *inet_protocol_base = &icmp_protocol;
+
+/* 网络层向传输控制层传递数据的数组，会扫描inet_protos数组
+  * 来确定调用不同的传输层协议，而链路层向网络层传输的则是struct packet_type
+  */
 struct inet_protocol *inet_protos[MAX_INET_PROTOS] = {
   NULL
 };
@@ -101,7 +105,7 @@ struct inet_protocol *inet_get_protocol(unsigned char prot)
 }
 
 /* 将prot协议添加到inet_protos协议数组当中
- */
+  */
 void inet_add_protocol(struct inet_protocol *prot)
 {
   unsigned char hash;
@@ -109,6 +113,7 @@ void inet_add_protocol(struct inet_protocol *prot)
 
   /* 注意是通过协议id来hash得到的一个hash数组中的索引的 */
   hash = prot->protocol & (MAX_INET_PROTOS - 1);
+	/* 将后添加的元素添加到第一个 */
   prot ->next = inet_protos[hash];
   inet_protos[hash] = prot;
   prot->copy = 0;
@@ -124,7 +129,7 @@ void inet_add_protocol(struct inet_protocol *prot)
   }
 }
 
-
+/* 函数协议 */
 int
 inet_del_protocol(struct inet_protocol *prot)
 {
@@ -133,9 +138,10 @@ inet_del_protocol(struct inet_protocol *prot)
   unsigned char hash;
 
   hash = prot->protocol & (MAX_INET_PROTOS - 1);
+	/* 如果是第一个，则直接删除 */
   if (prot == inet_protos[hash]) {
-	inet_protos[hash] = (struct inet_protocol *) inet_protos[hash]->next;
-	return(0);
+		inet_protos[hash] = (struct inet_protocol *) inet_protos[hash]->next;
+		return(0);
   }
 
   p = (struct inet_protocol *) inet_protos[hash];
@@ -145,11 +151,13 @@ inet_del_protocol(struct inet_protocol *prot)
 	 * the last one on the list, then we may need to reset
 	 * someones copied bit.
 	 */
+	/* 如果在next的链表中找到 */
 	if (p->next != NULL && p->next == prot) {
 		/*
 		 * if we are the last one with this protocol and
 		 * there is a previous one, reset its copy bit.
 		 */
+		   /* 如果将最后一个协议删除，则将之前和该协议相同的协议的copy设置为0 */
 	     if (p->copy == 0 && lp != NULL) lp->copy = 0;
 	     p->next = prot->next;
 	     return(0);

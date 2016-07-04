@@ -260,5 +260,5 @@ static struct device ppp0_dev = {
 #   define	NEXT_DEV	(&loopback_dev)
 #endif
 
-
+/* …Ë±∏¡¥±Ì */
 struct device *dev_base = NEXT_DEV;

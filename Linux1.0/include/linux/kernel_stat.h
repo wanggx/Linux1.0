@@ -15,6 +15,7 @@ struct kernel_stat {
 	unsigned int dk_drive[DK_NDRIVE];
 	unsigned int pgpgin, pgpgout;
 	unsigned int pswpin, pswpout;
+        /* 内核中处理中断的数量 */
 	unsigned int interrupts;
 	unsigned int ipackets, opackets;
 	unsigned int ierrors, oerrors;

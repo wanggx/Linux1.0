@@ -55,7 +55,7 @@ struct device {
    * (i.e. as seen by users in the "Space.c" file).  It is the name
    * the interface.
    */
-  char			  *name;
+  char			  *name;                    /* 设备名称，如网卡设备就是eth%d */
 
   /* I/O specific fields.  These will be moved to DDI soon. */
   unsigned long		  rmem_end;		/* shmem "recv" end	*/
@@ -63,12 +63,13 @@ struct device {
   unsigned long		  mem_end;		/* sahared mem end	*/
   unsigned long		  mem_start;		/* shared mem start	*/
   unsigned short	  base_addr;		/* device I/O address	*/
+  /* 设备的中断请求号 */
   unsigned char		  irq;			/* device IRQ number	*/
 
   /* Low-level status flags. */
   volatile unsigned char  start,		/* start an operation	*/
-                          tbusy,		/* transmitter busy	*/
-                          interrupt;		/* interrupt arrived	*/
+                          tbusy,		/* transmitter busy	*/    /* 表示当前设备是否忙于发送数据 */
+                          interrupt;		/* interrupt arrived	*/  /* 表示正在处理一个中断 */
 
   /*
    * Another mistake.
@@ -79,6 +80,7 @@ struct device {
   struct device		  *next;
 
   /* The device initialization function. Called only once. */
+  /* 设备初始化函数 */
   int			  (*init)(struct device *dev);
 
   /* Some hardware also needs these fields, but they are not part of the
@@ -104,6 +106,7 @@ struct device {
   unsigned short	  mtu;		/* interface MTU value		*/
   unsigned short	  type;		/* interface hardware type	*/
   unsigned short	  hard_header_len;	/* hardware hdr length	*/
+  /* 设备携带的对应私有数据，如以太网的则为struct lance_private结构 */
   void			  *priv;	/* pointer to private data	*/
 
   /* Interface address info. */
@@ -124,7 +127,7 @@ struct device {
   int			  (*stop)(struct device *dev);
   int			  (*hard_start_xmit) (struct sk_buff *skb,
 					      struct device *dev);
-  /* 完成mac首部的创建 */
+  /* 完成mac首部的创建回调 */
   int			  (*hard_header) (unsigned char *buff,
 					  struct device *dev,
 					  unsigned short type,
@@ -159,7 +162,8 @@ struct packet_type {
   int			(*func) (struct sk_buff *, struct device *,
 				 struct packet_type *);
   void			*data;
-  struct packet_type	*next;  /* 包链表 */
+  /* 包链表 */
+  struct packet_type	*next;  
 };
 
 
