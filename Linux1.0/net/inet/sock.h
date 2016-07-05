@@ -235,10 +235,12 @@ struct sock {
   struct socket			*socket;
   
   /* Callbacks */
-  /* 唤醒等待socket的进程 */
+  /* 唤醒等待socket的进程，也就是sock的状态发生改变 */
   void				(*state_change)(struct sock *sk);
+  /* 表示sock的数据已经准备好 */
   void				(*data_ready)(struct sock *sk,int bytes);
   void				(*write_space)(struct sock *sk);
+  /* 错误报告函数，通过icmp_rcv函数调用 */
   void				(*error_report)(struct sock *sk);
   
 };

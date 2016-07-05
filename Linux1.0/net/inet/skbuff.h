@@ -90,7 +90,7 @@ struct sk_buff {
 				         * 在mac首部尚未完成建立之前，该数据包一直处于发送缓冲队列中
                               */
   unsigned char			tries,lock;	/* Lock is now unused */
-						 /* 使用该数据包的模块数 */
+						 /* 使用该数据包的模块数，使用struct sock的进程数量 */
   unsigned short		users;		/* User count - see datagram.c (and soon seqpacket.c/stream.c) */
   unsigned long			padding[0];  /* 填充字节，目前定义为0字节，无需填充 */
   /* 之后的内存是需要发送到网络的数据，data即是sk_buff的末尾

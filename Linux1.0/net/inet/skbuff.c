@@ -321,7 +321,7 @@ void skb_new_list_head(struct sk_buff *volatile* list)
  *	type system cli() peek the buffer copy the data and sti();
  */
 
-/* 函数作用很简单，就是去除一个指向sk_buff的指针 */
+/* 函数作用很简单，就是取出一个指向sk_buff的指针 */
 struct sk_buff *skb_peek(struct sk_buff *volatile* list)
 {
 	return *list;
@@ -450,7 +450,7 @@ void kfree_skb(struct sk_buff *skb, int rw)
  *	fields and also do memory statistics to find all the [BEEP] leaks.
  */
 
-/* kmalloc一个sk_buf，并初始化sk_buf数据*/
+/* kmalloc一个sk_buf，并初始化sk_buf数据 */
 struct sk_buff *alloc_skb(unsigned int size,int priority)
 {
 	struct sk_buff *skb;
@@ -474,7 +474,7 @@ struct sk_buff *alloc_skb(unsigned int size,int priority)
 	net_memory+=size;
 	net_skbcount++;
 	skb->magic_debug_cookie=SK_GOOD_SKB;
-    /* 初始化使用skb的进程数为0 */
+       /* 初始化使用skb的进程数为0 */
 	skb->users=0;   
 	return skb;
 }

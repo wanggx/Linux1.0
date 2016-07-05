@@ -41,7 +41,8 @@ struct linger {
 
 /* Flags we can use with send/ and recv. */
 #define MSG_OOB		1
-#define MSG_PEEK	2   /* 仅仅是数据预先读取和检查 */
+/* 仅仅是数据预先读取和检查，例如读取一个skb，但是不将skb从队列中删除  */
+#define MSG_PEEK	2   
 
 /* Setsockoptions(2) level. Thanks to BSD these must match IPPROTO_xxx */
 #define SOL_SOCKET	1  /* 基本套接口 */

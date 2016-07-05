@@ -99,6 +99,9 @@ restart:
 		/* Interrupts off so that no packet arrives before we begin sleeping.
 		   Otherwise we might miss our wake up */
 		cli();
+                /* 如果此时，数据读取队列仍然为NULL，并且也不阻塞，
+                  * 则当前进程可中断的睡眠
+                  */
 		if (sk->rqueue == NULL)
 		{
 			interruptible_sleep_on(sk->sleep);
@@ -124,6 +127,11 @@ restart:
 	  }
 	  /* Again only user level code calls this function, so nothing interrupt level
 	     will suddenely eat the rqueue */
+          /* 运行到这里则代表struct sock的读取队列中有数据包可读取，
+            * 如果不是预读取，则从读取队列中移除一个skb，否则不移除， 
+            * 仅仅是读取了里面的数据，例如需要读取前面几个字节需要知道数据包信息的 
+            * 情况下  
+            */
 	  if (!(flags & MSG_PEEK))
 	  {
 	    /* 从读队列中获取一个skb */
@@ -147,7 +155,7 @@ restart:
 }
 
 
-/* skb_free_datagram 函数释放一个数据包，141 行递减用户计输，每个使用该数据包的进程都
+/* skb_free_datagram 函数释放一个数据包，166 行递减用户计数，每个使用该数据包的进程都
  * 回增加该 sk_buff 结构的 users 字段，一旦该字段为 0，表示这是一个游离的数据包，可以进
  * 行释放，否则表示还有进程在使用该数据包，此时不可进行释放，直接返回。148 行检查数
  * 据包是否仍然处于系统某个队列中， 如果数据包还被挂接在系统队列中， 也不可对其进行释

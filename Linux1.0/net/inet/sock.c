@@ -1811,7 +1811,10 @@ void sock_rfree(struct sock *sk, void *mem, unsigned long size)
 
 /* 获取协议上操作某个端口的sock，其中限制条件是
  * 本地地址和本地端口，远程地址和远程端口
- * 该函数和put_sock功能相反
+ * 该函数和put_sock功能相反，为什么要按照这个条件来获取struct sock 
+ * 例如当客户端和服务器之间有一个保活的连接，在保活的时间间隔当中 
+ * 服务器重启，当保活的探测包到来时，此时就找不到对应的struct sock结构 
+ * 就会给客户端发送一个reset命令，告诉客户端重新连接 
  */
 struct sock *get_sock(struct proto *prot, unsigned short num,
 				unsigned long raddr,
@@ -1904,6 +1907,9 @@ void release_sock(struct sock *sk)
 	}
 	sti();
 	DPRINTF((DBG_INET, "sk->back_log = %X\n", sk->back_log));
+        /* 注意在这里如果是tcp协议的则调用的tcp_rcv，
+          * 如果是udp则调用的是udp_rcv函数
+          */
 	if (sk->prot->rcv) sk->prot->rcv(skb, skb->dev, sk->opt,
 					 skb->saddr, skb->len, skb->daddr, 1,
 

@@ -161,7 +161,8 @@ icmp_send(struct sk_buff *skb_in, int type, int code, struct device *dev)
  * 每个元素对应一个传输层协议，协议在数组中的位置由协议编号索引，如 TCP 协议对应索
  * 引号为 6，UDP 为 17。274-287 行代码完成对传输层协议的遍历，调用协议对应错误处理函
  * 数进行返回错误的处理。 注意 inet_protos 数组中每个元素对应一个协议， 所以 274 行在一次
- * 循环后会退出，但这种编码方式提高了程序的可扩展性。
+ * 循环后会退出，但这种编码方式提高了程序的可扩展性。 
+ * Internet不可达错误处理在继续调用传输层的错误回调句柄，err_handler 
  */
 static void
 icmp_unreach(struct icmphdr *icmph, struct sk_buff *skb)
@@ -386,7 +387,11 @@ icmp_address(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev,
 
 
 /* Deal with incoming ICMP packets. */
-/* icmp协议数据接收函数 */
+/* icmp协议数据接收函数，当通过IP协议发送数据时，
+  * 数据包发送到某个路由器或站点时，由于各种原因无法再继续 
+  * 发送时，此时数据包所在的站点就会给数据包的源站点发送 
+  * 数据包不可达信息，在该函数中会调用icmp_unreach函数  
+  */
 int
 icmp_rcv(struct sk_buff *skb1, struct device *dev, struct options *opt,
 	 unsigned long daddr, unsigned short len,

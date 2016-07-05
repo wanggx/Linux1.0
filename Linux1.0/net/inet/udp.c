@@ -92,6 +92,10 @@ print_udp(struct udphdr *uh)
  * header points to the first 8 bytes of the udp header.  We need
  * to find the appropriate port.
  */
+/* udp错误处理函数，网络层到传输层的错误处理过程
+  * 如udp协议发送数据时，出现问题，根据相应的反馈来给出 
+  * 错误提示或处理 
+  */
 void
 udp_err(int err, unsigned char *header, unsigned long daddr,
 	unsigned long saddr, struct inet_protocol *protocol)
@@ -134,7 +138,7 @@ sport=%d,dport=%d", err, header, daddr, saddr, protocol, (int)th->source,(int)th
   sk->error_report(sk);
 }
 
-
+/* udp协议的数据校验函数，就是产生校验数据 */
 static unsigned short
 udp_check(struct udphdr *uh, int len,
 	  unsigned long saddr, unsigned long daddr)
@@ -362,7 +366,7 @@ udp_write(struct sock *sk, unsigned char *buff, int len, int noblock,
   return(udp_sendto(sk, buff, len, noblock, flags, NULL, 0));
 }
 
-
+/* ioctl系统调用udp的具体实现 */
 int
 udp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 {

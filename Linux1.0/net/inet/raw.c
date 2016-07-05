@@ -282,7 +282,7 @@ raw_close(struct sock *sk, int timeout)
   release_sock(sk);
 }
 
-
+/* 原始套接字的初始化 */
 static int
 raw_init(struct sock *sk)
 {
