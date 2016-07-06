@@ -65,6 +65,7 @@ ddi_map(const char *id)
  * system startup.  Its purpose is to walk trough the "devices"
  * table (defined above), and to call all moduled defined in it.
  */
+/* 所有的网络设备都在这里通过设备的形式来初始化 */
 void ddi_init(void)
 {
   struct ddi_proto *pro;
@@ -74,6 +75,7 @@ void ddi_init(void)
 
   /* First off, kick all configured protocols. */
   pro = protocols;
+  /* 所有设备协议的初始化 */
   while (pro->name != NULL) {
 	(*pro->init)(pro);
 	pro++;

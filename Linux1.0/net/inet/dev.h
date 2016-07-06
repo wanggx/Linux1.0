@@ -48,6 +48,7 @@
  * gradually phase out this structure, and replace it with the
  * more general (but stolen :-) BSD "ifnet" structure. -FvK
  */
+/* 内核设备结构 */
 struct device {
 
   /*

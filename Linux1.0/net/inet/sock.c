@@ -845,9 +845,10 @@ static int inet_create(struct socket *sock, int protocol)
 			kfree_s((void *)sk, sizeof(*sk));
 			return(-EPROTONOSUPPORT);
 		}
+                /* 默认的设置为udp的协议 */
 		protocol = IPPROTO_UDP;
 		sk->no_check = UDP_NO_CHECK;
-		prot=&udp_prot;
+		prot=&udp_prot;          /* 注意数据报的则是UDP协议 */
 		break;
       
 	case SOCK_RAW:
@@ -859,7 +860,7 @@ static int inet_create(struct socket *sock, int protocol)
 			kfree_s((void *)sk, sizeof(*sk));
 			return(-EPROTONOSUPPORT);
 		}
-		prot = &raw_prot;
+		prot = &raw_prot;          /* 原始套接字的则是raw_prot操作集 */
 		sk->reuse = 1;
 		sk->no_check = 0;	/*
 					 * Doesn't matter no checksum is
@@ -967,6 +968,7 @@ static int inet_create(struct socket *sock, int protocol)
   /* 初始化最大传输单元 */
   sk->mtu = 576;
   sk->prot = prot;
+  /* 注意struct socket和struct sock中的等待队列是一个 */
   sk->sleep = sock->wait;
 
   /* 初始化本地和远端地址 */
@@ -1021,6 +1023,7 @@ static int inet_create(struct socket *sock, int protocol)
 	sk->dummy_th.source = ntohs(sk->num);
   }
 
+  /* 注意在这里对协议对应的套接字进行初始化 */
   if (sk->prot->init) {
 	err = sk->prot->init(sk);
 	if (err != 0) {
@@ -2008,8 +2011,9 @@ extern unsigned long seq_offset;
 
 /* Called by ddi.c on kernel startup.  */
 
-/* AF_INET族协议初始化
- */
+/* AF_INET族协议初始化，注册INET协议设备的文件操作符
+  * 同时注册INET协议族的函数操作集合 
+  */
 void inet_proto_init(struct ddi_proto *pro)
 {
   struct inet_protocol *p;

@@ -76,6 +76,9 @@ struct socket {
   short			type;		/* SOCK_STREAM, ...		*/
   socket_state		state;
   long			flags;
+  /* 这里的ops表示struct socket对应的不同协议族的操作函数集合,
+    * 而struct sock中的prot则表示在协议族下面不同协议的函数操作集合 
+    */
   struct proto_ops	*ops;		/* protocols do most everything	*/
   /* 这就是socket的协议数据，其实就是struct sock结构，
     * 如果是UNIX协议族，则是struct unix_proto_data结构

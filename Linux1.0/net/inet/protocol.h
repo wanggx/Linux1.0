@@ -51,6 +51,7 @@ struct inet_protocol {
   struct inet_protocol *next;  
   unsigned char		protocol;  /*不同协议的一个ID,通过枚举来赋值的*/
   unsigned char		copy:1;    /* 表示在next的链表中，是否还有后续的元素的protocol值和当前相同 */
+  /* 在raw套接字协议当中，该data携带的是struct inet_protocol结构 */
   void			*data;
   char 			*name;	/* 协议名称 */
 };

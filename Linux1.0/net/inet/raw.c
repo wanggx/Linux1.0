@@ -90,6 +90,7 @@ raw_err (int err, unsigned char *header, unsigned long daddr,
  * This should be the easiest of all, all we do is\
  * copy it into a buffer.
  */
+/* 原始套接字的接收函数 */
 int
 raw_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 	unsigned long daddr, unsigned short len, unsigned long saddr,
@@ -282,7 +283,10 @@ raw_close(struct sock *sk, int timeout)
   release_sock(sk);
 }
 
-/* 原始套接字的初始化 */
+/* 原始套接字的初始化，在调用inet_create函数时，最后会初始化
+  * 只有raw协议有该初始化函数，注意在每次调用inet_create函数时 
+  * 都会调用该初始化函数，则多次调用的原因是什么？ 
+  */
 static int
 raw_init(struct sock *sk)
 {
@@ -376,7 +380,7 @@ raw_read (struct sock *sk, unsigned char *buff, int len, int noblock,
   return(raw_recvfrom(sk, buff, len, noblock, flags, NULL, NULL));
 }
 
-
+/* 原始套接字协议 */
 struct proto raw_prot = {
   sock_wmalloc,
   sock_rmalloc,

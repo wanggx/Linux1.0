@@ -36,7 +36,9 @@
 #include "inet/ax25call.h"
 #endif
 
-/* 设备驱动接口协议 */
+/* 设备驱动接口协议数组，其中包括对不同协议设备的初始化
+  * 如常用的UNIX、INET协议 
+  */
 struct ddi_proto protocols[] = {
 #ifdef	CONFIG_UNIX
   { "UNIX",	unix_proto_init	},

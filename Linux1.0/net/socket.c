@@ -75,6 +75,7 @@ static struct socket sockets[NSOCKETS];
 
 /* 等待使用struct socket结构的进程队列，目前系统中支持的struct sockets结构为NSOCKETS个 */
 static struct wait_queue *socket_wait_free = NULL;
+/* 系统中所有的协议族数据，如常用的UNIX、INET协议族 */
 static struct proto_ops *pops[NPROTO];
 static int net_debug = 0;
 
@@ -1165,7 +1166,7 @@ sock_init(void)
   /* Initialize the DDI module. */
 
 /* 设备驱动接口模块
- */
+  */
   ddi_init();
 
   /* Initialize the ARP module. */

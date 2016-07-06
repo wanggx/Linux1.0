@@ -983,7 +983,9 @@ static struct proto_ops unix_proto_ops = {
   NULL				/* unix_proto_fcntl	*/
 };
 
-/* AF_UNIX族协议操作函数 */
+/* AF_UNIX族协议操作函数，同时注册设备的文件操作符
+  * 和对应的UNIX协议族的操作函数集合
+  */
 void unix_proto_init(struct ddi_proto *pro)
 {
   struct unix_proto_data *upd;
