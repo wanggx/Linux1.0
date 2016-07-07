@@ -107,6 +107,7 @@ raw_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 	kfree_skb(skb, FREE_READ);
 	return(0);
   }
+  /* 取出对应的sock套接字数据 */
   sk = (struct sock *) protocol->data;
   if (sk == NULL) {
 	kfree_skb(skb, FREE_READ);
@@ -114,6 +115,13 @@ raw_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
   }
 
   /* Now we need to copy this into memory. */
+  /* 设置skb对应的sock套接字，在网络层向传输层传递数据时，
+    * 会循环扫描struct inet_protocol散列表，符合protocol的结构
+    * 都会被调用对应的rcv回调函数，如果一个skb包有对应的多个
+    * struct inet_protocol，则之前扫描到的都带有copy位，则此时
+    * 如raw_rcv接收到的skb都是复制了原来的一份skb，所以在下面
+    * 一句中就会设置对应的套接字
+    */
   skb->sk = sk;
   skb->len = len + skb->ip_hdr->ihl*sizeof(long);
   skb->h.raw = (unsigned char *) skb->ip_hdr;
@@ -297,6 +305,7 @@ raw_init(struct sock *sk)
 
   p->handler = raw_rcv;
   p->protocol = sk->protocol;
+  /* 携带对应的sock套接字 */
   p->data = (void *)sk;
   p->err_handler = raw_err;
   p->name="USER";
@@ -316,6 +325,7 @@ raw_init(struct sock *sk)
  * This should be easy, if there is something there
  * we return it, otherwise we block.
  */
+/* 原始套接字的接收函数 */
 int
 raw_recvfrom(struct sock *sk, unsigned char *to, int len,
 	     int noblock, unsigned flags, struct sockaddr_in *sin,

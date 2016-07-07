@@ -160,7 +160,7 @@ packet_close(struct sock *sk, int timeout)
   release_sock(sk);
 }
 
-
+/* packet协议初始化 */
 static int
 packet_init(struct sock *sk)
 {

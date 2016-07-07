@@ -69,6 +69,7 @@ struct sk_buff {
 	ipx_packet	*ipx;
 #endif	
   } h;
+  /* IP协议的头部，在RAW的套接字中会用到 */
   struct iphdr		*ip_hdr;		/* For IPPROTO_RAW */
   unsigned long			mem_len;    /* sk_buff的内存长度 */
   unsigned long 		len;		/* 实际数据长度 */

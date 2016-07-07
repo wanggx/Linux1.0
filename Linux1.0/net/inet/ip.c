@@ -320,6 +320,7 @@ do_options(struct iphdr *iph, struct options *opt)
   buff = (unsigned char *)(iph + 1);
 
   /* Now start the processing. */
+  /* 开始处理选项数据 */
   while (!done && len < iph->ihl*4) switch(*buff) {
 	case IPOPT_END:
 		done = 1;
@@ -1303,7 +1304,8 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 {
   struct iphdr *iph = skb->h.iph;
   unsigned char hash;
-  unsigned char flag = 0;
+  /* 标记，表示该skb能够顺利交给上层处理，如果不能交给上层处理，则发送不可达错误 */
+  unsigned char flag = 0;         
   unsigned char opts_p = 0;	/* Set iff the packet has options. */
   struct inet_protocol *ipprot;
   static struct options opt; /* since we don't use these yet, and they
@@ -1324,6 +1326,7 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 	return(0);
   }
   
+  /* 如果携带有额外数据 */
   if (iph->ihl != 5) {  	/* Fast path for the typical optionless IP packet. */
       ip_print(iph);		/* Bogus, only for debugging. */
       memset((char *) &opt, 0, sizeof(opt));
@@ -1389,6 +1392,7 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
   /* Point into the IP datagram, just past the header. */
 
   skb->ip_hdr = iph;
+  /* h.raw记录头部之后的TCP数据 */
   skb->h.raw += iph->ihl*4;
   hash = iph->protocol & (MAX_INET_PROTOS -1);
 
@@ -1408,7 +1412,13 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 	* only be set if more than one protocol wants it. 
 	* and then not for the last one.
 	*/
+       /* 执行到这表示传输层协议相同，如果有copy位，
+         * 则表示在网络层想传输层传递数据时，不止一个 
+         * 协议需要该数据包，注意这是在一个for循环当中， 
+         * 会将数据包发送给所有协议相同的上传协议 
+         */
        if (ipprot->copy) {
+                /* 重新要分配一个skb */
 		skb2 = alloc_skb(skb->mem_len, GFP_ATOMIC);
 		if (skb2 == NULL) 
 			continue;
@@ -1422,10 +1432,12 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 				(unsigned long)skb2 +
 				(unsigned long) skb->h.raw -
 				(unsigned long)skb);
+                /* 表明无需缓存 */
 		skb2->free=1;
 	} else {
 		skb2 = skb;
 	}
+        /* 可以正常交给上层协议处理 */
 	flag = 1;
 
        /*
@@ -1434,7 +1446,9 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 	* check the protocol handler's return values here...
 	*/
 
-	/* 此处开始调用到tcp_rcv函数 */
+        /* 此处开始调用到tcp_rcv函数，此处处理的是skb2，
+          * 如果有copy位，则重新复制一个skb，
+          */
 	ipprot->handler(skb2, dev, opts_p ? &opt : 0, iph->daddr,
 			(ntohs(iph->tot_len) - (iph->ihl * 4)),
 			iph->saddr, 0, ipprot);
@@ -1447,6 +1461,7 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
    * causes (proven, grin) ARP storms and a leakage of memory (i.e. all
    * ICMP reply messages get queued up for transmission...)
    */
+  /* 没有合适的传输层处理函数 */
   if (!flag) {
 	if (brd != IS_BROADCAST)
 		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PROT_UNREACH, dev);

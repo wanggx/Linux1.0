@@ -48,7 +48,7 @@ struct route {
   unsigned long route[MAX_ROUTE];
 };
 
-
+/* ip协议头的选项数据 */
 struct options {
   struct route		record_route;
   struct route		loose_route;
@@ -63,18 +63,19 @@ struct options {
 
 
 struct iphdr {
-  unsigned char		ihl:4,
-			version:4;
-  unsigned char		tos;
-  unsigned short	tot_len;
+  /* 包头长度，单位是4个字节，IP包头最少长度为20个字节  */
+  unsigned char		ihl:4,             
+			version:4;              /* 协议版本 */
+  unsigned char		tos;               /* 服务类型 */
+  unsigned short	tot_len;        /* 包总共长度 */
   unsigned short	id;
-  unsigned short	frag_off;
-  unsigned char		ttl;
+  unsigned short	frag_off;       /* 分段偏移 */
+  unsigned char		ttl;                /* 存活时间 */
   unsigned char		protocol;  /* 表明上层使用的协议 */
   unsigned short	check;     /* ip协议校验和 */
   unsigned long		saddr;
   unsigned long		daddr;
-  /*The options start here. */
+  /*The options start here. */   /* 选项数据紧挨着后面存放 */
 };
 
 
