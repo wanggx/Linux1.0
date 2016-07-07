@@ -123,9 +123,11 @@ struct device *init_etherdev(struct device *dev, int sizeof_private,
 	if (dev->name  &&  dev->name[0] == '\0')
 		sprintf(dev->name, "eth%d", next_ethdev_number++);
 
+        /* 初始化设备的skb */
 	for (i = 0; i < DEV_NUMBUFFS; i++)
 		dev->buffs[i] = NULL;
 	
+        /* 设置链路层回调函数 */
 	dev->hard_header	= eth_header;
 	dev->add_arp		= eth_add_arp;
 	dev->queue_xmit		= dev_queue_xmit;

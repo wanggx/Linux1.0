@@ -144,6 +144,7 @@ raw_rcv(struct sk_buff *skb, struct device *dev, struct options *opt,
 
 
 /* This will do terrible things if len + ipheader + devheader > dev->mtu */
+/* RAW套接字的发送函数 */
 static int
 raw_sendto(struct sock *sk, unsigned char *from, int len,
 	   int noblock,
@@ -274,7 +275,11 @@ raw_write(struct sock *sk, unsigned char *buff, int len, int noblock,
   return(raw_sendto(sk, buff, len, noblock, flags, NULL, 0));
 }
 
-
+/* raw套接字关闭，因为raw套接字struct inet_protocol结构
+  * 的特殊性，套接字在关闭的时候，需要将套接字对应的 
+  * struct inet_protocol结构给删除，当网络层向传输层，传递 
+  * 数据时，就不会搜索到该套接字  
+  */
 static void
 raw_close(struct sock *sk, int timeout)
 {
@@ -284,6 +289,9 @@ raw_close(struct sock *sk, int timeout)
   DPRINTF((DBG_RAW, "raw_close: deleting protocol %d\n",
 	   ((struct inet_protocol *)sk->pair)->protocol));
 
+  /* 注意在此时才用上了，在raw_init时设置的pair变量，
+    * 也就是获取套接字对应的struct inet_protocol指针 
+    */
   if (inet_del_protocol((struct inet_protocol *)sk->pair) < 0)
 		DPRINTF((DBG_RAW, "raw_close: del_protocol failed.\n"));
   kfree_s((void *)sk->pair, sizeof (struct inet_protocol));
@@ -313,6 +321,9 @@ raw_init(struct sock *sk)
   inet_add_protocol(p);
    
   /* We need to remember this somewhere. */
+  /* 在关闭raw套接字的时候，需要获取sock套接字的struct inet_protocol指针
+    * 因此在此处给记住 
+    */
   sk->pair = (struct sock *)p;
 
   DPRINTF((DBG_RAW, "raw init added protocol %d\n", sk->protocol));
@@ -342,6 +353,7 @@ raw_recvfrom(struct sock *sk, unsigned char *to, int len,
   if (len == 0) return(0);
   if (len < 0) return(-EINVAL);
 
+  /* 如果接收通道关闭 */
   if (sk->shutdown & RCV_SHUTDOWN) return(0);
   if (addr_len) {
 	err=verify_area(VERIFY_WRITE, addr_len, sizeof(*addr_len));
@@ -364,11 +376,15 @@ raw_recvfrom(struct sock *sk, unsigned char *to, int len,
   if(skb==NULL)
   	return err;
 
+  /* 获取需要拷贝的字节数 */
   copied = min(len, skb->len);
   
   skb_copy_datagram(skb, 0, to, copied);
 
   /* Copy the address. */
+  /* 将地址信息拷贝到sin当中，因为sin此时
+    * 是一个传出参数
+    */
   if (sin) {
 	struct sockaddr_in addr;
 

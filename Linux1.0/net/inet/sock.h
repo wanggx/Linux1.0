@@ -121,7 +121,10 @@ struct sock {
   unsigned long		        lingertime;/*表示等待关闭操作的时间，只有当 linger 标志位为 1 时，该字段才有意义。*/
   int				proc;/* 该 sock 结构（即该套接字）所属的进程的进程号。*/
   struct sock			*next;   /* 形成struct sock的一个链表 */
-  struct sock			*pair;
+  /* 在RAW套接字创建和关闭的时候用来记录struct inet_protocol指针
+    * 在PACKET套接字创建和关闭时用来记录struct packet_type指针 
+    */
+  struct sock			*pair;   
 
   /* send_head, send_tail 用于 TCP协议重发队列。
     * send_head 指向的队列 （send_tail 指向该队列的尾部）， 

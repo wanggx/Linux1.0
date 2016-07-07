@@ -121,6 +121,7 @@ struct device {
   unsigned short	  pa_alen;	/* protocol address length	*/
 
   /* Pointer to the interface buffers. */
+  /* 设备对应的skb */
   struct sk_buff	  *volatile buffs[DEV_NUMBUFFS];
 
   /* Pointers to interface service routines. */

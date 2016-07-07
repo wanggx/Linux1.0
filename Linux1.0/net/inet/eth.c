@@ -59,6 +59,7 @@ char *eth_print(unsigned char *ptr)
   return(buff);
 }
 
+/* 设置设备的读写内存，中断号和地址 */
 void eth_setup(char *str, int *ints)
 {
 	struct device *d = dev_base;
@@ -175,6 +176,7 @@ eth_add_arp(unsigned long addr, struct sk_buff *skb, struct device *dev)
 
 
 /* Determine the packet's protocol ID. */
+/* 判断链路层包的类型 */
 unsigned short
 eth_type_trans(struct sk_buff *skb, struct device *dev)
 {

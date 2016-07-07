@@ -96,6 +96,7 @@ get_stats(struct device *dev)
 }
 
 /* Initialize the rest of the LOOPBACK device. */
+/* 回环设备的初始化 */
 int
 loopback_init(struct device *dev)
 {

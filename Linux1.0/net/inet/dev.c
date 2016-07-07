@@ -134,7 +134,7 @@ static struct packet_type ip_packet_type = {
   &arp_packet_type
 };
    
-
+/* */
 struct packet_type *ptype_base = &ip_packet_type;
 
 /* 全局数据包缓存队列，还有一个队列就是struct sock中的back_log队列  */
@@ -272,6 +272,7 @@ my_addr(void)
 static int dev_nit=0; /* Number of network taps running */
 
 /* Add a protocol ID to the list.  This will change soon. */
+/* 添加一个struct packet_type结构到ptype_base链表当中 */
 void
 dev_add_pack(struct packet_type *pt)
 {
@@ -662,7 +663,7 @@ inet_bh(void *tmp)
 	 * to anyone who wants it.
 	 */
 	/* 扫描所有包类型的链表，然后根据包类型来调用相应的上层函数
-	  * 如ip_rcv，arp_rcv等等
+	  * 如ip_rcv，arp_rcv等等，注意这里和网络层向传输层传递的扫描方式有点不一样
 	  */
 	for (ptype = ptype_base; ptype != NULL; ptype = ptype->next) {
 		if (ptype->type == type || ptype->type == NET16(ETH_P_ALL)) {
@@ -693,7 +694,7 @@ inet_bh(void *tmp)
 			flag = 1;
 
 			/* Kick the protocol handler. */
-			/* 调用网络层的ip_rcv函数等等*/
+			/* 调用网络层的ip_rcv函数等等 */
 			ptype->func(skb2, skb->dev, ptype);
 		}
 	}
