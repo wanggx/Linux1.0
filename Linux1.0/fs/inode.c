@@ -477,7 +477,7 @@ struct inode * get_pipe_inode(void)
 
 	if (!(inode = get_empty_inode()))
 		return NULL;
-	/*给命名管道分配一页的数据，从这里可以看出命名管道不适合大量数据传输*/
+	/* 给命名管道分配一页的数据，从这里可以看出命名管道不适合大量数据传输*/
 	if (!(PIPE_BASE(*inode) = (char*) __get_free_page(GFP_USER))) {
 		iput(inode);
 		return NULL;
@@ -488,6 +488,7 @@ struct inode * get_pipe_inode(void)
 	PIPE_WAIT(*inode) = NULL;
 	PIPE_START(*inode) = PIPE_LEN(*inode) = 0;
 	PIPE_RD_OPENERS(*inode) = PIPE_WR_OPENERS(*inode) = 0;
+        /* 设置读写数量为1 */
 	PIPE_READERS(*inode) = PIPE_WRITERS(*inode) = 1;
 	PIPE_LOCK(*inode) = 0;
 	inode->i_pipe = 1;

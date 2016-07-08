@@ -148,6 +148,7 @@ static struct inode_operations fifo_inode_operations = {
 	NULL			/* permission */
 };
 
+/* 如果判断是管道文件，则初始化管道对应的inode */
 void init_fifo(struct inode * inode)
 {
 	inode->i_op = &fifo_inode_operations;

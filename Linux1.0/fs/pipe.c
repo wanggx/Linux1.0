@@ -20,12 +20,13 @@
 /* Additionally, we now use locking technique. This prevents race condition  */
 /* in case of paging and multiple read/write on the same pipe. (FGC)         */
 
-
+/* 从管道的0通道中读取数据 */
 static int pipe_read(struct inode * inode, struct file * filp, char * buf, int count)
 {
 	int chars = 0, size = 0, read = 0;
         char *pipebuf;
 
+	/* 如果是非阻塞 */
 	if (filp->f_flags & O_NONBLOCK) {
 		if (PIPE_LOCK(*inode))
 			return -EAGAIN;
@@ -36,6 +37,7 @@ static int pipe_read(struct inode * inode, struct file * filp, char * buf, int c
 				return 0;
 	} else while (PIPE_EMPTY(*inode) || PIPE_LOCK(*inode)) {
 		if (PIPE_EMPTY(*inode)) {
+			/* 是否有人在写 */
 			if (!PIPE_WRITERS(*inode))
 				return 0;
 		}
@@ -43,6 +45,7 @@ static int pipe_read(struct inode * inode, struct file * filp, char * buf, int c
 			return -ERESTARTSYS;
 		interruptible_sleep_on(&PIPE_WAIT(*inode));
 	}
+	/* 锁住管道 */
 	PIPE_LOCK(*inode)++;
 	while (count>0 && (size = PIPE_SIZE(*inode))) {
 		chars = PIPE_MAX_RCHUNK(*inode);
@@ -59,6 +62,7 @@ static int pipe_read(struct inode * inode, struct file * filp, char * buf, int c
 		memcpy_tofs(buf, pipebuf, chars );
 		buf += chars;
 	}
+	/* 解除锁定 */
 	PIPE_LOCK(*inode)--;
 	wake_up_interruptible(&PIPE_WAIT(*inode));
 	if (read)
@@ -68,6 +72,7 @@ static int pipe_read(struct inode * inode, struct file * filp, char * buf, int c
 	return 0;
 }
 	
+/* 将数据写入管道的1通道当中 */
 static int pipe_write(struct inode * inode, struct file * filp, char * buf, int count)
 {
 	int chars = 0, free = 0, written = 0;
@@ -318,6 +323,7 @@ struct file_operations rdwr_fifo_fops = {
 	NULL
 };
 
+/* 0通道的读文件操作集合 */
 struct file_operations read_pipe_fops = {
 	pipe_lseek,
 	pipe_read,
@@ -331,6 +337,7 @@ struct file_operations read_pipe_fops = {
 	NULL
 };
 
+/* 1通道的写文件操作集 */
 struct file_operations write_pipe_fops = {
 	pipe_lseek,
 	bad_pipe_rw,
@@ -344,6 +351,9 @@ struct file_operations write_pipe_fops = {
 	NULL
 };
 
+/* 管道文件操作的函数集合，这个是管道对应的inode所属的f_op
+  * 而0，1通道都对应的是单独的读写文件操作函数集
+  */
 struct file_operations rdwr_pipe_fops = {
 	pipe_lseek,
 	pipe_read,
@@ -357,6 +367,7 @@ struct file_operations rdwr_pipe_fops = {
 	NULL
 };
 
+/* 管道文件的inode操作函数集 */
 struct inode_operations pipe_inode_operations = {
 	&rdwr_pipe_fops,
 	NULL,			/* create */
@@ -375,6 +386,10 @@ struct inode_operations pipe_inode_operations = {
 	NULL			/* permission */
 };
 
+/*  创建管道系统调用，
+  * fildes为输出参数，表示两个文件描述符 
+  *  0通道读，1通道写  
+  */
 asmlinkage int sys_pipe(unsigned long * fildes)
 {
 	struct inode * inode;
@@ -405,6 +420,7 @@ asmlinkage int sys_pipe(unsigned long * fildes)
 		f[1]->f_count--;
 		return -EMFILE;
 	}
+	/* 获取管道对应的inode */
 	if (!(inode=get_pipe_inode())) {
 		current->filp[fd[0]] = NULL;
 		current->filp[fd[1]] = NULL;
@@ -412,6 +428,9 @@ asmlinkage int sys_pipe(unsigned long * fildes)
 		f[1]->f_count--;
 		return -ENFILE;
 	}
+	/* 两个文件描述符对应同一个inode，
+	  * 0通道是读，1通道是写
+	  */
 	f[0]->f_inode = f[1]->f_inode = inode;
 	f[0]->f_pos = f[1]->f_pos = 0;
 	f[0]->f_flags = O_RDONLY;

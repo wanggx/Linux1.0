@@ -198,7 +198,7 @@ struct inode {
 	unsigned short i_flags;
 	unsigned char i_lock;
 	unsigned char i_dirt;
-	unsigned char i_pipe;
+	unsigned char i_pipe;            /* 表明是管道对应的inode */
 	unsigned char i_seek;
 	unsigned char i_update;
 	/* 因为Linux采用的时VFS文件系统，上面数据是所有文件系统都需要使用的数据 

@@ -49,7 +49,7 @@ struct new_stat {
 #define S_IFBLK  0060000
 #define S_IFDIR  0040000
 #define S_IFCHR  0020000
-#define S_IFIFO  0010000
+#define S_IFIFO  0010000                         /* 有名管道文件 */
 #define S_ISUID  0004000		        /* u+s可以让用户在执行这个二进制程序的时候，
 								  * effective id变为这个文件的owner user
 								  */
@@ -61,7 +61,8 @@ struct new_stat {
 #define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)    /* 是否一个目录 */
 #define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)  /* 是否一个字符文件 */
 #define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)   /* 是否一个块文件 */
-#define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
+/* 判断是否有名管道文件，有名管道的名字存在于文件系统当中，而内容存在于内存当中 */
+#define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)    
 #define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
 
 #define S_IRWXU 00700     /* 用户自己的rwx权限 */
