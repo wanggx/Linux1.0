@@ -17,9 +17,9 @@ enum {
 	TIMER_BH = 0,
 	CONSOLE_BH,
 	SERIAL_BH,
-	TTY_BH,
+	TTY_BH,                 /* 终端 */
 	INET_BH,
-	KEYBOARD_BH
+	KEYBOARD_BH    /* 键盘 */
 };
 
 /* orl位或运算，将第nr位置为1 */

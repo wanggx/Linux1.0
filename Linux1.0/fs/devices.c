@@ -22,6 +22,7 @@ struct device_struct {
 	struct file_operations * fops;
 };
 
+/* 数组中的索引表示设备的主设备号 */
 static struct device_struct chrdevs[MAX_CHRDEV] = {
 	{ NULL, NULL },
 };
@@ -161,10 +162,17 @@ struct inode_operations blkdev_inode_operations = {
 /*
  * Called every time a character special file is opened
  */
+/* 打开字符设备 */
 int chrdev_open(struct inode * inode, struct file * filp)
 {
 	int i;
 
+	/* 在这里根据inode中的实际设备号，来获取主设备号，
+	  * 然后根据主设备号，来决定调用具体的fop，因为在Linux 
+	  * 当中可能多个字符设备的主设备号是不同的，而在read_inode 
+	  * 的时候仅仅判断了是字符设备，然后在字符设备的操作函数集合 
+	  * 中来具体的选择操作的fop，块设备也是同样的道理  
+	  */
 	i = MAJOR(inode->i_rdev);
 	if (i >= MAX_CHRDEV || !chrdevs[i].fops)
 		return -ENODEV;
@@ -179,6 +187,7 @@ int chrdev_open(struct inode * inode, struct file * filp)
  * is contain the open that then fills in the correct operations
  * depending on the special file...
  */
+/* 默认的字符设备操作函数集 */
 struct file_operations def_chr_fops = {
 	NULL,		/* lseek */
 	NULL,		/* read */

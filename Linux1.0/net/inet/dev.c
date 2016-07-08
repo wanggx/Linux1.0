@@ -991,6 +991,7 @@ dev_ifsioc(void *arg, unsigned int getset)
 
 
 /* This function handles all "interface"-type I/O control requests. */
+/* 设备的IO控制函数 */
 int
 dev_ioctl(unsigned int cmd, void *arg)
 {

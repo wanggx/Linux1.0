@@ -66,6 +66,7 @@ unsigned long lance_init(unsigned long mem_start, unsigned long mem_end);
   and returns the new start of free memory.
   */
 
+/* 网络设备的初始化，此处就是网卡的初始化 */
 unsigned long net_dev_init (unsigned long mem_start, unsigned long mem_end)
 {
 

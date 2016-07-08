@@ -1618,6 +1618,7 @@ inet_select(struct socket *sock, int sel_type, select_table *wait )
 }
 
 
+/*  INET协议族的端口控制函数 */
 static int
 inet_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
 {

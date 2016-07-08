@@ -433,6 +433,7 @@ int do_open(const char * filename,int flags,int mode)
 	f->f_pos = 0;
 	f->f_reada = 0;
 	f->f_op = NULL;
+        /* 根据inode来设置file的f_op指针 */
 	if (inode->i_op)
 		f->f_op = inode->i_op->default_file_ops;
 	if (f->f_op && f->f_op->open) {

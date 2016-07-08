@@ -1816,7 +1816,7 @@ static struct tty_ldisc tty_ldisc_N_TTY = {
 	copy_to_cooked		/* handler */
 };
 
-	
+/* 终端设备初始化 */	
 long tty_init(long kmem_start)
 {
 	int i;

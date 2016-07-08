@@ -107,17 +107,19 @@ struct device {
   unsigned short	  mtu;		/* interface MTU value		*/
   unsigned short	  type;		/* interface hardware type	*/
   unsigned short	  hard_header_len;	/* hardware hdr length	*/
-  /* 设备携带的对应私有数据，如以太网的则为struct lance_private结构 */
+  /* 设备携带的对应私有数据，如以太网的则为struct lance_private结构，
+    * 不同的网络设备携带的数据不一样 
+    */
   void			  *priv;	/* pointer to private data	*/
 
   /* Interface address info. */
   unsigned char		  broadcast[MAX_ADDR_LEN];	/* hw bcast add	*/
   unsigned char		  dev_addr[MAX_ADDR_LEN];	/* hw address	*/
   unsigned char		  addr_len;	/* harfware address length	*/
-  unsigned long		  pa_addr;	/* protocol address		*/
-  unsigned long		  pa_brdaddr;	/* protocol broadcast addr	*/
+  unsigned long		  pa_addr;	/* protocol address		*/  /* 设备ip地址 */
+  unsigned long		  pa_brdaddr;	/* protocol broadcast addr	*/ /* 设备广播地址 */
   unsigned long		  pa_dstaddr;	/* protocol P-P other side addr	*/
-  unsigned long		  pa_mask;	/* protocol netmask		*/
+  unsigned long		  pa_mask;	/* protocol netmask		*/   /* 子网掩码 */
   unsigned short	  pa_alen;	/* protocol address length	*/
 
   /* Pointer to the interface buffers. */
