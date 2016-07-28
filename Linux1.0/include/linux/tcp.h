@@ -38,13 +38,13 @@ struct tcphdr {
 					        * 数据转由应用处理，在处理telnet等交互模式的连接时，该标志是置位的
 					        */
 			ack:1,	/* 表示是确认包 */
-			urg:1,
+			urg:1,    /* 发送紧急数据标记，如果该标记为1，则表示该数据包中有紧急数据 */
 			res2:2;
   unsigned short	window;     /* 它指出了现在允许对方发送的数据量，接收方的缓冲空间是有限的
    								 * 故用窗口值作为接收方让发送方设置其发送窗口的依据，单位为字节
    								 */
   unsigned short	check;		/* 校验和 */
-  unsigned short	urg_ptr;
+  unsigned short	urg_ptr;       /* 发送紧急数据的指针 */
 };
 
 

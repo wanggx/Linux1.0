@@ -172,7 +172,7 @@ net_timer (unsigned long data)
 	reset_timer (sk, TIME_DESTROY, TCP_DONE_TIME);
 	release_sock (sk);
 	break;
-    case TIME_PROBE0:   /* 窗口探测定时器 */
+    case TIME_PROBE0:   /* 窗口探测定时器，也被称为坚持定时器 */
 	tcp_send_probe0(sk);
 	release_sock (sk);
 	break;
@@ -213,7 +213,7 @@ net_timer (unsigned long data)
 	}
 	release_sock (sk);
 	break;
-    case TIME_KEEPOPEN:
+    case TIME_KEEPOPEN:          /* 保活定时器 */
 	/* Send something to keep the connection open. */
 	if (sk->prot->write_wakeup)
 	  sk->prot->write_wakeup (sk);

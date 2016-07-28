@@ -41,6 +41,9 @@ struct linger {
 #define PF_IPX		AF_IPX
 
 /* Flags we can use with send/ and recv. */
+/* TCP的带外数据标记，也就是紧急数据，TCP在接收到带外数据时，需要优先处理
+  * 如ftp协议，客户端发送取消文件传输的带外紧急数据
+  */
 #define MSG_OOB		1
 /* 仅仅是数据预先读取和检查，例如读取一个skb，但是不将skb从队列中删除  */
 #define MSG_PEEK	2   

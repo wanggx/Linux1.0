@@ -959,6 +959,7 @@ static int tcp_write(struct sock *sk, unsigned char *from,
  */
 
 	/* Now we need to check if we have a half built packet. */
+        /* 检查是否有最大数据发送包，如果有，则将其发送 */
 	if ((skb = tcp_dequeue_partial(sk)) != NULL) {
 	        int hdrlen;
 
